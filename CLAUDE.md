@@ -1,6 +1,6 @@
 # FIREFLY MUD ENGINE
 
-A modern text-based RPG combining MUD mechanics with web interfaces and AI integration.
+A modern text-based RPG combining MUD mechanics with web interfaces.
 
 **Tech Stack: Roda + Sequel + PostgreSQL** (NOT Rails)
 
@@ -23,18 +23,7 @@ Every command file MUST end with this line or the command **silently fails**:
 ```ruby
 Commands::Base::Registry.register(Commands::<Plugin>::<Command>)
 ```
-
 Registration must be **outside** all modules, at the bottom of the file. Wrong module paths (e.g., `Commands::Core::Social::Wave` instead of `Commands::Social::Wave`) also cause silent failure.
-
-```ruby
-module Commands
-  module Social
-    class Wave < Commands::Base::Command
-      command_name 'wave'
-      # ...
-    end
-  end
-end
 
 # MUST be last line, outside modules
 Commands::Base::Registry.register(Commands::Social::Wave)
