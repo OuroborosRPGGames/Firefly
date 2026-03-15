@@ -2586,6 +2586,21 @@ class CombatResolutionService
 
     return result unless battle_map_service.battle_map_active?
 
+    ranged_attack = %i[ranged natural_ranged].include?(weapon_type)
+
+    # Wall checks: melee blocked by passable_edges walls, ranged blocked by LOS walls
+    if ranged_attack
+      if battle_map_service.wall_blocks_ranged?(actor, target)
+        result[:blocked] = true
+        return result
+      end
+    else
+      if battle_map_service.wall_blocks_melee?(actor, target)
+        result[:blocked] = true
+        return result
+      end
+    end
+
     # Flat modifiers are divided by attack_count so they apply proportionally
     # to each attack's share of the round total (matching how dice are divided).
     n = [attack_count, 1].max.to_f
@@ -2599,7 +2614,6 @@ class CombatResolutionService
     prone_mod = battle_map_service.prone_modifier(actor, target)
     total += (prone_mod / n).round
 
-    ranged_attack = %i[ranged natural_ranged].include?(weapon_type)
     if ranged_attack
       result[:elevation_damage_bonus] = battle_map_service.elevation_damage_bonus(actor, target)
       total += (result[:elevation_damage_bonus] / n).round

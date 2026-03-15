@@ -48,24 +48,29 @@ RSpec.describe WallMaskService do
   describe '#hex_to_pixel' do
     subject(:service) { described_class.new(room) }
 
-    it 'maps origin hex to pixel (0, 0)' do
+    it 'maps origin hex to bottom-left area (Y-flipped: north at top)' do
       px, py = service.hex_to_pixel(0, 0)
-      expect(px).to eq(0)
-      expect(py).to eq(0)
+      # hex(0,0) is the south-west corner → low pixel X, high pixel Y
+      expect(px).to be_between(0, 50)
+      expect(py).to be_between(50, 100)
     end
 
     it 'maps a hex to a pixel within mask bounds' do
-      # Room is 20x20 feet, mask is 100x100 pixels
-      # hex (5, 4) → feet ~= (10, 8) → pixel ~= (50, 40)
-      px, py = service.hex_to_pixel(5, 4)
+      px, py = service.hex_to_pixel(3, 4)
       expect(px).to be_between(0, 100)
       expect(py).to be_between(0, 100)
     end
 
-    it 'pixel coordinates are proportional to hex position' do
+    it 'higher hex_x maps to higher pixel_x' do
       px1, _  = service.hex_to_pixel(0, 0)
-      px2, _  = service.hex_to_pixel(5, 0)
+      px2, _  = service.hex_to_pixel(3, 0)
       expect(px2).to be > px1
+    end
+
+    it 'higher hex_y maps to lower pixel_y (Y-flipped)' do
+      _, py1 = service.hex_to_pixel(0, 0)
+      _, py2 = service.hex_to_pixel(0, 8)
+      expect(py2).to be < py1
     end
   end
 

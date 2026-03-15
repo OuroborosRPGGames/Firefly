@@ -45,6 +45,7 @@ class WallMaskService
     @image = nil
     @load_attempted = false
     @pixel_cache = {}
+    @hex_geometry = nil  # lazy-computed hex layout params
   end
 
   # Returns :wall, :door, :window, or :floor for a pixel coordinate.
@@ -103,13 +104,23 @@ class WallMaskService
     result
   end
 
-  # Convert hex coordinates to pixel coordinates.
+  # Convert hex coordinates to pixel coordinates using flat-top hex geometry.
+  # Must match HexOverlayService#build_hex_pixel_map and the JS hexToPixel()
+  # so that passable_edges and LOS rays sample the same mask pixels the editor
+  # displays.
   def hex_to_pixel(hex_x, hex_y)
-    fx, fy = HexGrid.hex_to_feet(hex_x, hex_y, @room.min_x, @room.min_y)
-    feet_to_pixel(fx, fy)
+    g = hex_geometry
+    col = hex_x - g[:min_x]
+    visual_row = ((hex_y - g[:min_y]) / 4.0).floor
+    visual_row = (g[:num_visual_rows] - 1) - visual_row  # Y-flip: north at top
+    stagger = col.to_i.odd? ? -g[:hex_height] / 2.0 : 0
+
+    px = (g[:hex_size] + col * g[:hex_size] * 1.5).round
+    py = (g[:hex_height] / 2.0 + visual_row * g[:hex_height] + stagger).round
+    [px.clamp(0, mask_width.to_i - 1), py.clamp(0, mask_height.to_i - 1)]
   end
 
-  # Convert feet coordinates to pixel coordinates.
+  # Convert feet coordinates to pixel coordinates (linear mapping for non-hex callers).
   def feet_to_pixel(fx, fy)
     rw = (@room.max_x - @room.min_x).to_f
     rh = (@room.max_y - @room.min_y).to_f
@@ -130,6 +141,37 @@ class WallMaskService
   end
 
   private
+
+  # Lazily compute hex geometry params matching HexOverlayService#build_hex_pixel_map.
+  # Cached per instance so compute_passable_edges loops don't recompute.
+  def hex_geometry
+    @hex_geometry ||= begin
+      room_w = (@room.max_x - @room.min_x).to_f
+      room_h = (@room.max_y - @room.min_y).to_f
+      hex_coords = HexGrid.hex_coords_for_room(0, 0, room_w, room_h)
+
+      all_xs = hex_coords.map { |x, _| x }
+      all_ys = hex_coords.map { |_, y| y }
+      min_x = all_xs.min || 0
+      min_y = all_ys.min || 0
+      num_cols = (all_xs.max || 0) - min_x
+      num_visual_rows = (((all_ys.max || 0) - min_y) / 4.0).floor + 1
+
+      mw = mask_width.to_f
+      mh = mask_height.to_f
+      hex_size_by_width  = mw / [num_cols * 1.5 + 2.0, 1].max
+      hex_size_by_height = mh / [(num_visual_rows + 0.5) * Math.sqrt(3), 1].max
+      hex_size = [hex_size_by_width, hex_size_by_height].max
+
+      {
+        min_x: min_x,
+        min_y: min_y,
+        num_visual_rows: num_visual_rows,
+        hex_size: hex_size,
+        hex_height: hex_size * Math.sqrt(3)
+      }
+    end
+  end
 
   def mask_width
     @room.battle_map_wall_mask_width || @image&.width || 512

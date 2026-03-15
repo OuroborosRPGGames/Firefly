@@ -9893,7 +9893,8 @@
 
         if (!textContent) {
             // Empty input (just hitting Enter) re-shows any active quickmenu
-            if (quickmenuData) {
+            // Only if the quickmenu key handler is still active (in a fight or activity)
+            if (quickmenuData && quickmenuKeyHandler) {
                 showObservationPanel('quickmenu', quickmenuData, 'right');
             }
             return;
@@ -11143,6 +11144,7 @@
         lastParticipantHash = null;
         battleMapZoom = 1.0;
         stopBattleMapPolling();
+        clearQuickmenuHandler();
 
         if (window._battleMapCompositor) {
           window._battleMapCompositor.destroy();

@@ -146,6 +146,41 @@ class BattleMapCombatService
     has_line_of_sight?(viewer, target) ? 0 : -4
   end
 
+  # Check if a wall edge blocks melee between two adjacent hexes.
+  # Uses the same passable_edges check as movement — if you can't walk there,
+  # you can't punch through it either (walls AND windows block melee).
+  # @param attacker [FightParticipant]
+  # @param target [FightParticipant]
+  # @return [Boolean] true if wall blocks the melee attack
+  def wall_blocks_melee?(attacker, target)
+    return false unless battle_map_active?
+
+    room = fight.room
+    return false unless room
+
+    to_hex = RoomHex.where(room_id: room.id, hex_x: target.hex_x, hex_y: target.hex_y).first
+    return false unless to_hex && !to_hex.passable_edges.nil?
+
+    dx = target.hex_x - attacker.hex_x
+    dy = target.hex_y - attacker.hex_y
+    dir_idx = CombatPathfindingService::PATH_HEX_OFFSETS.index([dx, dy])
+    return false unless dir_idx  # not adjacent or unrecognized offset
+
+    direction = CombatPathfindingService::DIRECTION_NAMES[dir_idx]
+    !to_hex.passable_from?(direction)
+  end
+
+  # Check if a wall blocks ranged attacks between two participants.
+  # Walls fully block; windows and doors do NOT block ranged attacks (you can
+  # shoot through a window or an open doorway).
+  # @param attacker [FightParticipant]
+  # @param target [FightParticipant]
+  # @return [Boolean] true if wall blocks the ranged attack
+  def wall_blocks_ranged?(attacker, target)
+    return false unless battle_map_active?
+    !has_line_of_sight?(attacker, target)
+  end
+
   # ========================================
   # Hazard System
   # ========================================
