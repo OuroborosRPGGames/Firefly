@@ -134,9 +134,11 @@ There's a timelines system which allows people to play multiple instances of the
 
 There's a combat system which is a simultaneous round system. What that means is everyone puts in what they want to do at the same time, and then the round plays out with individual actions interleaving which is then turned into a short narrative paragraph. I like this approach since it still has the main advantages of turn-based combat, the ability to RP throughout and not requiring people to be super twitchy but doesn't drag in the same way, a 5 person fight is about as fast as a 2 person one still. The combat plays out on a hex map which will render into the left side of the web client when in combat with hexes having various properties like elevation, cover, hazard which affect combat. You can also upload images to serve as battlemaps and set the different appropriate parameters for the hexes. You can enter all combat actions through the hex map instead of through the main client if required, clicking on an enemy to select them as your target etc. As long as looking neat this can go a long way to helping people visualize a fight and understand what's going on.
 
-Activities/Missions: Missions are pre-created adventures with branching paths made up of a series of discreet challengers, while other types of activities work as games or competitions.
+Activities/Missions: Missions are pre-created adventures with branching paths made up of a series of discrete challengers, while other types of activities work as games or competitions.
 
 There's an RNG Dungeon system called Delves, this builds a randomized dungeon of multiple levels with traps, puzzles, skill challenges, combat enemies and treasure. Each level gets harder but the rewards double. Characters only have 60 minutes in a delve to get their rewards and get out, but time doesn't tick down on it's own, instead every action has a specific time cost, with several actions that make things easier also having a cost. This means that delves can have a very high skill ceiling with people being able to try and push themselves to get deeper and deeper etc, but also don't require you to be twitchy, can be taken a break from in the middle of them, and can RP with other characters as you do them since RP doesn't take time off the clock.
+
+There's a system for downloading details from character's you've made or areas you've built and then uploading them to a new game also using the same engine.
 
 ML/LLM Modules:
 There are also several features powered by LLMs/Machine Learning models, these are all optional and users can determine which if any they want to include.
@@ -150,6 +152,8 @@ Semote: Processes an emote the same as a normal emote but also scans the non-ver
 Automatic Battlemap generation: Takes the description of the room and creates a battlemap based on it, then uses ML segmentation models to find the objects etc in the room and autotags all those hexes.
 
 Additional Mission Rounds: Two mission round types can be included which use LLMs, a persuade type where characters need to persuade a LLM played NPC to progress the round. And a free-roll type where players choose entirely freeform how to tackle an obstacle and the LLM sets stats/difficulties.
+
+Auto-triage: A script that can be run daily that will go through tickets and dispatch a claude code session to investigate them, updating helpfiles if it finds information is incorrect/missing and creating files of code patches for potential bugs to review. If setup with a GitHub repo it can create PRs to that repo with the fix for the bug.
 
 Building tools: Almost any aspect in whole or in part can be delegated to an LLM if desired from getting it to write a single room description to getting it to design and build a whole town with shops, houses, npcs, shop inventories etc.
 
