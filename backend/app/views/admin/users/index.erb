@@ -1,0 +1,66 @@
+<% @page_title = 'User Management - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Users', path: '/admin/users' }] %>
+
+<%= admin_content_start %>
+      <h2 class="text-2xl font-bold mb-4">User Management</h2>
+
+      <div class="card bg-base-200">
+        <div class="card-body p-0">
+          <div class="flex justify-between items-center px-4 py-3 border-b border-base-content/10">
+            <h5 class="card-title mb-0">Registered Users</h5>
+            <span class="badge badge-neutral"><%= @users.length %> users</span>
+          </div>
+          <div class="p-4">
+            <div class="overflow-x-auto">
+              <table class="table table-zebra">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Characters</th>
+                    <th>Last Login</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @users.each do |user| %>
+                  <tr>
+                    <td>
+                      <a href="/admin/users/<%= user.id %>" class="link link-hover">
+                        <%= h user.username %>
+                      </a>
+                      <% if user.admin? %>
+                        <span class="badge badge-error ml-1">Admin</span>
+                      <% elsif user.staff? %>
+                        <span class="badge badge-primary ml-1">Staff</span>
+                      <% end %>
+                    </td>
+                    <td><%= h user.email %></td>
+                    <td>
+                      <% if user.id == current_user.id %>
+                        <span class="badge badge-info">You</span>
+                      <% end %>
+                    </td>
+                    <td><%= user.characters_dataset.count %></td>
+                    <td>
+                      <% if user.last_login_at %>
+                        <%= user.last_login_at.strftime('%Y-%m-%d %H:%M') %>
+                      <% else %>
+                        <span class="text-base-content/70">Never</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <a href="/admin/users/<%= user.id %>" class="btn btn-sm btn-outline btn-primary">
+                        <i class="bi bi-pencil"></i> Manage
+                      </a>
+                    </td>
+                  </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+<%= admin_content_end %>

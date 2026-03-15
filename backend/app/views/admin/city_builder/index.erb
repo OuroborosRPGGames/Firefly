@@ -1,0 +1,51 @@
+<% @page_title = 'City Builder - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'City Builder' }] %>
+
+<%= admin_content_start %>
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h2 class="text-2xl font-bold">City Builder</h2>
+          <p class="text-base-content/70">Select a city to view and edit its blocks and buildings</p>
+        </div>
+      </div>
+
+      <% if @locations.empty? %>
+        <div class="alert alert-info">
+          <div>
+            <h5 class="font-bold">No cities found</h5>
+            <p>Create a city using the World Builder first. Cities are created by using the "Place City" tool in the World Builder interface.</p>
+            <a href="/admin/world_builder" class="btn btn-primary mt-3">
+              <i class="bi bi-globe mr-2"></i>Go to World Builder
+            </a>
+          </div>
+        </div>
+      <% else %>
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <% @locations.each do |loc| %>
+            <div class="card bg-base-200 h-full">
+              <div class="card-body">
+                <h5 class="card-title"><%= h(loc.city_name || loc.name) %></h5>
+                <p class="text-base-content/70 text-sm">
+                  <% if loc.world %>
+                    <i class="bi bi-globe mr-1"></i><%= h(loc.world.name) %><br>
+                  <% end %>
+                  <% if loc.zone %>
+                    <i class="bi bi-geo-alt mr-1"></i><%= h(loc.zone.name) %><br>
+                  <% end %>
+                  <i class="bi bi-grid-3x3 mr-1"></i>
+                  <%= loc.horizontal_streets || 10 %> x <%= loc.vertical_streets || 10 %> grid<br>
+                  <% building_count = loc.rooms_dataset.where(room_type: 'building').count rescue 0 %>
+                  <i class="bi bi-building mr-1"></i>
+                  <%= building_count %> buildings
+                </p>
+              </div>
+              <div class="card-actions p-4 pt-0">
+                <a href="/admin/city_builder/<%= loc.id %>" class="btn btn-primary btn-sm w-full">
+                  <i class="bi bi-pencil-square mr-2"></i>Edit City
+                </a>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+<%= admin_content_end %>

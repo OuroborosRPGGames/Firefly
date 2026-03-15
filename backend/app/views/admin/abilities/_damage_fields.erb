@@ -1,0 +1,256 @@
+<div class="card bg-base-200 mb-4">
+  <div class="card-body">
+    <div class="p-4 border-b border-base-content/10 -mx-4 -mt-4 mb-4">
+      <h3 class="font-semibold"><i class="bi bi-lightning-charge mr-2"></i>Damage Configuration</h3>
+    </div>
+    <% if @ability.pc_ability? %>
+      <div class="alert alert-info mb-4" id="pc-damage-hint">
+        <i class="bi bi-info-circle mr-2"></i>
+        <span>
+          <strong>PC Ability:</strong> Uses unified 2d8 roll (exploding on 8s) + willpower allocation.
+          Damage dice below are ignored for PCs. Expected value: ~10.3 + willpower.
+        </span>
+      </div>
+    <% end %>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3" id="npc-dice-section" style="<%= @ability.pc_ability? ? 'display:none;' : '' %>">
+      <div>
+        <label class="label"><span class="label-text">Base Damage Dice</span></label>
+        <input type="text" class="input input-bordered w-full" name="base_damage_dice"
+               value="<%= h(@ability.base_damage_dice || '') %>" placeholder="e.g., 2d8, 3d6+2">
+        <label class="label"><span class="label-text-alt text-base-content/70">Leave empty for utility abilities</span></label>
+      </div>
+
+      <div>
+        <label class="label"><span class="label-text">Damage Modifier Dice</span></label>
+        <input type="text" class="input input-bordered w-full" name="damage_modifier_dice"
+               value="<%= h(@ability.damage_modifier_dice || '') %>" placeholder="e.g., +1d6, -1d4">
+        <label class="label"><span class="label-text-alt text-base-content/70">Additional dice rolled</span></label>
+      </div>
+
+      <div>
+        <label class="label"><span class="label-text">Flat Modifier</span></label>
+        <input type="number" class="input input-bordered w-full" name="damage_modifier"
+               value="<%= @ability.damage_modifier %>" placeholder="0">
+      </div>
+
+      <div>
+        <label class="label"><span class="label-text">Multiplier</span></label>
+        <input type="number" class="input input-bordered w-full" name="damage_multiplier"
+               value="<%= @ability.damage_multiplier || 1.0 %>" step="0.1" min="0.1" max="5">
+        <label class="label"><span class="label-text-alt text-base-content/70">1.0 = 100%</span></label>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
+      <div>
+        <label class="label"><span class="label-text">Damage Type</span></label>
+        <select class="select select-bordered w-full" name="damage_type">
+          <% Ability::DAMAGE_TYPES.each do |t| %>
+            <option value="<%= t %>" <%= @ability.damage_type == t ? 'selected' : '' %>><%= t.capitalize %></option>
+          <% end %>
+        </select>
+      </div>
+
+      <div>
+        <label class="label"><span class="label-text">Stat Bonus</span></label>
+        <select class="select select-bordered w-full" name="damage_stat">
+          <option value="">None</option>
+          <option value="strength" <%= @ability.damage_stat == 'strength' ? 'selected' : '' %>>Strength</option>
+          <option value="dexterity" <%= @ability.damage_stat == 'dexterity' ? 'selected' : '' %>>Dexterity</option>
+          <option value="intelligence" <%= @ability.damage_stat == 'intelligence' ? 'selected' : '' %>>Intelligence</option>
+          <option value="wisdom" <%= @ability.damage_stat == 'wisdom' ? 'selected' : '' %>>Wisdom</option>
+          <option value="charisma" <%= @ability.damage_stat == 'charisma' ? 'selected' : '' %>>Charisma</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="label"><span class="label-text">Options</span></label>
+        <div class="form-control">
+          <label class="label cursor-pointer justify-start gap-3">
+            <input type="hidden" name="is_healing" value="0">
+            <input type="checkbox" class="checkbox checkbox-primary" name="is_healing" value="1"
+                   <%= @ability.is_healing ? 'checked' : '' %> id="is_healing">
+            <span class="label-text">Healing ability</span>
+          </label>
+        </div>
+        <div class="form-control">
+          <label class="label cursor-pointer justify-start gap-3">
+            <input type="hidden" name="bypasses_resistances" value="0">
+            <input type="checkbox" class="checkbox checkbox-primary" name="bypasses_resistances" value="1"
+                   <%= @ability.bypasses_resistances ? 'checked' : '' %> id="bypasses_resistances">
+            <span class="label-text">Bypasses resistances (true damage)</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Split Damage Types -->
+<div class="card bg-base-200 mb-4">
+  <div class="card-body">
+    <div class="p-4 border-b border-base-content/10 -mx-4 -mt-4 mb-4 flex justify-between items-center">
+      <h3 class="font-semibold"><i class="bi bi-pie-chart mr-2"></i>Split Damage Types</h3>
+      <button type="button" class="btn btn-sm btn-outline btn-primary" onclick="addDamageTypeSplit()">
+        <i class="bi bi-plus-lg mr-1"></i>Add Split
+      </button>
+    </div>
+    <p class="text-base-content/70 text-sm mb-3">
+      Split damage across multiple types. Values should total 100% (e.g., "50%" fire + "50%" physical).
+    </p>
+
+    <div id="damage-types-container">
+      <% splits = @ability.parsed_damage_types || [] %>
+      <% if splits.empty? %>
+        <div class="text-base-content/70 text-center py-3" id="no-splits-message">
+          No split damage configured. Ability uses single damage type above.
+        </div>
+      <% else %>
+        <% splits.each_with_index do |split, index| %>
+          <div class="damage-type-row grid grid-cols-1 md:grid-cols-3 gap-2 mb-2" data-index="<%= index %>">
+            <div>
+              <select class="select select-bordered select-sm w-full" name="damage_types_split[<%= index %>][type]">
+                <% Ability::DAMAGE_TYPES.each do |t| %>
+                  <option value="<%= t %>" <%= split['type'] == t ? 'selected' : '' %>><%= t.capitalize %></option>
+                <% end %>
+              </select>
+            </div>
+            <div>
+              <input type="text" class="input input-bordered input-sm w-full" name="damage_types_split[<%= index %>][value]"
+                     value="<%= split['value'] %>" placeholder="e.g., 50%">
+            </div>
+            <div>
+              <button type="button" class="btn btn-sm btn-outline btn-error" onclick="removeDamageTypeSplit(this)">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- Conditional Damage -->
+<div class="card bg-base-200 mb-4">
+  <div class="card-body">
+    <div class="p-4 border-b border-base-content/10 -mx-4 -mt-4 mb-4 flex justify-between items-center">
+      <h3 class="font-semibold"><i class="bi bi-question-diamond mr-2"></i>Conditional Damage Bonuses</h3>
+      <button type="button" class="btn btn-sm btn-outline btn-primary" onclick="addConditionalDamage()">
+        <i class="bi bi-plus-lg mr-1"></i>Add Condition
+      </button>
+    </div>
+    <p class="text-base-content/70 text-sm mb-3">
+      Add bonus damage when specific conditions are met (e.g., +1d6 vs burning targets).
+    </p>
+
+    <div id="conditional-damage-container">
+      <% conditions = @ability.parsed_conditional_damage || [] %>
+      <% if conditions.empty? %>
+        <div class="text-base-content/70 text-center py-3" id="no-conditions-message">
+          No conditional damage configured.
+        </div>
+      <% else %>
+        <% conditions.each_with_index do |cond, index| %>
+          <div class="conditional-row grid grid-cols-1 md:grid-cols-4 gap-2 mb-2" data-index="<%= index %>">
+            <div>
+              <select class="select select-bordered select-sm w-full" name="conditional_damage[<%= index %>][condition]">
+                <option value="target_has_status" <%= cond['condition'] == 'target_has_status' ? 'selected' : '' %>>Target has status</option>
+                <option value="target_below_50_hp" <%= cond['condition'] == 'target_below_50_hp' ? 'selected' : '' %>>Target below 50% HP</option>
+                <option value="target_prone" <%= cond['condition'] == 'target_prone' ? 'selected' : '' %>>Target prone</option>
+                <option value="first_attack_of_round" <%= cond['condition'] == 'first_attack_of_round' ? 'selected' : '' %>>First attack of round</option>
+              </select>
+            </div>
+            <div>
+              <input type="text" class="input input-bordered input-sm w-full" name="conditional_damage[<%= index %>][status]"
+                     value="<%= cond['status'] %>" placeholder="Status name">
+            </div>
+            <div>
+              <input type="text" class="input input-bordered input-sm w-full" name="conditional_damage[<%= index %>][bonus_dice]"
+                     value="<%= cond['bonus_dice'] %>" placeholder="e.g., 1d6">
+            </div>
+            <div>
+              <button type="button" class="btn btn-sm btn-outline btn-error" onclick="removeConditionalDamage(this)">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<script>
+let damageTypeIndex = <%= (@ability.parsed_damage_types || []).length %>;
+let conditionalIndex = <%= (@ability.parsed_conditional_damage || []).length %>;
+
+function addDamageTypeSplit() {
+  document.getElementById('no-splits-message')?.remove();
+  const container = document.getElementById('damage-types-container');
+  const html = `
+    <div class="damage-type-row grid grid-cols-1 md:grid-cols-3 gap-2 mb-2" data-index="${damageTypeIndex}">
+      <div>
+        <select class="select select-bordered select-sm w-full" name="damage_types_split[${damageTypeIndex}][type]">
+          <% Ability::DAMAGE_TYPES.each do |t| %>
+            <option value="<%= t %>"><%= t.capitalize %></option>
+          <% end %>
+        </select>
+      </div>
+      <div>
+        <input type="text" class="input input-bordered input-sm w-full" name="damage_types_split[${damageTypeIndex}][value]" placeholder="e.g., 50%">
+      </div>
+      <div>
+        <button type="button" class="btn btn-sm btn-outline btn-error" onclick="removeDamageTypeSplit(this)">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+    </div>
+  `;
+  container.insertAdjacentHTML('beforeend', html);
+  damageTypeIndex++;
+  updatePowerDisplay();
+}
+
+function removeDamageTypeSplit(btn) {
+  btn.closest('.damage-type-row').remove();
+  updatePowerDisplay();
+}
+
+function addConditionalDamage() {
+  document.getElementById('no-conditions-message')?.remove();
+  const container = document.getElementById('conditional-damage-container');
+  const html = `
+    <div class="conditional-row grid grid-cols-1 md:grid-cols-4 gap-2 mb-2" data-index="${conditionalIndex}">
+      <div>
+        <select class="select select-bordered select-sm w-full" name="conditional_damage[${conditionalIndex}][condition]">
+          <option value="target_has_status">Target has status</option>
+          <option value="target_below_50_hp">Target below 50% HP</option>
+          <option value="target_prone">Target prone</option>
+          <option value="first_attack_of_round">First attack of round</option>
+        </select>
+      </div>
+      <div>
+        <input type="text" class="input input-bordered input-sm w-full" name="conditional_damage[${conditionalIndex}][status]" placeholder="Status name">
+      </div>
+      <div>
+        <input type="text" class="input input-bordered input-sm w-full" name="conditional_damage[${conditionalIndex}][bonus_dice]" placeholder="e.g., 1d6">
+      </div>
+      <div>
+        <button type="button" class="btn btn-sm btn-outline btn-error" onclick="removeConditionalDamage(this)">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+    </div>
+  `;
+  container.insertAdjacentHTML('beforeend', html);
+  conditionalIndex++;
+  updatePowerDisplay();
+}
+
+function removeConditionalDamage(btn) {
+  btn.closest('.conditional-row').remove();
+  updatePowerDisplay();
+}
+</script>

@@ -1,0 +1,172 @@
+# Ability Power Calculation Weights
+# Used by AbilityPowerCalculator for real ability power rating.
+# Run the auto-tuning simulator to adjust these values:
+#   ruby scripts/ability_balance_simulator.rb --synthetic-tune
+#
+# Last tuned: 2026-03-15 17:02:06
+
+version: 1
+mode: fresh
+
+baseline:
+  damage: 11
+  hp: 6
+  hits_per_round: 1
+  rounds_per_fight: 4
+
+coefficients:
+  cc_skip_mult: 1.25
+  cc_penalty_mult: 0.2
+  vuln_efficiency: 0.15
+  dot_efficiency: 0.18
+  debuff_mult: 0.14
+  buff_mult: 0.67
+  mitigation_per_hit: 1.05
+  mitigation_pool: 0.39
+  shield_efficiency: 0.84
+  heal_mult: 1.2
+  aoe_circle_r1: 1.5
+  aoe_circle_r2: 2.5
+  aoe_circle_r3: 4
+  aoe_circle_r4: 6
+  aoe_action_economy: 1.5
+  aoe_ff_penalty: 0.7
+  chain_target_efficiency: 0.8
+  forced_movement_per_hex: 6
+  execute_threshold_mult: 0.5
+  lifesteal_efficiency: 0.3
+  duration_base: 1
+  duration_decay: 0.5
+  duration_max_factor: 2.5
+  dot_tick_decay: 0.7
+  buff_5dmg_2r: 1
+  buff_10dmg_1r: 1
+  buff_3dmg_3r: 1
+  vuln_2x_2r: 1
+  vuln_3x_1r: 1
+  vuln_1_5x_3r: 1
+  dot_burning_2r: 1
+  dot_burning_3r: 1
+  dot_poisoned_2r: 1
+  dot_poisoned_3r: 1
+  dot_bleeding_2r: 1
+  dot_bleeding_3r: 1
+  dot_freezing_2r: 1
+  dot_freezing_3r: 1
+  shield_10hp_3r: 1
+  shield_15hp_2r: 1
+  shield_20hp_2r: 1
+  cc_stun_1r: 1
+  cc_stun_2r: 1
+  cc_daze_1r: 1
+  cc_daze_2r: 1
+  cc_daze_3r: 1
+  cc_prone_1r: 1
+  debuff_frightened_2r: 1
+  debuff_taunted_2r: 1
+  armor_3red_3r: 1
+  armor_4red_2r: 1
+  armor_6red_1r: 1
+  protect_3red_3r: 1
+  protect_5red_2r: 1
+  protect_8red_1r: 1
+
+weights:
+  global:
+    power_per_damage: 3.5
+    dot_penalty: 0.7
+    healing_multiplier: 1.5
+    stat_bonus_assumed: 3
+  status:
+    stunned: 11
+    dazed: 5.5
+    prone: 8.8
+    immobilized: 9.44
+    snared: 25
+    slowed: 8.43
+    grappled: 35
+    burning: 4
+    poisoned: 3
+    bleeding: 3
+    freezing: 4
+    vulnerable: 11
+    vulnerable_fire: 50
+    vulnerable_ice: 50
+    vulnerable_lightning: 50
+    vulnerable_physical: 50
+    vulnerable_2x: 11
+    vulnerable_3x: 22
+    vulnerable_1x: 25
+    frightened: 2.75
+    taunted: 1.65
+    empowered_5dmg: 5
+    empowered_10dmg: 10
+    empowered_3dmg: 3
+    protected: 5
+    protected_5red: 5
+    protected_8red: 8
+    protected_3red: 3
+    armored_3red: 3
+    armored_4red: 4
+    armored_6red: 6
+    shielded_10hp: 10
+    shielded_15hp: 15
+    shielded_20hp: 20
+    regenerating: 1.2
+    healing_amplified: 25
+    resistant_fire: 25
+    resistant_ice: 25
+    resistant_lightning: 25
+    resistant_physical: 25
+    vulnerable_1_5x: 5.5
+  aoe_circle:
+    radius_1: 1.5
+    radius_2: 2.5
+    radius_3: 4
+    radius_4: 6
+    radius_max: 8
+  aoe_cone:
+    base_divisor: 1.47
+    minimum: 1.5
+  aoe_line:
+    divisor: 1.8
+  aoe:
+    action_economy_multiplier: 1.5
+    friendly_fire_penalty: 0.7
+  aoe_friendly_fire:
+    circle_r2: 2.45
+    circle_r3: 4
+  duration:
+    base_factor: 1
+    subsequent_factor: 0.5
+    max_factor: 2.5
+    dot_decay: 0.7
+  cost:
+    willpower_per_point: 3
+    cooldown_max_penalty_pct: 0.2
+    cooldown_seconds_divisor: 300
+    ability_penalty_per_point: 5
+    all_roll_penalty_per_point: 3
+    specific_cooldown_per_round: 0.05
+    specific_cooldown_max_pct: 0.25
+  special:
+    execute_instant_kill: 62.69
+    execute_multiplier_base: 20
+    forced_movement_per_hex: 6
+    lifesteal_fraction: 0.3
+    conditional_trigger_rate: 0.5
+    combo_trigger_rate: 0.3
+    resistance_bypass: 15
+  chain:
+    default_max_targets: 4.4
+    default_falloff: 0.5
+    target_efficiency: 0.8
+
+locked_coefficients:
+  []
+
+locked_weights:
+  []
+
+last_run:
+  {}

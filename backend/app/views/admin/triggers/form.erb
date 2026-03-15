@@ -1,0 +1,342 @@
+<% @page_title = "#{@trigger.id ? 'Edit' : 'New'} Trigger - Admin" %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Triggers', path: '/admin/triggers' }, { label: @trigger.id ? 'Edit Trigger' : 'New Trigger' }] %>
+
+<%= admin_content_start %>
+      <h2 class="text-2xl font-bold mb-6"><%= @trigger.id ? 'Edit Trigger' : 'New Trigger' %></h2>
+
+      <form action="<%= @trigger.id ? "/admin/triggers/#{@trigger.id}" : '/admin/triggers/create' %>" method="post">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 space-y-6">
+            <div class="card bg-base-200">
+              <div class="p-4 border-b border-base-content/10 font-semibold">Basic Information</div>
+              <div class="card-body">
+                <div class="form-control mb-4">
+                  <label class="label" for="name">
+                    <span class="label-text">Name *</span>
+                  </label>
+                  <input type="text" class="input input-bordered w-full" id="name" name="name"
+                         value="<%= h @trigger.name %>" required>
+                </div>
+
+                <div class="form-control mb-4">
+                  <label class="label" for="description">
+                    <span class="label-text">Description</span>
+                  </label>
+                  <textarea class="textarea textarea-bordered w-full" id="description" name="description" rows="2"><%= h @trigger.description %></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="form-control">
+                    <label class="label" for="trigger_type">
+                      <span class="label-text">Trigger Type *</span>
+                    </label>
+                    <select class="select select-bordered w-full" id="trigger_type" name="trigger_type" required onchange="updateTypeFields()">
+                      <option value="">Select type...</option>
+                      <option value="mission" <%= @trigger.trigger_type == 'mission' ? 'selected' : '' %>>Mission</option>
+                      <option value="npc" <%= @trigger.trigger_type == 'npc' ? 'selected' : '' %>>NPC Behavior</option>
+                      <option value="world_memory" <%= @trigger.trigger_type == 'world_memory' ? 'selected' : '' %>>World Memory</option>
+                      <option value="clue_share" <%= @trigger.trigger_type == 'clue_share' ? 'selected' : '' %>>Clue Share</option>
+                    </select>
+                  </div>
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text">Status</span>
+                    </label>
+                    <label class="label cursor-pointer justify-start gap-3">
+                      <input type="checkbox" class="checkbox" id="is_active" name="is_active" value="1"
+                             <%= @trigger.is_active != false ? 'checked' : '' %>>
+                      <span class="label-text">Active</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mission Fields -->
+            <div class="card bg-base-200" id="mission_fields" style="display:none">
+              <div class="p-4 border-b border-base-content/10 font-semibold">Mission Settings</div>
+              <div class="card-body">
+                <div class="form-control mb-4">
+                  <label class="label" for="activity_id">
+                    <span class="label-text">Activity/Mission</span>
+                  </label>
+                  <select class="select select-bordered w-full" id="activity_id" name="activity_id">
+                    <option value="">Any activity</option>
+                    <% @activities.each do |a| %>
+                      <option value="<%= a.id %>" <%= @trigger.activity_id == a.id ? 'selected' : '' %>>
+                        <%= h a.name %>
+                      </option>
+                    <% end %>
+                  </select>
+                </div>
+
+                <div class="form-control mb-4">
+                  <label class="label" for="mission_event_type">
+                    <span class="label-text">Event Type</span>
+                  </label>
+                  <select class="select select-bordered w-full" id="mission_event_type" name="mission_event_type">
+                    <option value="succeed" <%= @trigger.mission_event_type == 'succeed' ? 'selected' : '' %>>Success</option>
+                    <option value="fail" <%= @trigger.mission_event_type == 'fail' ? 'selected' : '' %>>Failure</option>
+                    <option value="branch" <%= @trigger.mission_event_type == 'branch' ? 'selected' : '' %>>Branch Change</option>
+                    <option value="round_complete" <%= @trigger.mission_event_type == 'round_complete' ? 'selected' : '' %>>Round Complete</option>
+                  </select>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="form-control">
+                    <label class="label" for="specific_round">
+                      <span class="label-text">Specific Round (optional)</span>
+                    </label>
+                    <input type="number" class="input input-bordered w-full" id="specific_round" name="specific_round"
+                           value="<%= @trigger.specific_round %>" min="1">
+                  </div>
+                  <div class="form-control">
+                    <label class="label" for="specific_branch">
+                      <span class="label-text">Specific Branch (optional)</span>
+                    </label>
+                    <input type="number" class="input input-bordered w-full" id="specific_branch" name="specific_branch"
+                           value="<%= @trigger.specific_branch %>" min="0">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- NPC Fields -->
+            <div class="card bg-base-200" id="npc_fields" style="display:none">
+              <div class="p-4 border-b border-base-content/10 font-semibold">NPC Settings</div>
+              <div class="card-body">
+                <div class="form-control mb-4">
+                  <label class="label" for="npc_character_id">
+                    <span class="label-text">Specific NPC (optional)</span>
+                  </label>
+                  <select class="select select-bordered w-full" id="npc_character_id" name="npc_character_id">
+                    <option value="">Any NPC matching archetype</option>
+                    <% @npcs.each do |npc| %>
+                      <option value="<%= npc.id %>" <%= @trigger.npc_character_id == npc.id ? 'selected' : '' %>>
+                        <%= h npc.full_name %>
+                      </option>
+                    <% end %>
+                  </select>
+                </div>
+
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text">Archetypes (if no specific NPC)</span>
+                  </label>
+                  <% archetype_ids = @trigger.npc_archetype_ids || [] %>
+                  <div class="space-y-2">
+                    <% @archetypes.each do |arch| %>
+                      <label class="label cursor-pointer justify-start gap-3">
+                        <input type="checkbox" class="checkbox" id="arch_<%= arch.id %>"
+                               name="npc_archetype_ids[]" value="<%= arch.id %>"
+                               <%= archetype_ids.include?(arch.id) ? 'checked' : '' %>>
+                        <span class="label-text"><%= h arch.name %></span>
+                      </label>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- World Memory Fields -->
+            <div class="card bg-base-200" id="world_memory_fields" style="display:none">
+              <div class="p-4 border-b border-base-content/10 font-semibold">World Memory Settings</div>
+              <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="form-control">
+                    <label class="label" for="memory_publicity_filter">
+                      <span class="label-text">Publicity Filter</span>
+                    </label>
+                    <select class="select select-bordered w-full" id="memory_publicity_filter" name="memory_publicity_filter">
+                      <option value="any" <%= @trigger.memory_publicity_filter == 'any' ? 'selected' : '' %>>Any</option>
+                      <option value="public" <%= @trigger.memory_publicity_filter == 'public' ? 'selected' : '' %>>Public</option>
+                      <option value="private" <%= @trigger.memory_publicity_filter == 'private' ? 'selected' : '' %>>Private</option>
+                    </select>
+                  </div>
+                  <div class="form-control">
+                    <label class="label" for="min_importance">
+                      <span class="label-text">Minimum Importance (1-10)</span>
+                    </label>
+                    <input type="number" class="input input-bordered w-full" id="min_importance" name="min_importance"
+                           value="<%= @trigger.min_importance %>" min="1" max="10">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Condition -->
+            <div class="card bg-base-200">
+              <div class="p-4 border-b border-base-content/10 font-semibold">Condition Matching</div>
+              <div class="card-body">
+                <div class="form-control mb-4">
+                  <label class="label" for="condition_type">
+                    <span class="label-text">Condition Type *</span>
+                  </label>
+                  <select class="select select-bordered w-full" id="condition_type" name="condition_type" required onchange="updateConditionFields()">
+                    <option value="contains" <%= @trigger.condition_type == 'contains' ? 'selected' : '' %>>Contains Text</option>
+                    <option value="exact" <%= @trigger.condition_type == 'exact' ? 'selected' : '' %>>Exact Match</option>
+                    <option value="regex" <%= @trigger.condition_type == 'regex' ? 'selected' : '' %>>Regex Pattern</option>
+                    <option value="llm_match" <%= @trigger.condition_type == 'llm_match' ? 'selected' : '' %>>LLM Semantic Match</option>
+                  </select>
+                </div>
+
+                <div class="form-control mb-4" id="condition_value_field">
+                  <label class="label" for="condition_value">
+                    <span class="label-text">Pattern/Text</span>
+                  </label>
+                  <input type="text" class="input input-bordered w-full" id="condition_value" name="condition_value"
+                         value="<%= h @trigger.condition_value %>" placeholder="Text to match">
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/70">Leave empty to trigger on any content</span>
+                  </label>
+                </div>
+
+                <div id="llm_fields" style="display:none">
+                  <div class="form-control mb-4">
+                    <label class="label" for="llm_match_prompt">
+                      <span class="label-text">LLM Match Description</span>
+                    </label>
+                    <textarea class="textarea textarea-bordered w-full" id="llm_match_prompt" name="llm_match_prompt" rows="3"
+                              placeholder="Describe the behavior to detect, e.g., 'The guard is calling for someone to be arrested'"><%= h @trigger.llm_match_prompt %></textarea>
+                  </div>
+                  <div class="form-control">
+                    <label class="label" for="llm_match_threshold">
+                      <span class="label-text">Confidence Threshold (0.0-1.0)</span>
+                    </label>
+                    <input type="number" class="input input-bordered w-full" id="llm_match_threshold" name="llm_match_threshold"
+                           value="<%= @trigger.llm_match_threshold || 0.7 %>" min="0" max="1" step="0.1">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action -->
+            <div class="card bg-base-200">
+              <div class="p-4 border-b border-base-content/10 font-semibold">Action</div>
+              <div class="card-body">
+                <div class="form-control mb-4">
+                  <label class="label" for="action_type">
+                    <span class="label-text">Action Type *</span>
+                  </label>
+                  <select class="select select-bordered w-full" id="action_type" name="action_type" required onchange="updateActionFields()">
+                    <option value="staff_alert" <%= @trigger.action_type == 'staff_alert' ? 'selected' : '' %>>Staff Alert Only</option>
+                    <option value="code_block" <%= @trigger.action_type == 'code_block' ? 'selected' : '' %>>Code Block Only</option>
+                    <option value="both" <%= @trigger.action_type == 'both' ? 'selected' : '' %>>Both</option>
+                  </select>
+                </div>
+
+                <div id="alert_fields">
+                  <div class="form-control mb-4">
+                    <label class="label" for="alert_message_template">
+                      <span class="label-text">Alert Message Template</span>
+                    </label>
+                    <textarea class="textarea textarea-bordered w-full" id="alert_message_template" name="alert_message_template" rows="2"
+                              placeholder="Use {{trigger_name}}, {{source}}, {{content}}, {{time}}"><%= h @trigger.alert_message_template %></textarea>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <label class="label cursor-pointer justify-start gap-3">
+                      <input type="checkbox" class="checkbox" id="send_discord" name="send_discord" value="1"
+                             <%= @trigger.send_discord ? 'checked' : '' %>>
+                      <span class="label-text">
+                        <i class="bi bi-discord"></i> Send Discord Notification
+                      </span>
+                    </label>
+                    <label class="label cursor-pointer justify-start gap-3">
+                      <input type="checkbox" class="checkbox" id="send_email" name="send_email" value="1"
+                             <%= @trigger.send_email ? 'checked' : '' %>>
+                      <span class="label-text">
+                        <i class="bi bi-envelope"></i> Send Email
+                      </span>
+                    </label>
+                  </div>
+
+                  <div class="form-control" id="email_recipients_field" style="display:none">
+                    <label class="label" for="email_recipients">
+                      <span class="label-text">Email Recipients (comma-separated)</span>
+                    </label>
+                    <input type="text" class="input input-bordered w-full" id="email_recipients" name="email_recipients"
+                           value="<%= h @trigger.email_recipients %>" placeholder="admin@example.com, staff@example.com">
+                  </div>
+                </div>
+
+                <div id="code_fields" style="display:none">
+                  <div class="form-control">
+                    <label class="label" for="code_block">
+                      <span class="label-text">Ruby Code Block</span>
+                    </label>
+                    <textarea class="textarea textarea-bordered w-full font-mono" id="code_block" name="code_block" rows="8"
+                              placeholder="# Available methods:
+# broadcast_to_room(room_id, message)
+# send_to_character(character_id, message)
+# spawn_npc(character_id, room_id)
+# alert_staff(message)
+# log(message)"><%= h @trigger.code_block %></textarea>
+                    <label class="label">
+                      <span class="label-text-alt text-base-content/70">Code runs in a sandboxed environment with 5-second timeout</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-6">
+            <div class="card bg-base-200">
+              <div class="p-4 border-b border-base-content/10 font-semibold">Actions</div>
+              <div class="card-body">
+                <button type="submit" class="btn btn-primary w-full mb-2">
+                  <i class="bi bi-check-lg mr-1"></i>Save Trigger
+                </button>
+                <a href="/admin/triggers" class="btn btn-outline btn-secondary w-full">Cancel</a>
+              </div>
+            </div>
+
+            <% if @trigger.id %>
+            <div class="card bg-base-200">
+              <div class="p-4 border-b border-base-content/10 font-semibold">Info</div>
+              <div class="card-body">
+                <p class="mb-1"><strong>Created:</strong> <%= @trigger.created_at&.strftime('%Y-%m-%d %H:%M') %></p>
+                <p class="mb-3"><strong>Activations:</strong> <%= @trigger.activation_count %></p>
+                <a href="/admin/triggers/<%= @trigger.id %>/activations" class="btn btn-outline btn-info btn-sm">
+                  View Activations
+                </a>
+              </div>
+            </div>
+            <% end %>
+          </div>
+        </div>
+      </form>
+
+      <script>
+      function updateTypeFields() {
+        const type = document.getElementById('trigger_type').value;
+        document.getElementById('mission_fields').style.display = type === 'mission' ? 'block' : 'none';
+        document.getElementById('npc_fields').style.display = type === 'npc' ? 'block' : 'none';
+        document.getElementById('world_memory_fields').style.display = type === 'world_memory' ? 'block' : 'none';
+      }
+
+      function updateConditionFields() {
+        const type = document.getElementById('condition_type').value;
+        document.getElementById('llm_fields').style.display = type === 'llm_match' ? 'block' : 'none';
+      }
+
+      function updateActionFields() {
+        const type = document.getElementById('action_type').value;
+        document.getElementById('alert_fields').style.display = type !== 'code_block' ? 'block' : 'none';
+        document.getElementById('code_fields').style.display = type !== 'staff_alert' ? 'block' : 'none';
+      }
+
+      // Show/hide email field
+      document.getElementById('send_email').addEventListener('change', function() {
+        document.getElementById('email_recipients_field').style.display = this.checked ? 'block' : 'none';
+      });
+
+      // Initialize on load
+      updateTypeFields();
+      updateConditionFields();
+      updateActionFields();
+      document.getElementById('email_recipients_field').style.display =
+        document.getElementById('send_email').checked ? 'block' : 'none';
+      </script>
+<%= admin_content_end %>

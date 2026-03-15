@@ -1,0 +1,86 @@
+<% @page_title = 'Clues - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Clues' }] %>
+
+<%= admin_content_start %>
+      <h2 class="mb-4 text-2xl font-bold">Clues</h2>
+
+      <div class="mb-4">
+        <a href="/admin/clues/new" class="btn btn-primary">
+          <i class="bi bi-plus-lg mr-1"></i>New Clue
+        </a>
+      </div>
+
+      <% if @clues.empty? %>
+        <%= partial 'shared/empty_state', locals: { message: 'No clues defined yet.', link: '/admin/clues/new', link_text: 'Create your first clue' } %>
+      <% else %>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Content Preview</th>
+                <th>NPCs</th>
+                <th>Share Likelihood</th>
+                <th>Shares</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @clues.each do |clue| %>
+                <tr>
+                  <td>
+                    <%= h clue.name %>
+                    <% if clue.is_secret %>
+                      <i class="bi bi-eye-slash ml-1 text-warning" title="Secret"></i>
+                    <% end %>
+                  </td>
+                  <td>
+                    <span class="text-sm text-base-content/60"><%= truncate_text(clue.content, 50) %></span>
+                  </td>
+                  <td>
+                    <span class="badge badge-info"><%= clue.npc_clues_dataset.count %></span>
+                  </td>
+                  <td>
+                    <div class="flex items-center gap-2">
+                      <progress class="progress progress-success w-20" value="<%= (clue.share_likelihood * 100).round %>" max="100"></progress>
+                      <span class="text-sm"><%= (clue.share_likelihood * 100).round %>%</span>
+                    </div>
+                  </td>
+                  <td>
+                    <a href="/admin/clues/<%= clue.id %>/shares" class="link link-primary">
+                      <%= clue.clue_shares_dataset.count %>
+                    </a>
+                  </td>
+                  <td>
+                    <% if clue.is_active %>
+                      <span class="badge badge-success">Active</span>
+                    <% else %>
+                      <span class="badge badge-neutral">Inactive</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <div class="join">
+                      <a href="/admin/clues/<%= clue.id %>" class="btn btn-primary btn-outline btn-sm join-item" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </a>
+                      <a href="/admin/clues/<%= clue.id %>/shares" class="btn btn-info btn-outline btn-sm join-item" title="Share History">
+                        <i class="bi bi-clock-history"></i>
+                      </a>
+                      <%= partial 'admin/delete_button', locals: { path: "/admin/clues/#{clue.id}/delete", label: 'clue' } %>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+
+      <%
+      def truncate_text(text, len)
+        return '' if text.nil?
+        text.length > len ? text[0, len] + '...' : text
+      end
+      %>
+<%= admin_content_end %>

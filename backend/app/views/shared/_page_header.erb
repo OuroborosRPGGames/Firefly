@@ -1,0 +1,20 @@
+<%#
+  Page header with optional action button
+
+  Usage:
+    <%= partial 'shared/page_header', locals: {
+      title: 'Stat Blocks',
+      icon: 'bar-chart',
+      button_text: 'New Stat Block',  # optional
+      button_path: '/admin/stat_blocks/new',  # optional
+      button_icon: 'plus-circle'  # optional, defaults to 'plus-circle'
+    } %>
+%>
+<div class="flex justify-between items-center mb-4">
+  <h2 class="text-2xl font-semibold"><i class="bi bi-<%= icon %> mr-2"></i><%= title %></h2>
+  <% if defined?(button_text) && button_text %>
+    <a href="<%= button_path %>" class="btn btn-primary">
+      <i class="bi bi-<%= defined?(button_icon) && button_icon ? button_icon : 'plus-circle' %> mr-1"></i><%= button_text %>
+    </a>
+  <% end %>
+</div>

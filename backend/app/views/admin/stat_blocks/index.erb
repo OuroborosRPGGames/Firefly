@@ -1,0 +1,118 @@
+<% @page_title = 'Stat Blocks - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Stat Blocks', path: '/admin/stat_blocks' }] %>
+
+<%= admin_content_start %>
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h2 class="text-2xl font-bold flex items-center gap-2">
+          <i class="bi bi-bar-chart"></i>Stat Blocks
+        </h2>
+        <a href="/admin/stat_blocks/new" class="btn btn-primary">
+          <i class="bi bi-plus-circle"></i>New Stat Block
+        </a>
+      </div>
+
+      <% if @stat_blocks.empty? %>
+        <%= partial 'shared/empty_state', locals: { message: 'No stat blocks created yet. Stat blocks define the attributes (like Strength, Dexterity, etc.) that characters can allocate points to.' } %>
+      <% else %>
+        <div class="card bg-base-200">
+          <div class="overflow-x-auto">
+            <table class="table table-zebra">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Stats</th>
+                  <th>Points</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @stat_blocks.each do |block| %>
+                <tr class="hover">
+                  <td>
+                    <a href="/admin/stat_blocks/<%= block.id %>" class="link link-hover font-semibold">
+                      <%= h block.name %>
+                    </a>
+                    <% if block.is_default %>
+                      <span class="badge badge-success badge-sm ml-1">Default</span>
+                    <% end %>
+                    <% if block.description && !block.description.empty? %>
+                      <br><span class="text-base-content/70 text-sm"><%= block.description[0..49] %><%= '...' if block.description.length > 50 %></span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if block.single? %>
+                      <span class="badge badge-primary">Single</span>
+                    <% else %>
+                      <span class="badge badge-info">Paired</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <span class="badge badge-neutral"><%= block.stats.count %> stats</span>
+                    <% if block.paired? %>
+                      <br><span class="text-base-content/70 text-sm">
+                        <%= block.primary_label %>: <%= block.primary_stats.count %>,
+                        <%= block.secondary_label %>: <%= block.secondary_stats.count %>
+                      </span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if block.single? %>
+                      <%= block.total_points %> pts
+                    <% else %>
+                      <%= block.total_points %> / <%= block.secondary_points %> pts
+                    <% end %>
+                    <br><span class="text-base-content/70 text-sm">
+                      Range: <%= block.min_stat_value %>-<%= block.max_stat_value %>
+                    </span>
+                  </td>
+                  <td>
+                    <% if block.is_active %>
+                      <span class="badge badge-success">Active</span>
+                    <% else %>
+                      <span class="badge badge-neutral">Inactive</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <div class="join">
+                      <a href="/admin/stat_blocks/<%= block.id %>" class="btn btn-sm btn-outline join-item" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </a>
+                      <% unless block.is_default %>
+                        <form action="/admin/stat_blocks/<%= block.id %>/set_default" method="post" class="inline">
+                          <%= csrf_tag %>
+                          <button type="submit" class="btn btn-sm btn-outline btn-success join-item" title="Set as Default">
+                            <i class="bi bi-star"></i>
+                          </button>
+                        </form>
+                      <% end %>
+                      <%= partial 'admin/delete_button', locals: { path: "/admin/stat_blocks/#{block.id}/delete", label: 'stat block' } %>
+                    </div>
+                  </td>
+                </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Help Text -->
+      <div class="card bg-base-200 mt-6">
+        <div class="p-4 border-b border-base-content/10">
+          <h5 class="font-semibold flex items-center gap-2">
+            <i class="bi bi-question-circle"></i>About Stat Blocks
+          </h5>
+        </div>
+        <div class="card-body">
+          <p><span class="font-semibold">Single-type</span> blocks have one pool of stats (like STR, DEX, CON). Characters get a total number of points to distribute among all stats.</p>
+          <p class="mt-2"><span class="font-semibold">Paired-type</span> blocks have two categories (like Stats + Skills). Characters get separate point pools for each category.</p>
+          <p class="mt-2 mb-1"><span class="font-semibold">Cost Formulas:</span></p>
+          <ul class="list-disc list-inside text-base-content/80">
+            <li><span class="font-semibold">Doubling Every Other</span>: 1,1,2,2,3,3,4,4,5,5... (good for single-type with max 10)</li>
+            <li><span class="font-semibold">Linear Increasing</span>: 1,2,3,4,5... (good for paired-type with max 5)</li>
+          </ul>
+        </div>
+      </div>
+<%= admin_content_end %>

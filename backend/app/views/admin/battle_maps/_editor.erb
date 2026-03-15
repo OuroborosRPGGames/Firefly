@@ -1,0 +1,1659 @@
+<%
+  # Unified battle map editor partial
+  # Used by both template editor and room editor
+  # Required variables:
+  #   @entity       - BattleMapTemplate or Room
+  #   @editor_mode  - :template or :room
+  #   @hex_types, @surface_types, @cover_types, @cover_names_fallback, @water_types, @hazard_types
+  #
+  # Template mode: @hex_data_json, @valid_coords_json, @hex_min_x/y, @hex_max_x/y, @light_count
+  # Room mode:     @hexes (RoomHex records)
+
+  is_template = @editor_mode == :template
+  is_room = @editor_mode == :room
+
+  if is_template
+    bg_url = @entity.image_url
+    entity_id = @entity.id
+    api_base = "/admin/battle_map_templates/#{entity_id}/api"
+    back_url = '/admin/battle_map_templates'
+  else
+    bg_url = @entity.battle_map_image_url
+    entity_id = @entity.id
+    api_base = "/admin/battle_maps/#{entity_id}/api"
+    back_url = '/admin/battle_maps'
+  end
+
+  has_bg_image = !bg_url.nil? && !bg_url.to_s.strip.empty?
+  ai_enabled = is_room && defined?(GameSetting) && GameSetting.get_boolean('ai_battle_maps_enabled')
+  dynamic_lighting_enabled = is_room && defined?(GameSetting) && GameSetting.get_boolean('dynamic_lighting_enabled')
+  sam_available = defined?(ReplicateSamService) && ReplicateSamService.available? rescue false
+  has_image = has_bg_image
+
+  # Mask URLs
+  if is_template
+    water_mask = @entity.water_mask_url
+    foliage_mask = @entity.foliage_mask_url
+    fire_mask = @entity.fire_mask_url
+    light_sources_data = @entity.light_sources
+  else
+    water_mask = @entity.battle_map_water_mask_url
+    foliage_mask = @entity.battle_map_foliage_mask_url
+    fire_mask = @entity.battle_map_fire_mask_url
+    light_sources_data = @entity.detected_light_sources
+  end
+
+  existing_lights = (light_sources_data || []).map { |s| s['type'] }.uniq rescue []
+
+  # Normalize light source pixel coords to 0-1 UV for the WebGL shader
+  normalized_lights = begin
+    bg_url = is_template ? @entity.image_url : @entity.battle_map_image_url
+    if bg_url && !bg_url.to_s.strip.empty? && (light_sources_data || []).any?
+      path = bg_url.start_with?('/') ? File.join('public', bg_url) : bg_url
+      if File.exist?(path)
+        require 'vips'
+        img = Vips::Image.new_from_file(path, access: :sequential)
+        img_w, img_h = img.width.to_f, img.height.to_f
+        max_dim = [img_w, img_h].max
+
+        pixel_sources =
+          if defined?(DynamicLightingService)
+            DynamicLightingService.normalize_light_sources_for_image(@entity, light_sources_data, img_w, img_h)
+          else
+            light_sources_data
+          end
+
+        pixel_sources.map do |s|
+          s = s.respond_to?(:to_hash) ? s.to_hash.dup : s.dup
+          s['center_x'] = s['center_x'].to_f / img_w
+          s['center_y'] = s['center_y'].to_f / img_h
+          s['radius_px'] = [s['radius_px'].to_f / max_dim, 0.3].min
+          s
+        end
+      else
+        light_sources_data
+      end
+    else
+      light_sources_data || []
+    end
+  rescue StandardError => e
+    warn "[BattleMapEditor] Failed to normalize light sources: #{e.message}"
+    light_sources_data || []
+  end
+
+  bg_img_width = nil
+  bg_img_height = nil
+  if bg_url && !bg_url.to_s.strip.empty?
+    begin
+      bg_path = bg_url.start_with?('/') ? File.join('public', bg_url) : bg_url
+      if File.exist?(bg_path)
+        require 'vips'
+        _bg_img = Vips::Image.new_from_file(bg_path, access: :sequential)
+        bg_img_width  = _bg_img.width
+        bg_img_height = _bg_img.height
+      end
+    rescue => e
+      warn "[EditorERB] Could not read image dimensions: #{e.message}"
+    end
+  end
+%>
+
+<style>
+  .battle-map-editor { display: flex; height: calc(100vh - 200px); min-height: 600px; }
+  .tools-panel { width: 200px; flex-shrink: 0; overflow-y: auto; }
+  .map-canvas { flex-grow: 1; overflow: auto; background: oklch(var(--b3)); position: relative; }
+  .map-canvas .battle-map-svg { position: relative; z-index: 1; }
+  .properties-panel { width: 280px; flex-shrink: 0; overflow-y: auto; }
+  .hex { cursor: pointer; transition: opacity 0.15s; }
+  .hex:hover { opacity: 0.8; }
+  .hex.selected { stroke: oklch(var(--wa)); stroke-width: 3; }
+  .hex-text { font-size: 8px; fill: #fff; pointer-events: none; filter: drop-shadow(0 0 2px rgba(0,0,0,0.8)); }
+  .tool-btn { width: 100%; text-align: left; margin-bottom: 4px; }
+  .tool-btn.active { @apply btn-primary; }
+  .effects-overlay { position: absolute; top: 0; left: 0; pointer-events: none; }
+</style>
+
+<div class="flex justify-between items-center mb-4">
+  <div>
+    <% if is_template %>
+      <h4 class="text-xl font-bold">Template: <%= h @entity.category %>/<%= h @entity.shape_key %> v<%= @entity.variant %></h4>
+      <span class="text-base-content/70 text-sm">
+        Size: <%= @entity.width_feet.to_i %> x <%= @entity.height_feet.to_i %> ft |
+        Hexes: <%= @hex_data.size %> |
+        Lights: <%= @light_count %>
+      </span>
+    <% else %>
+      <h4 class="text-xl font-bold">Battle Map: <%= h @entity.name %></h4>
+      <span class="text-base-content/70 text-sm">
+        Type: <%= @entity.room_type %> |
+        <% if @entity.min_x && @entity.max_x %>
+          Size: <%= @entity.max_x - @entity.min_x + 1 %> x <%= @entity.max_y - @entity.min_y + 1 %> |
+        <% end %>
+        Hexes: <%= @hexes.count %>
+      </span>
+    <% end %>
+  </div>
+  <div class="flex gap-2">
+    <a href="<%= back_url %>" class="btn btn-ghost gap-2">
+      <i class="bi bi-arrow-left"></i> Back
+    </a>
+  </div>
+</div>
+
+<% if is_room && (@entity.min_x.nil? || @entity.max_x.nil?) %>
+  <div class="alert alert-warning mb-4">
+    <i class="bi bi-exclamation-triangle mr-2"></i>
+    This room has no defined bounds. Set min_x, max_x, min_y, max_y on the room before generating a battle map.
+  </div>
+<% end %>
+
+<div class="battle-map-editor">
+  <!-- Tools Panel -->
+  <div class="tools-panel bg-base-200 p-3 border-r border-base-content/10">
+    <h6 class="text-xs uppercase font-bold text-base-content/50 mb-3">Tools</h6>
+
+    <button class="btn btn-ghost btn-sm tool-btn active" data-tool="select">
+      <i class="bi bi-cursor"></i>Select
+    </button>
+    <button class="btn btn-ghost btn-sm tool-btn" data-tool="paint">
+      <i class="bi bi-brush"></i>Paint Terrain
+    </button>
+    <button class="btn btn-ghost btn-sm tool-btn" data-tool="wall">
+      <i class="bi bi-bricks"></i>Paint Wall
+    </button>
+    <button class="btn btn-ghost btn-sm tool-btn" data-tool="cover">
+      <i class="bi bi-box"></i>Place Cover
+    </button>
+    <button class="btn btn-ghost btn-sm tool-btn" data-tool="elevation">
+      <i class="bi bi-layers"></i>Set Elevation
+    </button>
+    <button class="btn btn-ghost btn-sm tool-btn" data-tool="hazard">
+      <i class="bi bi-exclamation-triangle"></i>Add Hazard
+    </button>
+    <button class="btn btn-ghost btn-sm tool-btn" data-tool="water">
+      <i class="bi bi-droplet"></i>Add Water
+    </button>
+    <button class="btn btn-ghost btn-sm tool-btn" data-tool="erase">
+      <i class="bi bi-eraser"></i>Erase to Normal
+    </button>
+    <button class="btn btn-ghost btn-sm tool-btn" data-tool="wall_mask">
+      <i class="bi bi-pencil-square"></i>Wall Mask
+    </button>
+    <div id="wall-mask-type-selector" class="flex flex-col gap-1 mt-1 pl-2" style="display:none;">
+      <button class="btn btn-xs btn-error wall-mask-type-btn active" data-mask-type="wall">Wall</button>
+      <button class="btn btn-xs btn-success wall-mask-type-btn" data-mask-type="door">Door</button>
+      <button class="btn btn-xs btn-info wall-mask-type-btn" data-mask-type="window">Window</button>
+    </div>
+
+    <div class="divider my-3"></div>
+
+    <h6 class="text-xs uppercase font-bold text-base-content/50 mb-3">Actions</h6>
+
+    <% if ai_enabled %>
+      <% if @entity.battle_map_image_url %>
+        <form method="post" action="/admin/battle_maps/<%= entity_id %>/regenerate_ai" class="mb-2">
+          <button type="submit" class="btn btn-warning btn-sm w-full gap-2 flex-nowrap" <%= 'disabled' unless @entity.min_x %>>
+            <i class="bi bi-stars"></i><span class="truncate">Regenerate with AI</span>
+          </button>
+        </form>
+      <% else %>
+        <form method="post" action="/admin/battle_maps/<%= entity_id %>/generate_ai" class="mb-2">
+          <button type="submit" class="btn btn-primary btn-sm w-full gap-2 flex-nowrap" <%= 'disabled' unless @entity.min_x %>>
+            <i class="bi bi-stars"></i><span class="truncate">Generate with AI</span>
+          </button>
+        </form>
+      <% end %>
+      <span class="text-base-content/50 text-xs block mb-3 text-center">Uses Gemini to create image + analyze hexes</span>
+    <% end %>
+
+    <% if is_room %>
+      <form method="post" action="/admin/battle_maps/<%= entity_id %>/generate" class="mb-2">
+        <button type="submit" class="btn btn-<%= ai_enabled ? 'outline btn-' : '' %>success btn-sm w-full gap-2 flex-nowrap" <%= 'disabled' unless @entity.min_x %>>
+          <i class="bi bi-magic"></i><span class="truncate">Generate Procedural</span>
+        </button>
+      </form>
+
+      <form method="post" action="/admin/battle_maps/<%= entity_id %>/clear" class="mb-2" onsubmit="return confirm('Clear all hex data?')">
+        <button type="submit" class="btn btn-outline btn-error btn-sm w-full gap-2 flex-nowrap">
+          <i class="bi bi-trash"></i><span class="truncate">Clear Map</span>
+        </button>
+      </form>
+    <% end %>
+
+    <% if is_template %>
+      <form method="post" action="/admin/battle_map_templates/<%= entity_id %>/delete" class="mb-2" onsubmit="return confirm('Delete this template permanently?')">
+        <button type="submit" class="btn btn-outline btn-error btn-sm w-full gap-2 flex-nowrap">
+          <i class="bi bi-trash"></i><span class="truncate">Delete Template</span>
+        </button>
+      </form>
+    <% end %>
+
+    <div class="divider my-3"></div>
+
+    <h6 class="text-xs uppercase font-bold text-base-content/50 mb-3">Background</h6>
+
+    <% if is_room %>
+      <form method="post" action="/admin/battle_maps/<%= entity_id %>/upload_image" enctype="multipart/form-data">
+        <input type="file" name="battle_map_image" accept="image/*" class="file-input file-input-bordered file-input-xs w-full mb-2">
+        <button type="submit" class="btn btn-outline btn-primary btn-sm w-full gap-2 flex-nowrap">
+          <i class="bi bi-upload"></i><span class="truncate">Upload Image</span>
+        </button>
+      </form>
+    <% end %>
+
+    <% if has_image %>
+      <div class="mt-2 text-success text-sm">
+        <i class="bi bi-check-circle mr-1"></i>Image uploaded
+      </div>
+    <% end %>
+
+    <div class="divider my-3"></div>
+
+    <h6 class="text-xs uppercase font-bold text-base-content/50 mb-3">Lighting & Effects</h6>
+
+    <% unless sam_available %>
+      <div class="text-warning text-xs mb-2">
+        <i class="bi bi-exclamation-triangle mr-1"></i>SAM not available (no Replicate API key)
+      </div>
+    <% end %>
+    <% unless has_image %>
+      <div class="text-warning text-xs mb-2">
+        <i class="bi bi-exclamation-triangle mr-1"></i>Upload a background image first
+      </div>
+    <% end %>
+
+    <div id="mask-generator">
+      <div class="text-xs font-semibold text-base-content/60 mb-1">Effect Masks</div>
+      <label class="flex items-center gap-2 mb-1 cursor-pointer">
+        <input type="checkbox" class="checkbox checkbox-xs" name="sam_water" value="1" <%= 'checked' if water_mask %>>
+        <span class="text-xs">Water</span>
+        <% if water_mask %><i class="bi bi-check-circle-fill text-success text-xs ml-auto"></i><% end %>
+      </label>
+      <label class="flex items-center gap-2 mb-1 cursor-pointer">
+        <input type="checkbox" class="checkbox checkbox-xs" name="sam_foliage" value="1" <%= 'checked' if foliage_mask %>>
+        <span class="text-xs">Foliage</span>
+        <% if foliage_mask %><i class="bi bi-check-circle-fill text-success text-xs ml-auto"></i><% end %>
+      </label>
+      <label class="flex items-center gap-2 mb-2 cursor-pointer">
+        <input type="checkbox" class="checkbox checkbox-xs" name="sam_fire" value="1" <%= 'checked' if fire_mask %>>
+        <span class="text-xs">Fire</span>
+        <% if fire_mask %><i class="bi bi-check-circle-fill text-success text-xs ml-auto"></i><% end %>
+      </label>
+
+      <div class="text-xs font-semibold text-base-content/60 mb-1">Light Sources</div>
+      <% light_types = { 'fire' => 'Fire / Hearth', 'torch' => 'Torch', 'candle' => 'Candle', 'gaslamp' => 'Gas Lamp', 'electric_light' => 'Electric Light', 'magical_light' => 'Magical Light' } %>
+      <% light_types.each do |key, label| %>
+        <label class="flex items-center gap-2 mb-1 cursor-pointer">
+          <input type="checkbox" class="checkbox checkbox-xs" name="sam_light_<%= key %>" value="1">
+          <span class="text-xs"><%= label %></span>
+          <% if existing_lights.include?(key) %><i class="bi bi-check-circle-fill text-success text-xs ml-auto"></i><% end %>
+        </label>
+      <% end %>
+
+      <button type="button" id="generate-masks-btn" class="btn btn-outline btn-info btn-sm w-full mt-2 gap-2 flex-nowrap" <%= 'disabled' unless sam_available && has_image %>>
+        <i class="bi bi-lightning"></i><span class="truncate">Generate Masks</span>
+      </button>
+      <button type="button" id="clear-masks-btn" class="btn btn-outline btn-ghost btn-xs w-full mt-1 gap-2 flex-nowrap">
+        <i class="bi bi-x-circle"></i><span class="truncate">Clear All Masks</span>
+      </button>
+      <div id="mask-status" class="text-xs mt-2" style="display:none;"></div>
+      <%
+        wall_mask_url = is_template ? @entity.wall_mask_url : @entity.battle_map_wall_mask_url
+      %>
+      <div class="divider my-1"></div>
+      <div class="text-xs font-semibold text-base-content/60 mb-1">Wall Mask</div>
+      <button type="button" id="show-wall-mask-btn"
+              class="btn btn-outline btn-ghost btn-xs w-full mt-1 gap-2 flex-nowrap"
+              data-mask-url="<%= h wall_mask_url %>">
+        <i class="bi bi-eye"></i><span class="truncate">Show Mask</span>
+      </button>
+      <button type="button" id="clear-wall-mask-btn"
+              class="btn btn-outline btn-ghost btn-xs w-full mt-1 gap-2 flex-nowrap">
+        <i class="bi bi-x-square"></i><span class="truncate">Clear Wall Mask</span>
+      </button>
+      <button type="button" id="regenerate-wall-features-btn"
+              class="btn btn-outline btn-ghost btn-xs w-full mt-1 gap-2" style="flex-wrap:nowrap">
+        <i class="bi bi-arrow-repeat"></i><span class="truncate">Regen Wall Icons</span>
+      </button>
+    </div>
+
+    <div class="divider my-3"></div>
+
+    <h6 class="text-xs uppercase font-bold text-base-content/50 mb-3">Preview</h6>
+    <button class="btn btn-ghost btn-sm tool-btn gap-2" id="toggle-effects-btn">
+      <i class="bi bi-stars"></i>Preview Effects
+    </button>
+    <div id="time-of-day-controls" style="display:none;" class="mt-2 space-y-2">
+      <div class="flex gap-3">
+        <label class="flex items-center gap-1 text-xs cursor-pointer">
+          <input type="checkbox" class="checkbox checkbox-xs" id="effects-lighting" checked>
+          Lighting
+        </label>
+        <label class="flex items-center gap-1 text-xs cursor-pointer">
+          <input type="checkbox" class="checkbox checkbox-xs" id="effects-animation" checked>
+          Animation
+        </label>
+      </div>
+      <label class="text-xs text-base-content/60">Time of Day</label>
+      <input type="range" class="range range-xs" min="0" max="24" step="0.5" value="12" id="time-slider">
+      <span id="time-label" class="text-xs text-base-content/50">12:00 (Noon)</span>
+    </div>
+
+    <div class="divider my-3"></div>
+
+    <h6 class="text-xs uppercase font-bold text-base-content/50 mb-3">Icon Legend</h6>
+    <div class="text-xs space-y-0.5">
+      <div><i class="bi bi-shield-fill text-info"></i> Cover</div>
+      <div><i class="bi bi-fire text-warning"></i> Fire</div>
+      <div><i class="bi bi-exclamation-triangle-fill text-error"></i> Trap / Difficult</div>
+      <div><i class="bi bi-skull-crossbones text-error"></i> Poison</div>
+      <div><i class="bi bi-lightning-fill text-warning"></i> Electric</div>
+      <div><i class="bi bi-droplet-fill text-info"></i> Water / Acid</div>
+      <div><i class="bi bi-wind text-base-content/60"></i> Gas</div>
+      <div><i class="bi bi-snow text-info"></i> Cold</div>
+      <div><i class="bi bi-stars text-secondary"></i> Magic</div>
+      <div><i class="bi bi-bricks text-base-content/60"></i> Wall</div>
+      <div><i class="bi bi-arrow-up-circle text-success"></i> Elevated &nbsp; <i class="bi bi-arrow-down-circle text-warning"></i> Lower</div>
+      <div><i class="bi bi-x-circle-fill text-error"></i> Blocked</div>
+    </div>
+  </div>
+
+  <!-- Map Canvas -->
+  <div class="map-canvas" id="map-canvas">
+    <% if is_template || (@entity.min_x && @entity.max_x && @entity.min_y && @entity.max_y) %>
+      <svg id="hex-grid" class="battle-map-svg"></svg>
+    <% else %>
+      <div class="flex items-center justify-center h-full text-base-content/50">
+        <div class="text-center">
+          <i class="bi bi-map text-4xl block mb-3"></i>
+          <p>Room bounds not defined</p>
+          <p class="text-sm">Set min_x, max_x, min_y, max_y on the room to enable the hex grid.</p>
+        </div>
+      </div>
+    <% end %>
+    <!-- Zoom controls -->
+    <div class="absolute bottom-3 right-3 flex items-center gap-1 bg-base-200/90 rounded-lg px-2 py-1 shadow z-10">
+      <button type="button" class="btn btn-ghost btn-xs" id="zoom-out-btn"><i class="bi bi-dash-lg"></i></button>
+      <span class="text-xs font-mono w-10 text-center" id="zoom-label">100%</span>
+      <button type="button" class="btn btn-ghost btn-xs" id="zoom-in-btn"><i class="bi bi-plus-lg"></i></button>
+      <button type="button" class="btn btn-ghost btn-xs" id="zoom-reset-btn" title="Reset zoom"><i class="bi bi-arrows-angle-contract"></i></button>
+    </div>
+  </div>
+
+  <!-- Properties Panel -->
+  <div class="properties-panel bg-base-200 p-3 border-l border-base-content/10">
+    <div class="flex items-center justify-between mb-3">
+      <h6 class="text-xs uppercase font-bold text-base-content/50">Hex Properties</h6>
+      <span id="save-indicator" class="text-xs text-success opacity-0 transition-opacity duration-300">Saved</span>
+    </div>
+
+    <div id="no-selection" class="text-base-content/50 text-center py-8">
+      <i class="bi bi-cursor block text-3xl mb-2"></i>
+      Click a hex to view/edit properties
+    </div>
+
+    <form id="hex-form" style="display:none;">
+      <input type="hidden" id="hex-x" name="hex_x">
+      <input type="hidden" id="hex-y" name="hex_y">
+
+      <div id="hex-position" class="text-xs text-info mb-2 font-mono">-</div>
+
+      <!-- Type & Surface (always open) -->
+      <details id="section-type" class="collapse collapse-arrow bg-base-300 rounded-box mb-1" open>
+        <summary class="collapse-title text-xs font-semibold min-h-0 py-1.5 px-2">Type & Surface</summary>
+        <div class="collapse-content px-2 pb-2">
+          <div class="form-control mb-2">
+            <label class="label py-0.5"><span class="label-text text-xs">Hex Type</span></label>
+            <select class="select select-bordered select-sm w-full" id="hex-type" name="hex_type">
+              <% @hex_types.each do |type| %>
+                <option value="<%= type %>"><%= type.gsub('_', ' ').capitalize %></option>
+              <% end %>
+            </select>
+          </div>
+          <div class="form-control mb-2">
+            <label class="label py-0.5"><span class="label-text text-xs">Surface</span></label>
+            <select class="select select-bordered select-sm w-full" id="surface-type" name="surface_type">
+              <option value="">None</option>
+              <% @surface_types.each do |type| %>
+                <option value="<%= type %>"><%= type.capitalize %></option>
+              <% end %>
+            </select>
+          </div>
+          <div class="form-control mb-2">
+            <label class="label py-0.5"><span class="label-text text-xs">Cover Object</span></label>
+            <select class="select select-bordered select-sm w-full" id="cover-object" name="cover_object">
+              <option value="">None</option>
+              <% if @cover_types.any? %>
+                <% @cover_types.each do |obj| %>
+                  <option value="<%= obj.name %>"><%= obj.name.gsub('_', ' ').split.map(&:capitalize).join(' ') %></option>
+                <% end %>
+              <% elsif @cover_names_fallback %>
+                <% @cover_names_fallback.each do |name| %>
+                  <option value="<%= name %>"><%= name.gsub('_', ' ').capitalize %></option>
+                <% end %>
+              <% end %>
+            </select>
+          </div>
+        </div>
+      </details>
+
+      <!-- Cover -->
+      <details id="section-cover" class="collapse collapse-arrow bg-base-300 rounded-box mb-1">
+        <summary class="collapse-title text-xs font-semibold min-h-0 py-1.5 px-2">Cover</summary>
+        <div class="collapse-content px-2 pb-2">
+          <div class="form-control mb-2">
+            <label class="label cursor-pointer justify-start gap-2 py-0.5">
+              <input type="checkbox" class="checkbox checkbox-sm" id="has-cover" name="has_cover">
+              <span class="label-text text-xs">Has Cover</span>
+            </label>
+          </div>
+          <div class="form-control mb-2">
+            <label class="label py-0.5"><span class="label-text text-xs">Cover Height</span></label>
+            <input type="number" class="input input-bordered input-sm w-full" id="cover-height" name="cover_height" min="0" max="10" value="0">
+          </div>
+          <div class="form-control mb-2">
+            <label class="label cursor-pointer justify-start gap-2 py-0.5">
+              <input type="checkbox" class="checkbox checkbox-sm" id="destroyable" name="destroyable">
+              <span class="label-text text-xs">Destroyable</span>
+            </label>
+          </div>
+          <div id="hit-points-group" class="form-control mb-2" style="display:none;">
+            <label class="label py-0.5"><span class="label-text text-xs">Hit Points</span></label>
+            <input type="number" class="input input-bordered input-sm w-full" id="hit-points" name="hit_points" min="0" value="0">
+          </div>
+          <div class="form-control mb-2">
+            <label class="label cursor-pointer justify-start gap-2 py-0.5">
+              <input type="checkbox" class="checkbox checkbox-sm" id="blocks-los" name="blocks_los">
+              <span class="label-text text-xs">Blocks Line of Sight</span>
+            </label>
+          </div>
+        </div>
+      </details>
+
+      <!-- Elevation -->
+      <details id="section-elevation" class="collapse collapse-arrow bg-base-300 rounded-box mb-1">
+        <summary class="collapse-title text-xs font-semibold min-h-0 py-1.5 px-2">Elevation</summary>
+        <div class="collapse-content px-2 pb-2">
+          <div class="form-control mb-2">
+            <label class="label py-0.5"><span class="label-text text-xs">Elevation Level</span></label>
+            <input type="number" class="input input-bordered input-sm w-full" id="elevation-level" name="elevation_level" min="-10" max="10" value="0">
+          </div>
+          <div class="flex gap-2 mb-2">
+            <label class="label cursor-pointer gap-1 py-0.5">
+              <input type="checkbox" class="checkbox checkbox-xs" id="is-ramp" name="is_ramp">
+              <span class="label-text text-xs">Ramp</span>
+            </label>
+            <label class="label cursor-pointer gap-1 py-0.5">
+              <input type="checkbox" class="checkbox checkbox-xs" id="is-stairs" name="is_stairs">
+              <span class="label-text text-xs">Stairs</span>
+            </label>
+            <label class="label cursor-pointer gap-1 py-0.5">
+              <input type="checkbox" class="checkbox checkbox-xs" id="is-ladder" name="is_ladder">
+              <span class="label-text text-xs">Ladder</span>
+            </label>
+          </div>
+        </div>
+      </details>
+
+      <!-- Water -->
+      <details id="section-water" class="collapse collapse-arrow bg-base-300 rounded-box mb-1">
+        <summary class="collapse-title text-xs font-semibold min-h-0 py-1.5 px-2">Water</summary>
+        <div class="collapse-content px-2 pb-2">
+          <div class="form-control mb-2">
+            <label class="label py-0.5"><span class="label-text text-xs">Water Type</span></label>
+            <select class="select select-bordered select-sm w-full" id="water-type" name="water_type">
+              <option value="">None</option>
+              <% @water_types.each do |type| %>
+                <option value="<%= type %>"><%= type.capitalize %></option>
+              <% end %>
+            </select>
+          </div>
+          <div id="water-details" style="display:none;">
+            <div class="form-control mb-2">
+              <label class="label py-0.5"><span class="label-text text-xs">Water Depth (feet)</span></label>
+              <input type="number" class="input input-bordered input-sm w-full" id="water-depth" name="water_depth" min="0" value="0">
+            </div>
+            <div class="form-control mb-2">
+              <label class="label cursor-pointer justify-start gap-2 py-0.5">
+                <input type="checkbox" class="checkbox checkbox-sm" id="requires-swimming" name="requires_swimming">
+                <span class="label-text text-xs">Requires Swimming</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Hazard -->
+      <details id="section-hazard" class="collapse collapse-arrow bg-base-300 rounded-box mb-1">
+        <summary class="collapse-title text-xs font-semibold min-h-0 py-1.5 px-2">Hazard</summary>
+        <div class="collapse-content px-2 pb-2">
+          <div class="form-control mb-2">
+            <label class="label py-0.5"><span class="label-text text-xs">Hazard Type</span></label>
+            <select class="select select-bordered select-sm w-full" id="hazard-type" name="hazard_type">
+              <option value="">None</option>
+              <% @hazard_types.each do |type| %>
+                <option value="<%= type %>"><%= type.gsub('_', ' ').split.map(&:capitalize).join(' ') %></option>
+              <% end %>
+            </select>
+          </div>
+          <div id="hazard-details" style="display:none;">
+            <div class="form-control mb-2">
+              <label class="label py-0.5"><span class="label-text text-xs">Danger Level (0-10)</span></label>
+              <input type="number" class="input input-bordered input-sm w-full" id="danger-level" name="danger_level" min="0" max="10" value="0">
+            </div>
+            <div class="form-control mb-2">
+              <label class="label py-0.5"><span class="label-text text-xs">Damage Per Round</span></label>
+              <input type="number" class="input input-bordered input-sm w-full" id="hazard-damage-per-round" name="hazard_damage_per_round" min="0" value="0">
+            </div>
+            <div class="form-control mb-2">
+              <label class="label py-0.5"><span class="label-text text-xs">Save Difficulty (DC)</span></label>
+              <input type="number" class="input input-bordered input-sm w-full" id="hazard-save-difficulty" name="hazard_save_difficulty" min="0" value="0">
+            </div>
+          </div>
+          <div class="form-control mb-2">
+            <label class="label cursor-pointer justify-start gap-2 py-0.5">
+              <input type="checkbox" class="checkbox checkbox-sm" id="is-potential-hazard" name="is_potential_hazard">
+              <span class="label-text text-xs">Potential Hazard (triggered)</span>
+            </label>
+          </div>
+          <div id="potential-trigger-group" class="form-control mb-2" style="display:none;">
+            <label class="label py-0.5"><span class="label-text text-xs">Trigger Type</span></label>
+            <select class="select select-bordered select-sm w-full" id="potential-trigger" name="potential_trigger">
+              <option value="">None</option>
+              <% RoomHex::POTENTIAL_TRIGGERS.each do |type| %>
+                <option value="<%= type %>"><%= type.capitalize %></option>
+              <% end %>
+            </select>
+          </div>
+        </div>
+      </details>
+
+      <!-- Explosive -->
+      <details id="section-explosive" class="collapse collapse-arrow bg-base-300 rounded-box mb-1">
+        <summary class="collapse-title text-xs font-semibold min-h-0 py-1.5 px-2">Explosive</summary>
+        <div class="collapse-content px-2 pb-2">
+          <div class="form-control mb-2">
+            <label class="label cursor-pointer justify-start gap-2 py-0.5">
+              <input type="checkbox" class="checkbox checkbox-sm" id="is-explosive" name="is_explosive">
+              <span class="label-text text-xs">Explosive</span>
+            </label>
+          </div>
+          <div id="explosive-details" style="display:none;">
+            <div class="form-control mb-2">
+              <label class="label py-0.5"><span class="label-text text-xs">Explosion Radius (hexes)</span></label>
+              <input type="number" class="input input-bordered input-sm w-full" id="explosion-radius" name="explosion_radius" min="1" value="1">
+            </div>
+            <div class="form-control mb-2">
+              <label class="label py-0.5"><span class="label-text text-xs">Explosion Damage</span></label>
+              <input type="number" class="input input-bordered input-sm w-full" id="explosion-damage" name="explosion_damage" min="0" value="0">
+            </div>
+            <div class="form-control mb-2">
+              <label class="label py-0.5"><span class="label-text text-xs">Explosion Trigger</span></label>
+              <select class="select select-bordered select-sm w-full" id="explosion-trigger" name="explosion_trigger">
+                <option value="">None</option>
+                <% RoomHex::EXPLOSION_TRIGGERS.each do |type| %>
+                  <option value="<%= type %>"><%= type.capitalize %></option>
+                <% end %>
+              </select>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Movement -->
+      <details id="section-movement" class="collapse collapse-arrow bg-base-300 rounded-box mb-1">
+        <summary class="collapse-title text-xs font-semibold min-h-0 py-1.5 px-2">Movement</summary>
+        <div class="collapse-content px-2 pb-2">
+          <div class="form-control mb-2">
+            <label class="label cursor-pointer justify-start gap-2 py-0.5">
+              <input type="checkbox" class="checkbox checkbox-sm" id="traversable" name="traversable" checked>
+              <span class="label-text text-xs">Traversable</span>
+            </label>
+          </div>
+          <div class="form-control mb-2">
+            <label class="label cursor-pointer justify-start gap-2 py-0.5">
+              <input type="checkbox" class="checkbox checkbox-sm" id="difficult-terrain" name="difficult_terrain">
+              <span class="label-text text-xs">Difficult Terrain</span>
+            </label>
+          </div>
+          <div class="form-control mb-2">
+            <label class="label cursor-pointer justify-start gap-2 py-0.5">
+              <input type="checkbox" class="checkbox checkbox-sm" id="slippery" name="slippery">
+              <span class="label-text text-xs">Slippery</span>
+            </label>
+          </div>
+          <div class="form-control mb-2">
+            <label class="label py-0.5"><span class="label-text text-xs">Movement Modifier</span></label>
+            <input type="number" class="input input-bordered input-sm w-full" id="movement-modifier" name="movement_modifier" min="0.1" max="10" step="0.1" value="1.0">
+          </div>
+        </div>
+      </details>
+
+      <!-- Description -->
+      <details id="section-description" class="collapse collapse-arrow bg-base-300 rounded-box mb-1">
+        <summary class="collapse-title text-xs font-semibold min-h-0 py-1.5 px-2">Description</summary>
+        <div class="collapse-content px-2 pb-2">
+          <div class="form-control mb-2">
+            <textarea class="textarea textarea-bordered textarea-sm w-full" id="description-override" name="description_override" rows="2" placeholder="Custom hex description..."></textarea>
+          </div>
+        </div>
+      </details>
+    </form>
+  </div>
+</div>
+
+<script src="/js/battle-map-renderer.js?v=<%= Time.now.to_i %>"></script>
+<script src="/js/battle-map-particles.js?v=<%= Time.now.to_i %>"></script>
+<script src="/js/battle-map-effects.js?v=<%= Time.now.to_i %>"></script>
+<script src="/js/battle-map-compositor.js?v=<%= Time.now.to_i %>"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const EDITOR_MODE = '<%= @editor_mode %>';
+  const ENTITY_ID = <%= entity_id %>;
+  const API_BASE = '<%= api_base %>';
+  const hasBgImage = <%= has_bg_image %>;
+  let selectedHex = null;
+  let currentTool = 'select';
+  let mapCompositor = null;
+  let litPreviewRequestId = 0;
+  let litPreviewDebounceTimer = null;
+  let effectsActive = false;
+  let dragMoved = false;  // set by pan IIFE, read by hex click handler
+
+  // ─── Hex Data Setup ────────────────────────────────────────────────
+  <% if is_template %>
+    const hexData = <%= @hex_data_json %>;
+    const validCoords = <%= @valid_coords_json %>;
+    const roomData = {
+      minX: <%= @hex_min_x %>, maxX: <%= @hex_max_x %>,
+      minY: <%= @hex_min_y %>, maxY: <%= @hex_max_y %>,
+      roomWidthFeet: <%= @entity.width_feet %>,
+      roomHeightFeet: <%= @entity.height_feet %>,
+      hexes: hexData.map(h => ({
+        hex_x: h.hex_x, hex_y: h.hex_y,
+        hex_type: h.hex_type, elevation_level: h.elevation_level,
+        cover_object: h.cover_object, has_cover: h.has_cover || false,
+        hazard_type: h.hazard_type, water_type: h.water_type,
+        difficult_terrain: h.difficult_terrain || false,
+        traversable: h.traversable !== false,
+        wall_feature: h.wall_feature
+      })),
+      backgroundUrl: <%= bg_url.to_json %>,
+      imageWidth: <%= bg_img_width.to_json %>,
+      imageHeight: <%= bg_img_height.to_json %>,
+      validCoords: validCoords
+    };
+    BattleMapRenderer.renderEditorGrid('hex-grid', roomData);
+  <% elsif @entity.min_x && @entity.max_x && @entity.min_y && @entity.max_y %>
+    <%
+      hex_coords = HexGrid.hex_coords_for_records(@entity, hexes: @hexes)
+      hex_xs = hex_coords.map(&:first)
+      hex_ys = hex_coords.map(&:last)
+    %>
+    const roomData = {
+      minX: <%= hex_xs.min || 0 %>, maxX: <%= hex_xs.max || 0 %>,
+      minY: <%= hex_ys.min || 0 %>, maxY: <%= hex_ys.max || 0 %>,
+      roomWidthFeet: <%= @entity.max_x - @entity.min_x %>,
+      roomHeightFeet: <%= @entity.max_y - @entity.min_y %>,
+      hexes: <%= @hexes.map { |h|
+        {
+          hex_x: h.hex_x, hex_y: h.hex_y, hex_type: h.hex_type,
+          elevation_level: h.elevation_level, cover_object: h.cover_object,
+          has_cover: h.has_cover || false, hazard_type: h.hazard_type,
+          water_type: h.water_type, difficult_terrain: h.difficult_terrain == true,
+          traversable: h.traversable != false, danger_level: h.danger_level,
+          wall_feature: h.wall_feature,
+          id: h.id
+        }
+      }.to_json %>,
+      backgroundUrl: <%= bg_url.to_json %>,
+      imageWidth: <%= bg_img_width.to_json %>,
+      imageHeight: <%= bg_img_height.to_json %>,
+      validCoords: <%= hex_coords.to_json %>
+    };
+    BattleMapRenderer.renderEditorGrid('hex-grid', roomData);
+  <% end %>
+
+  // ─── Zoom & Pan ──────────────────────────────────────────────────
+  (function() {
+    const mapCanvas = document.getElementById('map-canvas');
+    const svgEl = document.getElementById('hex-grid');
+    if (!mapCanvas || !svgEl) return;
+
+    const ZOOM_STEP = 0.15;
+    const ZOOM_MIN = 0.25;
+    const ZOOM_MAX = 4.0;
+    let zoom = 1.0;
+    const baseW = parseFloat(svgEl.getAttribute('width')) || 700;
+    const baseH = parseFloat(svgEl.getAttribute('height')) || 500;
+
+    const zoomLabel = document.getElementById('zoom-label');
+    const zoomInBtn = document.getElementById('zoom-in-btn');
+    const zoomOutBtn = document.getElementById('zoom-out-btn');
+    const zoomResetBtn = document.getElementById('zoom-reset-btn');
+
+    function applyZoom(newZoom, centerX, centerY) {
+      newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, newZoom));
+      const oldZoom = zoom;
+      zoom = newZoom;
+      if (zoomLabel) zoomLabel.textContent = Math.round(newZoom * 100) + '%';
+      svgEl.setAttribute('width', baseW * newZoom);
+      svgEl.setAttribute('height', baseH * newZoom);
+      svgEl.style.transformOrigin = '0 0';
+      if (mapCompositor) {
+        mapCompositor.updateTransform(newZoom);
+      }
+      // Also scale the WebGL effects canvas so the background image zooms in sync
+      const effectsCanvas = mapCanvas.querySelector('.battle-map-effects-canvas');
+      if (effectsCanvas) {
+        effectsCanvas.style.width  = (baseW * newZoom) + 'px';
+        effectsCanvas.style.height = (baseH * newZoom) + 'px';
+      }
+      // Also scale the wall mask canvas
+      const wallMaskCanvas = mapCanvas.querySelector('.wall-mask-canvas');
+      if (wallMaskCanvas) {
+        wallMaskCanvas.style.width  = (baseW * newZoom) + 'px';
+        wallMaskCanvas.style.height = (baseH * newZoom) + 'px';
+      }
+
+      if (centerX !== undefined && centerY !== undefined) {
+        const ratio = newZoom / oldZoom;
+        mapCanvas.scrollLeft = centerX * ratio - (centerX - mapCanvas.scrollLeft);
+        mapCanvas.scrollTop = centerY * ratio - (centerY - mapCanvas.scrollTop);
+      }
+    }
+
+    if (zoomInBtn) zoomInBtn.onclick = function() {
+      const cx = mapCanvas.scrollLeft + mapCanvas.clientWidth / 2;
+      const cy = mapCanvas.scrollTop + mapCanvas.clientHeight / 2;
+      applyZoom(zoom + ZOOM_STEP, cx, cy);
+    };
+    if (zoomOutBtn) zoomOutBtn.onclick = function() {
+      const cx = mapCanvas.scrollLeft + mapCanvas.clientWidth / 2;
+      const cy = mapCanvas.scrollTop + mapCanvas.clientHeight / 2;
+      applyZoom(zoom - ZOOM_STEP, cx, cy);
+    };
+    if (zoomResetBtn) zoomResetBtn.onclick = function() { applyZoom(1.0); };
+
+    // Mouse wheel zoom
+    mapCanvas.addEventListener('wheel', function(e) {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+      const rect = mapCanvas.getBoundingClientRect();
+      const cx = e.clientX - rect.left + mapCanvas.scrollLeft;
+      const cy = e.clientY - rect.top + mapCanvas.scrollTop;
+      applyZoom(zoom + delta, cx, cy);
+    }, { passive: false });
+
+    // Drag to pan — left/middle/right click all initiate pan.
+    // A "drag" is only activated once the mouse moves >5px, so short clicks
+    // still register as hex select/paint actions.
+    const DRAG_THRESHOLD = 5;
+    let dragging = false, pendingDrag = false;
+    let dragStartX = 0, dragStartY = 0, scrollStartX = 0, scrollStartY = 0;
+
+    mapCanvas.addEventListener('mousedown', function(e) {
+      // Don't start pan tracking when drawing on the wall mask canvas
+      if (e.target.closest('.wall-mask-canvas')) return;
+      pendingDrag = true;
+      dragMoved = false;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      scrollStartX = mapCanvas.scrollLeft;
+      scrollStartY = mapCanvas.scrollTop;
+      // Middle/right click: immediately activate drag (no threshold needed)
+      if (e.button === 1 || e.button === 2) {
+        dragging = true;
+        mapCanvas.style.cursor = 'grabbing';
+        e.preventDefault();
+      }
+    });
+    document.addEventListener('mousemove', function(e) {
+      if (!pendingDrag && !dragging) return;
+      const dx = e.clientX - dragStartX;
+      const dy = e.clientY - dragStartY;
+      if (!dragging && Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
+        dragging = true;
+        dragMoved = true;
+        mapCanvas.style.cursor = 'grabbing';
+      }
+      if (dragging) {
+        mapCanvas.scrollLeft = scrollStartX - dx;
+        mapCanvas.scrollTop  = scrollStartY - dy;
+      }
+    });
+    document.addEventListener('mouseup', function() {
+      pendingDrag = false;
+      if (dragging) {
+        dragging = false;
+        mapCanvas.style.cursor = '';
+      }
+    });
+    mapCanvas.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+  })();
+
+  // ─── Tool Buttons ──────────────────────────────────────────────────
+  document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      currentTool = this.dataset.tool;
+    });
+  });
+
+  // ─── Hex Click ─────────────────────────────────────────────────────
+  const hexGrid = document.getElementById('hex-grid');
+  if (hexGrid) {
+    hexGrid.addEventListener('click', function(e) {
+      // If the mouse moved enough to be a drag-pan, don't treat it as a click
+      if (dragMoved) { dragMoved = false; return; }
+      const hex = e.target.closest('.hex');
+      if (!hex) return;
+
+      const hexX = parseInt(hex.dataset.hexX);
+      const hexY = parseInt(hex.dataset.hexY);
+
+      if (currentTool === 'select') {
+        selectHex(hex, hexX, hexY);
+      } else {
+        applyTool(hex, hexX, hexY);
+      }
+    });
+  }
+
+  // ─── Select Hex ────────────────────────────────────────────────────
+  function selectHex(element, hexX, hexY) {
+    if (selectedHex) selectedHex.classList.remove('selected');
+    selectedHex = element;
+    element.classList.add('selected');
+
+    document.getElementById('no-selection').style.display = 'none';
+    document.getElementById('hex-form').style.display = 'block';
+    document.getElementById('hex-x').value = hexX;
+    document.getElementById('hex-y').value = hexY;
+    document.getElementById('hex-position').textContent = `Hex (${hexX}, ${hexY})`;
+
+    if (EDITOR_MODE === 'template') {
+      // Template: use local hex data
+      const hex = findLocalHex(hexX, hexY);
+      if (hex) populateForm(hex);
+    } else {
+      // Room: fetch from API for full property set
+      fetch(`${API_BASE}/hexes`)
+        .then(r => r.json())
+        .then(data => {
+          const hex = data.hexes.find(h => h.hex_x === hexX && h.hex_y === hexY);
+          if (hex) populateForm(hex);
+        });
+    }
+  }
+
+  function findLocalHex(hexX, hexY) {
+    <% if is_template %>
+      return hexData.find(h => h.hex_x === hexX && h.hex_y === hexY);
+    <% else %>
+      return roomData.hexes.find(h => h.hex_x === hexX && h.hex_y === hexY);
+    <% end %>
+  }
+
+  function populateForm(hex) {
+    document.getElementById('hex-type').value = hex.hex_type || 'normal';
+    document.getElementById('surface-type').value = hex.surface_type || '';
+    document.getElementById('cover-object').value = hex.cover_object || '';
+    document.getElementById('has-cover').checked = hex.has_cover === true;
+    document.getElementById('cover-height').value = hex.cover_height || 0;
+    document.getElementById('destroyable').checked = hex.destroyable === true;
+    document.getElementById('hit-points').value = hex.hit_points || 0;
+    document.getElementById('blocks-los').checked = hex.blocks_line_of_sight === true;
+    document.getElementById('elevation-level').value = hex.elevation_level || 0;
+    document.getElementById('is-ramp').checked = hex.is_ramp === true;
+    document.getElementById('is-stairs').checked = hex.is_stairs === true;
+    document.getElementById('is-ladder').checked = hex.is_ladder === true;
+    document.getElementById('water-type').value = hex.water_type || '';
+    document.getElementById('water-depth').value = hex.water_depth || 0;
+    document.getElementById('requires-swimming').checked = hex.requires_swimming === true;
+    document.getElementById('hazard-type').value = hex.hazard_type || '';
+    document.getElementById('danger-level').value = hex.danger_level || 0;
+    document.getElementById('hazard-damage-per-round').value = hex.hazard_damage_per_round || 0;
+    document.getElementById('hazard-save-difficulty').value = hex.hazard_save_difficulty || 0;
+    document.getElementById('is-potential-hazard').checked = hex.is_potential_hazard === true;
+    document.getElementById('potential-trigger').value = hex.potential_trigger || '';
+    document.getElementById('traversable').checked = hex.traversable !== false;
+    document.getElementById('difficult-terrain').checked = hex.difficult_terrain === true;
+    document.getElementById('slippery').checked = hex.slippery === true;
+    document.getElementById('movement-modifier').value = hex.movement_modifier || 1.0;
+    document.getElementById('is-explosive').checked = hex.is_explosive === true;
+    document.getElementById('explosion-radius').value = hex.explosion_radius || 1;
+    document.getElementById('explosion-damage').value = hex.explosion_damage || 0;
+    document.getElementById('explosion-trigger').value = hex.explosion_trigger || '';
+    document.getElementById('description-override').value = hex.description_override || '';
+    toggleConditionalFields();
+    autoOpenSections(hex);
+  }
+
+  function autoOpenSections(hex) {
+    // Close all sections except Type & Surface
+    document.querySelectorAll('#hex-form details').forEach(d => {
+      if (d.id !== 'section-type') d.removeAttribute('open');
+    });
+    // Always open Type & Surface
+    document.getElementById('section-type').setAttribute('open', '');
+    // Open sections with non-default values
+    if (hex.has_cover || hex.cover_object || hex.cover_height || hex.destroyable || hex.blocks_line_of_sight)
+      document.getElementById('section-cover').setAttribute('open', '');
+    if (hex.elevation_level || hex.is_ramp || hex.is_stairs || hex.is_ladder)
+      document.getElementById('section-elevation').setAttribute('open', '');
+    if (hex.water_type)
+      document.getElementById('section-water').setAttribute('open', '');
+    if (hex.hazard_type || hex.is_potential_hazard)
+      document.getElementById('section-hazard').setAttribute('open', '');
+    if (hex.is_explosive)
+      document.getElementById('section-explosive').setAttribute('open', '');
+    if (hex.difficult_terrain || hex.traversable === false || hex.slippery || (hex.movement_modifier && hex.movement_modifier !== 1.0))
+      document.getElementById('section-movement').setAttribute('open', '');
+    if (hex.description_override)
+      document.getElementById('section-description').setAttribute('open', '');
+  }
+
+  // ─── Apply Tool ────────────────────────────────────────────────────
+  function applyTool(element, hexX, hexY) {
+    const data = { hex_x: hexX, hex_y: hexY };
+
+    switch(currentTool) {
+      case 'paint':
+        data.hex_type = 'normal';
+        data.traversable = 'true';
+        break;
+      case 'wall':
+        data.hex_type = 'wall';
+        data.traversable = 'false';
+        break;
+      case 'cover':
+        data.hex_type = 'cover';
+        data.has_cover = 'true';
+        data.traversable = 'false';
+        break;
+      case 'elevation':
+        const currentElev = parseInt(element.dataset.elevation || 0);
+        data.elevation_level = currentElev + 1;
+        break;
+      case 'hazard':
+        data.hex_type = 'hazard';
+        data.hazard_type = 'fire';
+        break;
+      case 'water':
+        data.hex_type = 'water';
+        data.water_type = 'puddle';
+        break;
+      case 'erase':
+        data.hex_type = 'normal';
+        data.traversable = 'true';
+        data.cover_object = '';
+        data.has_cover = 'false';
+        data.hazard_type = '';
+        data.water_type = '';
+        data.danger_level = '0';
+        break;
+    }
+
+    updateHex(data, element);
+  }
+
+  // ─── Update Hex ────────────────────────────────────────────────────
+  function updateHex(data, element) {
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+      formData.append(key, value);
+    });
+
+    fetch(`${API_BASE}/hexes`, { method: 'POST', body: formData })
+      .then(r => r.json())
+      .then(result => {
+        if (result.success) {
+          updateHexVisual(element, data);
+          // Update local cache
+          const hexX = parseInt(data.hex_x);
+          const hexY = parseInt(data.hex_y);
+          const hex = findLocalHex(hexX, hexY);
+          if (hex) {
+            Object.entries(data).forEach(([k, v]) => {
+              if (k !== 'hex_x' && k !== 'hex_y') {
+                if (v === 'true') hex[k] = true;
+                else if (v === 'false') hex[k] = false;
+                else if (v === '') hex[k] = null;
+                else hex[k] = isNaN(v) ? v : parseInt(v);
+              }
+            });
+          }
+        }
+      });
+  }
+
+  function updateHexVisual(element, data) {
+    // Find the group (element may be the polygon or the group)
+    const group = element.closest('g') || element.parentElement;
+    const polygon = group ? group.querySelector('.hex') : element;
+
+    if (data.hex_type && polygon) {
+      polygon.setAttribute('fill', BattleMapRenderer.getHexFill(data.hex_type, hasBgImage));
+      polygon.dataset.hexType = data.hex_type;
+    }
+
+    // Re-render feature icons if updateEditorHex is available
+    if (group && BattleMapRenderer.updateEditorHex) {
+      // Merge existing local hex data with the update to preserve wall_feature etc.
+      const hexX = parseInt(data.hex_x);
+      const hexY = parseInt(data.hex_y);
+      const localHex = findLocalHex(hexX, hexY);
+      const hexData = {
+        type: data.hex_type || polygon.dataset.hexType || 'normal',
+        hazard_type: data.hazard_type || (localHex && localHex.hazard_type) || null,
+        has_cover: data.has_cover === 'true' || data.has_cover === true,
+        elevation: parseInt(data.elevation_level) || 0,
+        difficult_terrain: data.difficult_terrain === 'true' || data.difficult_terrain === true,
+        water_type: data.water_type || (localHex && localHex.water_type) || null,
+        traversable: data.traversable !== 'false' && data.traversable !== false,
+        wall_feature: data.wall_feature || (localHex && localHex.wall_feature) || null
+      };
+      // We need pixel coords — estimate from SVG position
+      const bbox = polygon.getBBox();
+      const px = bbox.x + bbox.width / 2;
+      const py = bbox.y + bbox.height / 2;
+      const hexSize = bbox.width / 2;
+      BattleMapRenderer.updateEditorHex(group, hexData, px, py, hexSize, hasBgImage);
+    }
+  }
+
+  // ─── Conditional Fields ────────────────────────────────────────────
+  function toggleConditionalFields() {
+    const destroyable = document.getElementById('destroyable').checked;
+    document.getElementById('hit-points-group').style.display = destroyable ? 'block' : 'none';
+
+    const waterType = document.getElementById('water-type').value;
+    document.getElementById('water-details').style.display = waterType ? 'block' : 'none';
+
+    const hazardType = document.getElementById('hazard-type').value;
+    document.getElementById('hazard-details').style.display = hazardType ? 'block' : 'none';
+
+    const isPotentialHazard = document.getElementById('is-potential-hazard').checked;
+    document.getElementById('potential-trigger-group').style.display = isPotentialHazard ? 'block' : 'none';
+
+    const isExplosive = document.getElementById('is-explosive').checked;
+    document.getElementById('explosive-details').style.display = isExplosive ? 'block' : 'none';
+  }
+
+  document.getElementById('destroyable').addEventListener('change', toggleConditionalFields);
+  document.getElementById('water-type').addEventListener('change', toggleConditionalFields);
+  document.getElementById('hazard-type').addEventListener('change', toggleConditionalFields);
+  document.getElementById('is-potential-hazard').addEventListener('change', toggleConditionalFields);
+  document.getElementById('is-explosive').addEventListener('change', toggleConditionalFields);
+
+  // Auto-set has_cover when cover object selected
+  document.getElementById('cover-object').addEventListener('change', function() {
+    if (this.value) {
+      document.getElementById('has-cover').checked = true;
+    }
+  });
+
+  // ─── Auto-Save ─────────────────────────────────────────────────────
+  let saveIndicatorTimer = null;
+
+  function showSaveIndicator() {
+    const indicator = document.getElementById('save-indicator');
+    indicator.style.opacity = '1';
+    clearTimeout(saveIndicatorTimer);
+    saveIndicatorTimer = setTimeout(() => { indicator.style.opacity = '0'; }, 1200);
+  }
+
+  function autoSave() {
+    const form = document.getElementById('hex-form');
+    if (form.style.display === 'none') return;
+
+    const formData = new FormData(form);
+    const checkboxes = [
+      'traversable', 'difficult_terrain', 'is_explosive', 'blocks_los',
+      'destroyable', 'is_ramp', 'is_stairs', 'is_ladder',
+      'requires_swimming', 'slippery', 'is_potential_hazard', 'has_cover'
+    ];
+    checkboxes.forEach(name => {
+      const id = name.replace(/_/g, '-');
+      const el = document.getElementById(id);
+      if (el) formData.set(name, el.checked ? 'true' : 'false');
+    });
+
+    fetch(`${API_BASE}/hexes`, { method: 'POST', body: formData })
+      .then(r => r.json())
+      .then(result => {
+        if (result.success) {
+          showSaveIndicator();
+          if (selectedHex) {
+            updateHexVisual(selectedHex, {hex_type: formData.get('hex_type')});
+          }
+          // Update local cache
+          const hexX = parseInt(formData.get('hex_x'));
+          const hexY = parseInt(formData.get('hex_y'));
+          const hex = findLocalHex(hexX, hexY);
+          if (hex) {
+            hex.hex_type = formData.get('hex_type');
+            hex.surface_type = formData.get('surface_type') || null;
+            hex.cover_object = formData.get('cover_object') || null;
+            hex.has_cover = formData.get('has_cover') === 'true';
+            hex.elevation_level = parseInt(formData.get('elevation_level')) || 0;
+            hex.danger_level = parseInt(formData.get('danger_level')) || 0;
+            hex.water_type = formData.get('water_type') || null;
+            hex.hazard_type = formData.get('hazard_type') || null;
+            hex.traversable = formData.get('traversable') === 'true';
+            hex.difficult_terrain = formData.get('difficult_terrain') === 'true';
+          }
+        }
+      });
+  }
+
+  // Prevent form submission (no submit button, but enter key could trigger)
+  document.getElementById('hex-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    autoSave();
+  });
+
+  // Auto-save on change for selects, checkboxes, number inputs
+  document.querySelectorAll('#hex-form select, #hex-form input[type="checkbox"], #hex-form input[type="number"]')
+    .forEach(el => el.addEventListener('change', autoSave));
+
+  // Debounced auto-save for textarea
+  let descDebounceTimer;
+  document.getElementById('description-override').addEventListener('input', function() {
+    clearTimeout(descDebounceTimer);
+    descDebounceTimer = setTimeout(autoSave, 500);
+  });
+
+  // ─── Mask Generation ───────────────────────────────────────────────
+  const genMasksBtn = document.getElementById('generate-masks-btn');
+  if (genMasksBtn) {
+    genMasksBtn.addEventListener('click', function() {
+      const maskStatus = document.getElementById('mask-status');
+      const formData = new FormData();
+
+      document.querySelectorAll('#mask-generator input[type="checkbox"]:checked').forEach(cb => {
+        formData.append(cb.name, '1');
+      });
+
+      genMasksBtn.disabled = true;
+      genMasksBtn.innerHTML = '<span class="loading loading-spinner loading-xs"></span>Generating...';
+      maskStatus.style.display = 'block';
+      maskStatus.className = 'text-xs mt-2 text-info';
+      maskStatus.textContent = 'Running SAM detection... this may take a minute.';
+
+      fetch(`${API_BASE}/generate_masks`, { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(result => {
+          genMasksBtn.disabled = false;
+          genMasksBtn.innerHTML = '<i class="bi bi-lightning"></i>Generate Masks';
+
+          if (result.success) {
+            maskStatus.className = 'text-xs mt-2 text-success';
+            const parts = [];
+            if (result.results) {
+              Object.entries(result.results).forEach(([key, val]) => {
+                parts.push(`${key}: ${val.success ? 'OK' : val.error || 'failed'}`);
+              });
+            }
+            maskStatus.textContent = parts.length ? parts.join(' | ') : 'Masks generated!';
+            setTimeout(() => window.location.reload(), 1500);
+          } else {
+            maskStatus.className = 'text-xs mt-2 text-error';
+            maskStatus.textContent = result.error || 'Generation failed';
+          }
+        })
+        .catch(err => {
+          genMasksBtn.disabled = false;
+          genMasksBtn.innerHTML = '<i class="bi bi-lightning"></i>Generate Masks';
+          maskStatus.className = 'text-xs mt-2 text-error';
+          maskStatus.textContent = 'Request failed: ' + err.message;
+        });
+    });
+  }
+
+  // Clear Masks
+  const clearMasksBtn = document.getElementById('clear-masks-btn');
+  if (clearMasksBtn) {
+    clearMasksBtn.addEventListener('click', function() {
+      if (!confirm('Clear all effect masks and light sources?')) return;
+
+      fetch(`${API_BASE}/clear_masks`, { method: 'POST' })
+        .then(r => r.json())
+        .then(result => {
+          if (result.success) window.location.reload();
+        });
+    });
+  }
+
+  // ─── Effects Preview ───────────────────────────────────────────────
+  const toggleEffectsBtn = document.getElementById('toggle-effects-btn');
+  const timeControls = document.getElementById('time-of-day-controls');
+  const timeSlider = document.getElementById('time-slider');
+  const timeLabel = document.getElementById('time-label');
+  const isOutdoorRoom = <%= (@entity.respond_to?(:forced_indoor_night_lighting?) && @entity.forced_indoor_night_lighting?) ? 'false' : (@entity.respond_to?(:outdoor_room?) ? @entity.outdoor_room?.to_s : 'false') %>;
+  const useServerPrelitPreview = <%= (dynamic_lighting_enabled && has_bg_image).to_s %>;
+
+  if (toggleEffectsBtn) {
+    toggleEffectsBtn.addEventListener('click', function() {
+      effectsActive = !effectsActive;
+
+      if (effectsActive) {
+        this.classList.add('active');
+        timeControls.style.display = 'block';
+        initEffectsPreview().catch(function(error) {
+          console.warn('[BattleMapEditor] Failed to initialize effects preview:', error);
+          effectsActive = false;
+          if (toggleEffectsBtn) toggleEffectsBtn.classList.remove('active');
+          if (timeControls) timeControls.style.display = 'none';
+        });
+      } else {
+        this.classList.remove('active');
+        timeControls.style.display = 'none';
+        destroyEffectsPreview();
+      }
+    });
+  }
+
+  if (timeSlider) {
+    timeSlider.addEventListener('input', function() {
+      const hour = parseFloat(this.value);
+      const h = Math.floor(hour);
+      const m = (hour % 1) * 60;
+      const period = getTimePeriod(hour);
+      timeLabel.textContent = `${h}:${m < 10 ? '0' : ''}${Math.round(m)} (${period})`;
+
+      if (mapCompositor) {
+        mapCompositor.setTimeOfDay(hour, isOutdoorRoom);
+        if (useServerPrelitPreview) {
+          queueLitPreviewUpdate(hour);
+        }
+      }
+    });
+  }
+
+  // Lighting/Animation toggle checkboxes
+  const lightingCheckbox = document.getElementById('effects-lighting');
+  const animationCheckbox = document.getElementById('effects-animation');
+
+  if (lightingCheckbox) {
+    lightingCheckbox.addEventListener('change', function() {
+      if (mapCompositor) mapCompositor.setLightingEnabled(this.checked);
+    });
+  }
+  if (animationCheckbox) {
+    animationCheckbox.addEventListener('change', function() {
+      if (mapCompositor) mapCompositor.setAnimationEnabled(this.checked);
+    });
+  }
+
+  function getTimePeriod(hour) {
+    if (hour >= 5 && hour < 7) return 'Dawn';
+    if (hour >= 7 && hour < 10) return 'Morning';
+    if (hour >= 10 && hour < 14) return 'Noon';
+    if (hour >= 14 && hour < 17) return 'Afternoon';
+    if (hour >= 17 && hour < 19) return 'Dusk';
+    if (hour >= 19 || hour < 5) return 'Night';
+    return '';
+  }
+
+  function editorArenaHeight() {
+    if (typeof roomData !== 'undefined' && roomData.maxY != null && roomData.minY != null) {
+      return Math.floor((roomData.maxY - roomData.minY) / 4) + 1;
+    }
+    return null;
+  }
+
+  function editorFireHexes() {
+    if (typeof roomData === 'undefined' || !Array.isArray(roomData.hexes)) return [];
+    return roomData.hexes.map(h => ({
+      x: h.hex_x,
+      y: h.hex_y,
+      type: h.hex_type || h.type
+    }));
+  }
+
+  function buildEditorMapData(backgroundUrl, hour) {
+    return {
+      background_url: backgroundUrl,
+      water_mask_url: <%= water_mask.to_json %>,
+      foliage_mask_url: <%= foliage_mask.to_json %>,
+      fire_mask_url: <%= fire_mask.to_json %>,
+      light_sources: <%= normalized_lights.to_json %>,
+      time_of_day_hour: hour,
+      is_outdoor: isOutdoorRoom,
+      hexes: editorFireHexes(),
+      arena_height: editorArenaHeight(),
+      lighting_mode: useServerPrelitPreview ? 'server_prelit' : 'client_full',
+      apply_client_ambient: !useServerPrelitPreview
+    };
+  }
+
+  async function fetchLitPreviewUrl(hour) {
+    const fallback = <%= bg_url.to_json %>;
+    if (!useServerPrelitPreview) return fallback;
+
+    const requestId = ++litPreviewRequestId;
+    const formData = new FormData();
+    formData.append('hour', String(hour));
+
+    try {
+      const response = await fetch(`${API_BASE}/lighting_preview`, { method: 'POST', body: formData });
+      const result = await response.json();
+
+      if (requestId !== litPreviewRequestId) return null;
+      if (result.success && result.background_url) {
+        return `${result.background_url}?v=${Date.now()}`;
+      }
+
+      console.warn('[BattleMapEditor] Lighting preview failed:', result.error || 'unknown error');
+      return fallback;
+    } catch (error) {
+      if (requestId === litPreviewRequestId) {
+        console.warn('[BattleMapEditor] Lighting preview request failed:', error);
+      }
+      return fallback;
+    }
+  }
+
+  function queueLitPreviewUpdate(hour) {
+    if (litPreviewDebounceTimer) {
+      clearTimeout(litPreviewDebounceTimer);
+      litPreviewDebounceTimer = null;
+    }
+
+    litPreviewDebounceTimer = setTimeout(async function() {
+      litPreviewDebounceTimer = null;
+      if (!effectsActive || !mapCompositor) return;
+
+      const previewUrl = await fetchLitPreviewUrl(hour);
+      if (!previewUrl || !effectsActive || !mapCompositor) return;
+
+      mapCompositor.setMapImage(previewUrl);
+      mapCompositor.setTimeOfDay(hour, isOutdoorRoom);
+    }, 150);
+  }
+
+  async function initEffectsPreview() {
+    const mapCanvas = document.getElementById('map-canvas');
+    const svgEl = document.getElementById('hex-grid');
+    if (!mapCanvas || !svgEl) return;
+
+    const svgW = parseInt(svgEl.getAttribute('width')) || 700;
+    const svgH = parseInt(svgEl.getAttribute('height')) || 500;
+    const currentHour = timeSlider ? parseFloat(timeSlider.value) : 12;
+
+    let hexSize = null;
+    const anyHex = svgEl.querySelector('.hex');
+    if (anyHex) {
+      const box = anyHex.getBBox();
+      if (box.width > 0) hexSize = box.width / 2;
+    }
+    const hexHeight = hexSize ? (hexSize * Math.sqrt(3)) : null;
+
+    if (mapCompositor) {
+      mapCompositor.destroy();
+      mapCompositor = null;
+    }
+
+    let backgroundUrl = <%= bg_url.to_json %>;
+    if (useServerPrelitPreview) {
+      backgroundUrl = await fetchLitPreviewUrl(currentHour);
+      if (!effectsActive) return;
+    }
+
+    mapCompositor = new BattleMapCompositor(mapCanvas, {
+      quality: 'high',
+      enableLighting: lightingCheckbox ? lightingCheckbox.checked : true,
+      enableAnimation: animationCheckbox ? animationCheckbox.checked : true
+    });
+
+    const ready = mapCompositor.init({
+      mapData: buildEditorMapData(backgroundUrl, currentHour),
+      quality: 'high',
+      svgWidth: svgW,
+      svgHeight: svgH,
+      viewBoxYOffset: 0,
+      hexSize: hexSize,
+      hexHeight: hexHeight,
+      totalRows: editorArenaHeight()
+    });
+
+    if (!ready) {
+      effectsActive = false;
+      mapCompositor = null;
+      if (toggleEffectsBtn) toggleEffectsBtn.classList.remove('active');
+      if (timeControls) timeControls.style.display = 'none';
+      return;
+    }
+  }
+
+  function destroyEffectsPreview() {
+    litPreviewRequestId += 1; // cancel stale async callbacks
+    if (litPreviewDebounceTimer) {
+      clearTimeout(litPreviewDebounceTimer);
+      litPreviewDebounceTimer = null;
+    }
+    if (mapCompositor) {
+      mapCompositor.destroy();
+      mapCompositor = null;
+    }
+  }
+
+  // ─── Wall Mask Drawing ──────────────────────────────────────────
+  (function() {
+    const mapCanvas = document.getElementById('map-canvas');
+    const svgEl     = document.getElementById('hex-grid');
+    if (!mapCanvas || !svgEl || typeof roomData === 'undefined') return;
+    if (!roomData.roomWidthFeet || !roomData.roomHeightFeet) return;
+
+    // Create canvas overlay matching SVG base dimensions
+    const baseW = parseFloat(svgEl.getAttribute('width'))  || 700;
+    const baseH = parseFloat(svgEl.getAttribute('height')) || 500;
+
+    const maskCanvas = document.createElement('canvas');
+    maskCanvas.className = 'wall-mask-canvas';
+    maskCanvas.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;z-index:2;';
+    maskCanvas.width  = baseW;
+    maskCanvas.height = baseH;
+    maskCanvas.style.width  = baseW + 'px';
+    maskCanvas.style.height = baseH + 'px';
+    svgEl.insertAdjacentElement('afterend', maskCanvas);
+
+    const ctx = maskCanvas.getContext('2d');
+
+    // State
+    let drawing       = false;
+    let startFX = 0, startFY = 0, curFX = 0, curFY = 0;
+    let maskType      = 'wall';
+    let showMask      = false;
+    let savedMaskImg  = null;
+    let savedMaskUrl  = null;
+
+    const TYPE_COLORS = {
+      wall:   'rgba(255,0,0,0.5)',
+      door:   'rgba(0,200,0,0.5)',
+      window: 'rgba(0,100,255,0.5)'
+    };
+
+    function getEventFracs(e) {
+      const rect = maskCanvas.getBoundingClientRect();
+      return [
+        Math.max(0, Math.min(1, (e.clientX - rect.left)  / rect.width)),
+        Math.max(0, Math.min(1, (e.clientY - rect.top)   / rect.height))
+      ];
+    }
+
+    function redrawCanvas() {
+      ctx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+      if (showMask && savedMaskImg) {
+        ctx.globalAlpha = 0.5;
+        ctx.drawImage(savedMaskImg, 0, 0, maskCanvas.width, maskCanvas.height);
+        ctx.globalAlpha = 1.0;
+      }
+      if (drawing) {
+        const x1 = Math.min(startFX, curFX) * maskCanvas.width;
+        const y1 = Math.min(startFY, curFY) * maskCanvas.height;
+        const w  = Math.abs(curFX - startFX) * maskCanvas.width;
+        const h  = Math.abs(curFY - startFY) * maskCanvas.height;
+        ctx.fillStyle = TYPE_COLORS[maskType] || TYPE_COLORS.wall;
+        ctx.fillRect(x1, y1, w, h);
+      }
+    }
+
+    function loadMaskImage(url) {
+      if (!url) { savedMaskImg = null; savedMaskUrl = null; return; }
+      if (url === savedMaskUrl && savedMaskImg) { redrawCanvas(); return; }
+      const img = new Image();
+      img.onload = () => { savedMaskImg = img; savedMaskUrl = url; redrawCanvas(); };
+      img.src = url;
+    }
+
+    // Mouse events — only active when wall_mask tool is selected
+    maskCanvas.addEventListener('mousedown', (e) => {
+      if (currentTool !== 'wall_mask') return;
+      e.preventDefault();
+      drawing = true;
+      [startFX, startFY] = getEventFracs(e);
+      [curFX, curFY]     = [startFX, startFY];
+      redrawCanvas();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!drawing) return;
+      [curFX, curFY] = getEventFracs(e);
+      redrawCanvas();
+    });
+
+    document.addEventListener('mouseup', (e) => {
+      if (!drawing) return;
+      drawing = false;
+      [curFX, curFY] = getEventFracs(e);
+
+      const x1 = Math.min(startFX, curFX);
+      const y1 = Math.min(startFY, curFY);
+      const x2 = Math.max(startFX, curFX);
+      const y2 = Math.max(startFY, curFY);
+
+      if ((x2 - x1) < 0.002 || (y2 - y1) < 0.002) { redrawCanvas(); return; }
+
+      const fd = new FormData();
+      fd.append('x1', x1); fd.append('y1', y1);
+      fd.append('x2', x2); fd.append('y2', y2);
+      fd.append('mask_type', maskType);
+
+      fetch(`${API_BASE}/wall_mask_rect`, { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(result => {
+          if (result.success) {
+            loadMaskImage(result.mask_url + '?t=' + Date.now());
+            // Update Show Mask button's data attribute for future page loads
+            const showBtn = document.getElementById('show-wall-mask-btn');
+            if (showBtn) showBtn.dataset.maskUrl = result.mask_url;
+          }
+          redrawCanvas();
+        })
+        .catch(() => redrawCanvas());
+    });
+
+    // Activate pointer events only when wall_mask tool is selected
+    document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const isWallMask = btn.dataset.tool === 'wall_mask';
+        maskCanvas.style.pointerEvents = isWallMask ? 'auto' : 'none';
+        const typeSelector = document.getElementById('wall-mask-type-selector');
+        if (typeSelector) typeSelector.style.display = isWallMask ? 'flex' : 'none';
+      });
+    });
+
+    // Mask type sub-selector
+    document.querySelectorAll('.wall-mask-type-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.wall-mask-type-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        maskType = btn.dataset.maskType;
+      });
+    });
+
+    // Show Mask toggle
+    const showMaskBtn = document.getElementById('show-wall-mask-btn');
+    if (showMaskBtn) {
+      // Load on page-load if mask exists
+      if (showMaskBtn.dataset.maskUrl) loadMaskImage(showMaskBtn.dataset.maskUrl);
+
+      showMaskBtn.addEventListener('click', () => {
+        showMask = !showMask;
+        showMaskBtn.classList.toggle('active', showMask);
+        if (showMask && showMaskBtn.dataset.maskUrl) {
+          loadMaskImage(showMaskBtn.dataset.maskUrl);
+        }
+        redrawCanvas();
+      });
+    }
+
+    // Clear Wall Mask
+    const clearWallMaskBtn = document.getElementById('clear-wall-mask-btn');
+    if (clearWallMaskBtn) {
+      clearWallMaskBtn.addEventListener('click', () => {
+        if (!confirm('Clear the wall mask? This cannot be undone.')) return;
+        fetch(`${API_BASE}/clear_wall_mask`, { method: 'POST' })
+          .then(r => r.json())
+          .then(result => {
+            if (result.success) {
+              savedMaskImg = null;
+              savedMaskUrl = null;
+              showMask     = false;
+              if (showMaskBtn) {
+                showMaskBtn.classList.remove('active');
+                showMaskBtn.dataset.maskUrl = '';
+              }
+              redrawCanvas();
+            }
+          });
+      });
+    }
+
+    // Regenerate wall/door decorative icon overlays from the current wall mask.
+    const regenerateWallFeaturesBtn = document.getElementById('regenerate-wall-features-btn');
+    if (regenerateWallFeaturesBtn) {
+      regenerateWallFeaturesBtn.addEventListener('click', () => {
+        const statusEl = document.getElementById('mask-status');
+        regenerateWallFeaturesBtn.disabled = true;
+        if (statusEl) {
+          statusEl.style.display = 'block';
+          statusEl.className = 'text-xs mt-2 text-info';
+          statusEl.textContent = 'Regenerating wall/door icon overlays from mask...';
+        }
+
+        fetch(`${API_BASE}/regenerate_wall_features`, { method: 'POST' })
+          .then(r => r.json())
+          .then(result => {
+            if (!result.success) {
+              throw new Error(result.error || 'Regeneration failed');
+            }
+
+            if (statusEl) {
+              statusEl.className = 'text-xs mt-2 text-success';
+              statusEl.textContent = `Regenerated wall/door icons (${result.updated_hexes || 0} updated, ${result.marked_hexes || 0} marked). Reloading...`;
+            }
+            setTimeout(() => window.location.reload(), 700);
+          })
+          .catch(err => {
+            if (statusEl) {
+              statusEl.className = 'text-xs mt-2 text-error';
+              statusEl.textContent = `Regeneration failed: ${err.message}`;
+            }
+          })
+          .finally(() => {
+            regenerateWallFeaturesBtn.disabled = false;
+          });
+      });
+    }
+
+    // Store reference so the zoom handler can resize the canvas
+    window._wallMaskCanvas = maskCanvas;
+  })();
+});
+
+</script>

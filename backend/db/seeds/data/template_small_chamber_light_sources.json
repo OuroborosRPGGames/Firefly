@@ -1,0 +1,182 @@
+[
+  {
+    "id": "ls_1",
+    "type": "fire",
+    "color": [
+      1.0,
+      0.7,
+      0.3
+    ],
+    "center_x": 612,
+    "center_y": 763,
+    "intensity": 0.87,
+    "permanent": true,
+    "radius_px": 138,
+    "sam_mask_id": null
+  },
+  {
+    "id": "ls_2",
+    "type": "fire",
+    "color": [
+      1.0,
+      0.7,
+      0.3
+    ],
+    "center_x": 718,
+    "center_y": 642,
+    "intensity": 0.83,
+    "permanent": true,
+    "radius_px": 138,
+    "sam_mask_id": null
+  },
+  {
+    "id": "ls_3",
+    "type": "fire",
+    "color": [
+      1.0,
+      0.7,
+      0.3
+    ],
+    "center_x": 770,
+    "center_y": 576,
+    "intensity": 0.82,
+    "permanent": true,
+    "radius_px": 97,
+    "sam_mask_id": null
+  },
+  {
+    "id": "ls_4",
+    "type": "fire",
+    "color": [
+      1.0,
+      0.7,
+      0.3
+    ],
+    "center_x": 502,
+    "center_y": 484,
+    "intensity": 0.98,
+    "permanent": true,
+    "radius_px": 138,
+    "sam_mask_id": null
+  },
+  {
+    "id": "ls_5",
+    "type": "fire",
+    "color": [
+      1.0,
+      0.7,
+      0.3
+    ],
+    "center_x": 390,
+    "center_y": 460,
+    "intensity": 0.98,
+    "permanent": true,
+    "radius_px": 138,
+    "sam_mask_id": null
+  },
+  {
+    "id": "ls_6",
+    "type": "fire",
+    "color": [
+      1.0,
+      0.7,
+      0.3
+    ],
+    "center_x": 468,
+    "center_y": 387,
+    "intensity": 0.99,
+    "permanent": true,
+    "radius_px": 121,
+    "sam_mask_id": null
+  },
+  {
+    "id": "ls_7",
+    "type": "fire",
+    "color": [
+      1.0,
+      0.7,
+      0.3
+    ],
+    "center_x": 188,
+    "center_y": 305,
+    "intensity": 0.91,
+    "permanent": true,
+    "radius_px": 138,
+    "sam_mask_id": null
+  },
+  {
+    "id": "ls_8",
+    "type": "fire",
+    "color": [
+      1.0,
+      0.7,
+      0.3
+    ],
+    "center_x": 288,
+    "center_y": 189,
+    "intensity": 0.9,
+    "permanent": true,
+    "radius_px": 138,
+    "sam_mask_id": null
+  },
+  {
+    "id": "ls_9",
+    "type": "fire",
+    "color": [
+      1.0,
+      0.7,
+      0.3
+    ],
+    "center_x": 356,
+    "center_y": 778,
+    "intensity": 0.93,
+    "permanent": true,
+    "radius_px": 68,
+    "sam_mask_id": null
+  },
+  {
+    "id": "ls_10",
+    "type": "fire",
+    "color": [
+      1.0,
+      0.7,
+      0.3
+    ],
+    "center_x": 132,
+    "center_y": 608,
+    "intensity": 0.91,
+    "permanent": true,
+    "radius_px": 73,
+    "sam_mask_id": null
+  },
+  {
+    "id": "ls_11",
+    "type": "fire",
+    "color": [
+      1.0,
+      0.7,
+      0.3
+    ],
+    "center_x": 760,
+    "center_y": 306,
+    "intensity": 0.95,
+    "permanent": true,
+    "radius_px": 80,
+    "sam_mask_id": null
+  },
+  {
+    "id": "ls_12",
+    "type": "fire",
+    "color": [
+      1.0,
+      0.7,
+      0.3
+    ],
+    "center_x": 603,
+    "center_y": 153,
+    "intensity": 0.91,
+    "permanent": true,
+    "radius_px": 65,
+    "sam_mask_id": null
+  }
+]

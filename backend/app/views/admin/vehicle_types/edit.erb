@@ -1,0 +1,36 @@
+<% @page_title = 'Edit Vehicle Type - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Vehicle Types', path: '/admin/vehicle_types' }, { label: 'Edit' }] %>
+
+<%= admin_content_start %>
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">
+          <i class="bi bi-pencil mr-2"></i>Edit Vehicle Type: <%= h @vehicle_type.name %>
+        </h2>
+        <a href="/admin/vehicle_types?category=<%= @vehicle_type.category %>" class="btn btn-outline btn-secondary">
+          <i class="bi bi-arrow-left mr-2"></i>Back to Vehicle Types
+        </a>
+      </div>
+
+      <!-- Vehicle Type Info -->
+      <div class="alert mb-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
+          <div>
+            <strong>ID:</strong> <code><%= @vehicle_type.id %></code>
+          </div>
+          <div>
+            <strong>Category:</strong>
+            <span class="badge badge-primary"><%= @vehicle_type.category %></span>
+          </div>
+          <div>
+            <strong>Vehicles:</strong>
+            <%= @vehicle_type.vehicles_dataset.count %>
+          </div>
+          <div>
+            <strong>Universe:</strong>
+            <%= h(@vehicle_type.universe&.name || 'All') %>
+          </div>
+        </div>
+      </div>
+
+      <%= partial 'admin/vehicle_types/form' %>
+<%= admin_content_end %>

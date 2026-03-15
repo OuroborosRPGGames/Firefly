@@ -1,0 +1,81 @@
+<% @page_title = 'Narrative Threads - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Narrative', path: '/admin/narrative' }, { label: 'Threads' }] %>
+
+<%= admin_content_start %>
+      <h2 class="mb-4 text-2xl font-bold">
+        <i class="bi bi-diagram-3 mr-2"></i>Narrative Threads
+      </h2>
+
+      <% if @threads.empty? %>
+        <%= partial 'shared/empty_state', locals: { message: 'No narrative threads detected yet. Threads emerge automatically as players create world memories through roleplay.' } %>
+      <% else %>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Importance</th>
+                <th>Entities</th>
+                <th>Memories</th>
+                <th>Last Activity</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @threads.each do |thread| %>
+                <tr>
+                  <td>
+                    <a href="/admin/narrative/threads/<%= thread.id %>" class="link link-primary font-medium">
+                      <%= h thread.name %>
+                    </a>
+                    <% if thread.summary %>
+                      <div class="text-xs text-base-content/60 mt-1 line-clamp-2"><%= h thread.summary %></div>
+                    <% end %>
+                  </td>
+                  <td>
+                    <%
+                      badge_class = case thread.status
+                                    when 'emerging' then 'badge-info'
+                                    when 'active' then 'badge-success'
+                                    when 'climax' then 'badge-warning'
+                                    when 'dormant' then 'badge-ghost'
+                                    when 'resolved' then 'badge-neutral'
+                                    else 'badge-ghost'
+                                    end
+                    %>
+                    <span class="badge <%= badge_class %>"><%= thread.status %></span>
+                  </td>
+                  <td>
+                    <div class="flex items-center gap-1">
+                      <span><%= thread.importance.round(1) %></span>
+                      <progress class="progress progress-primary w-12" value="<%= thread.importance %>" max="10"></progress>
+                    </div>
+                  </td>
+                  <td><%= thread.entity_count %></td>
+                  <td><%= thread.memory_count %></td>
+                  <td>
+                    <% if thread.last_activity_at %>
+                      <span class="text-sm"><%= thread.last_activity_at.strftime('%Y-%m-%d %H:%M') %></span>
+                    <% else %>
+                      <span class="text-base-content/40">&#8212;</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <a href="/admin/narrative/threads/<%= thread.id %>" class="btn btn-primary btn-outline btn-sm">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+
+      <div class="mt-6">
+        <a href="/admin/narrative" class="btn btn-outline btn-sm">
+          <i class="bi bi-arrow-left mr-1"></i>Back to Narrative
+        </a>
+      </div>
+<%= admin_content_end %>

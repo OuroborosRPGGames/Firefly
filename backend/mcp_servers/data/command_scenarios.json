@@ -1,0 +1,664 @@
+{
+  "accessibility": [
+    { "scenario": "bare", "command": "accessibility" }
+  ],
+  "activate location": [
+    { "scenario": "bare", "command": "activate location" }
+  ],
+  "activity": [
+    { "scenario": "bare", "command": "activity" }
+  ],
+  "afk": [
+    { "scenario": "bare", "command": "afk", "run_twice": true }
+  ],
+  "aobserve": [
+    { "scenario": "bare", "command": "aobserve" }
+  ],
+  "arrangescene": [
+    { "scenario": "bare", "command": "arrangescene" }
+  ],
+  "attack": [
+    { "scenario": "in_combat", "setup": ["ensure_combat"], "command": "attack {agent2}" }
+  ],
+  "attempt": [
+    { "scenario": "bare", "command": "attempt" },
+    { "scenario": "with_target", "setup": ["ensure_second_agent"], "command": "attempt {agent2} waves hello" }
+  ],
+  "autogm": [
+    { "scenario": "bare", "command": "autogm" }
+  ],
+  "balance": [
+    { "scenario": "bare", "command": "balance" }
+  ],
+  "bb": [
+    { "scenario": "bare", "command": "bb" }
+  ],
+  "blindfold": [
+    { "scenario": "bare", "command": "blindfold" },
+    { "scenario": "with_target", "setup": ["ensure_second_agent"], "command": "blindfold {agent2}" }
+  ],
+  "bounce": [
+    { "scenario": "bare", "command": "bounce" }
+  ],
+  "broadcast": [
+    { "scenario": "bare", "command": "broadcast" }
+  ],
+  "build": [
+    { "scenario": "bare", "command": "build" }
+  ],
+  "build apartment": [
+    { "scenario": "bare", "command": "build apartment" }
+  ],
+  "build block": [
+    { "scenario": "bare", "command": "build block" }
+  ],
+  "build city": [
+    { "scenario": "bare", "command": "build city" }
+  ],
+  "build location": [
+    { "scenario": "bare", "command": "build location" }
+  ],
+  "build shop": [
+    { "scenario": "bare", "command": "build shop" }
+  ],
+  "buy": [
+    { "scenario": "bare", "command": "buy" }
+  ],
+  "buy house": [
+    { "scenario": "bare", "command": "buy house" }
+  ],
+  "buy shop": [
+    { "scenario": "bare", "command": "buy shop" }
+  ],
+  "buy vehicle": [
+    { "scenario": "bare", "command": "buy vehicle" }
+  ],
+  "camera": [
+    { "scenario": "bare", "command": "camera" }
+  ],
+  "cancelscene": [
+    { "scenario": "bare", "command": "cancelscene" }
+  ],
+  "cards": [
+    { "scenario": "bare", "command": "cards" }
+  ],
+  "carry": [
+    { "scenario": "bare", "command": "carry" },
+    { "scenario": "with_target", "setup": ["ensure_second_agent"], "command": "carry {agent2}" }
+  ],
+  "change name": [
+    { "scenario": "bare", "command": "change name" }
+  ],
+  "channel": [
+    { "scenario": "bare", "command": "channel" }
+  ],
+  "channels": [
+    { "scenario": "bare", "command": "channels" }
+  ],
+  "check in": [
+    { "scenario": "bare", "command": "check in" }
+  ],
+  "checkall": [
+    { "scenario": "bare", "command": "checkall" }
+  ],
+  "checkalloff": [
+    { "scenario": "bare", "command": "checkalloff" }
+  ],
+  "clan": [
+    { "scenario": "bare", "command": "clan" }
+  ],
+  "clean graffiti": [
+    { "scenario": "bare", "command": "clean graffiti" }
+  ],
+  "close roof": [
+    { "scenario": "bare", "command": "close roof" }
+  ],
+  "combat": [
+    { "scenario": "bare", "command": "combat" }
+  ],
+  "commands": [
+    { "scenario": "bare", "command": "commands" }
+  ],
+  "cover": [
+    { "scenario": "bare", "command": "cover" }
+  ],
+  "create event": [
+    { "scenario": "bare", "command": "create event" }
+  ],
+  "decorate": [
+    { "scenario": "bare", "command": "decorate" }
+  ],
+  "delete": [
+    { "scenario": "bare", "command": "delete" }
+  ],
+  "delete location": [
+    { "scenario": "bare", "command": "delete location" }
+  ],
+  "delete room": [
+    { "scenario": "bare", "command": "delete room" }
+  ],
+  "delete zone": [
+    { "scenario": "bare", "command": "delete zone" }
+  ],
+  "delve": [
+    { "scenario": "bare", "command": "delve" }
+  ],
+  "deposit": [
+    { "scenario": "bare", "command": "deposit" }
+  ],
+  "describe": [
+    { "scenario": "bare", "command": "describe" }
+  ],
+  "design": [
+    { "scenario": "bare", "command": "design" }
+  ],
+  "diceroll": [
+    { "scenario": "bare", "command": "diceroll" },
+    { "scenario": "with_args", "command": "diceroll 2d6", "ignore_text": true }
+  ],
+  "direction_walk": [
+    { "scenario": "bare", "command": "direction_walk" }
+  ],
+  "directory": [
+    { "scenario": "bare", "command": "directory" }
+  ],
+  "discord": [
+    { "scenario": "bare", "command": "discord" }
+  ],
+  "down": [
+    { "scenario": "bare", "command": "down" }
+  ],
+  "drag": [
+    { "scenario": "bare", "command": "drag" },
+    { "scenario": "with_target", "setup": ["ensure_second_agent"], "command": "drag {agent2}" }
+  ],
+  "dress": [
+    { "scenario": "bare", "command": "dress" }
+  ],
+  "drink": [
+    { "scenario": "bare", "command": "drink" }
+  ],
+  "drive": [
+    { "scenario": "bare", "command": "drive" }
+  ],
+  "drop": [
+    { "scenario": "bare", "command": "drop" }
+  ],
+  "dry off": [
+    { "scenario": "bare", "command": "dry off" }
+  ],
+  "east": [
+    { "scenario": "bare", "command": "east" }
+  ],
+  "eat": [
+    { "scenario": "bare", "command": "eat" }
+  ],
+  "edit room": [
+    { "scenario": "bare", "command": "edit room" }
+  ],
+  "emote": [
+    { "scenario": "bare", "command": "emote smiles" }
+  ],
+  "end event": [
+    { "scenario": "bare", "command": "end event" }
+  ],
+  "endscene": [
+    { "scenario": "bare", "command": "endscene" }
+  ],
+  "enter": [
+    { "scenario": "bare", "command": "enter" }
+  ],
+  "enter event": [
+    { "scenario": "bare", "command": "enter event" }
+  ],
+  "enter game": [
+    { "scenario": "bare", "command": "enter game" }
+  ],
+  "equipment": [
+    { "scenario": "bare", "command": "equipment" }
+  ],
+  "eta": [
+    { "scenario": "bare", "command": "eta" }
+  ],
+  "event info": [
+    { "scenario": "bare", "command": "event info" }
+  ],
+  "events": [
+    { "scenario": "bare", "command": "events" }
+  ],
+  "exits": [
+    { "scenario": "bare", "command": "exits" }
+  ],
+  "expose": [
+    { "scenario": "bare", "command": "expose" }
+  ],
+  "fabricate": [
+    { "scenario": "bare", "command": "fabricate" }
+  ],
+  "fight": [
+    { "scenario": "bare", "command": "fight" },
+    { "scenario": "with_target", "setup": ["ensure_second_agent"], "command": "fight {agent2}" }
+  ],
+  "finger": [
+    { "scenario": "bare", "command": "finger" },
+    { "scenario": "with_target", "setup": ["ensure_second_agent"], "command": "finger {agent2}" }
+  ],
+  "flash": [
+    { "scenario": "bare", "command": "flash" }
+  ],
+  "follow": [
+    { "scenario": "bare", "command": "follow" },
+    { "scenario": "with_target", "setup": ["ensure_second_agent"], "command": "follow {agent2}" }
+  ],
+  "gag": [
+    { "scenario": "bare", "command": "gag" },
+    { "scenario": "with_target", "setup": ["ensure_second_agent"], "command": "gag {agent2}" }
+  ],
+  "gen": [
+    { "scenario": "bare", "command": "gen" }
+  ],
+  "get": [
+    { "scenario": "bare", "command": "get" }
+  ],
+  "give": [
+    { "scenario": "bare", "command": "give" }
+  ],
+  "give number": [
+    { "scenario": "bare", "command": "give number" }
+  ],
+  "goto": [
+    { "scenario": "bare", "command": "goto" }
+  ],
+  "graffiti": [
+    { "scenario": "bare", "command": "graffiti" }
+  ],
+  "grant room": [
+    { "scenario": "bare", "command": "grant room" }
+  ],
+  "gtg": [
+    { "scenario": "bare", "command": "gtg", "run_twice": true }
+  ],
+  "help": [
+    { "scenario": "bare", "command": "help" },
+    { "scenario": "with_topic", "command": "help look" }
+  ],
+  "helpless": [
+    { "scenario": "bare", "command": "helpless", "run_twice": true }
+  ],
+  "helpsearch": [
+    { "scenario": "bare", "command": "helpsearch" },
+    { "scenario": "with_args", "command": "helpsearch combat" }
+  ],
+  "hidedesc": [
+    { "scenario": "bare", "command": "hidedesc" }
+  ],
+  "hold": [
+    { "scenario": "bare", "command": "hold" }
+  ],
+  "home": [
+    { "scenario": "bare", "command": "home" }
+  ],
+  "in": [
+    { "scenario": "bare", "command": "in" }
+  ],
+  "inventory": [
+    { "scenario": "bare", "command": "inventory" }
+  ],
+  "join channel": [
+    { "scenario": "bare", "command": "join channel" }
+  ],
+  "journey": [
+    { "scenario": "bare", "command": "journey" }
+  ],
+  "knock": [
+    { "scenario": "bare", "command": "knock" }
+  ],
+  "landmarks": [
+    { "scenario": "bare", "command": "landmarks" }
+  ],
+  "lead": [
+    { "scenario": "bare", "command": "lead" },
+    { "scenario": "with_target", "setup": ["ensure_second_agent"], "command": "lead {agent2}" }
+  ],
+  "leave channel": [
+    { "scenario": "bare", "command": "leave channel" }
+  ],
+  "leave event": [
+    { "scenario": "bare", "command": "leave event" }
+  ],
+  "library delete": [
+    { "scenario": "bare", "command": "library delete" }
+  ],
+  "lie": [
+    { "scenario": "bare", "command": "lie" }
+  ],
+  "listscenes": [
+    { "scenario": "bare", "command": "listscenes" }
+  ],
+  "look": [
+    { "scenario": "bare", "command": "look" },
+    { "scenario": "at_character", "setup": ["ensure_second_agent"], "command": "look {agent2}" }
+  ],
+  "mail": [
+    { "scenario": "bare", "command": "mail" }
+  ],
+  "make": [
+    { "scenario": "bare", "command": "make" }
+  ],
+  "make home": [
+    { "scenario": "bare", "command": "make home" }
+  ],
+  "makeup": [
+    { "scenario": "bare", "command": "makeup" }
+  ],
+  "map": [
+    { "scenario": "bare", "command": "map" }
+  ],
+  "media": [
+    { "scenario": "bare", "command": "media" }
+  ],
+  "meetup": [
+    { "scenario": "bare", "command": "meetup" }
+  ],
+  "msg": [
+    { "scenario": "bare", "command": "msg" },
+    { "scenario": "with_target", "setup": ["ensure_second_agent"], "command": "msg {agent2} hello" }
+  ],
+  "narrate": [
+    { "scenario": "bare", "command": "narrate", "run_twice": true }
+  ],
+  "news": [
+    { "scenario": "bare", "command": "news" }
+  ],
+  "north": [
+    { "scenario": "bare", "command": "north" }
+  ],
+  "northeast": [
+    { "scenario": "bare", "command": "northeast" }
+  ],
+  "northwest": [
+    { "scenario": "bare", "command": "northwest" }
+  ],
+  "npc": [
+    { "scenario": "bare", "command": "npc" }
+  ],
+  "npcquery": [
+    { "scenario": "bare", "command": "npcquery" }
+  ],
+  "observe": [
+    { "scenario": "bare", "command": "observe" }
+  ],
+  "ooc": [
+    { "scenario": "bare", "command": "ooc" },
+    { "scenario": "with_target", "setup": ["ensure_second_agent"], "command": "ooc {agent2} hey" }
+  ],
+  "oocrequest": [
+    { "scenario": "bare", "command": "oocrequest" }
+  ],
+  "open roof": [
+    { "scenario": "bare", "command": "open roof" }
+  ],
+  "out": [
+    { "scenario": "bare", "command": "out" }
+  ],
+  "outfit": [
+    { "scenario": "bare", "command": "outfit" }
+  ],
+  "pemit": [
+    { "scenario": "bare", "command": "pemit" },
+    { "scenario": "with_target", "setup": ["ensure_second_agent"], "command": "pemit {agent2} hello" }
+  ],
+  "pemote": [
+    { "scenario": "bare", "command": "pemote" }
+  ],
+  "permissions": [
+    { "scenario": "bare", "command": "permissions" }
+  ],
+  "pierce": [
+    { "scenario": "bare", "command": "pierce" }
+  ],
+  "places": [
+    { "scenario": "bare", "command": "places" }
+  ],
+  "play": [
+    { "scenario": "bare", "command": "play" }
+  ],
+  "pocket": [
+    { "scenario": "bare", "command": "pocket" }
+  ],
+  "preview": [
+    { "scenario": "bare", "command": "preview" }
+  ],
+  "private": [
+    { "scenario": "bare", "command": "private", "run_twice": true }
+  ],
+  "profile": [
+    { "scenario": "bare", "command": "profile" },
+    { "scenario": "with_target", "setup": ["ensure_second_agent"], "command": "profile {agent2}" }
+  ],
+  "property": [
+    { "scenario": "bare", "command": "property" }
+  ],
+  "puppet": [
+    { "scenario": "bare", "command": "puppet" }
+  ],
+  "puppets": [
+    { "scenario": "bare", "command": "puppets" }
+  ],
+  "quiet": [
+    { "scenario": "bare", "command": "quiet", "run_twice": true }
+  ],
+  "quit": [
+    { "scenario": "bare", "command": "quit" }
+  ],
+  "redecorate": [
+    { "scenario": "bare", "command": "redecorate" }
+  ],
+  "release": [
+    { "scenario": "bare", "command": "release" }
+  ],
+  "remove": [
+    { "scenario": "bare", "command": "remove" }
+  ],
+  "rename": [
+    { "scenario": "bare", "command": "rename" }
+  ],
+  "reply": [
+    { "scenario": "bare", "command": "reply" }
+  ],
+  "reputation": [
+    { "scenario": "bare", "command": "reputation" }
+  ],
+  "reroll": [
+    { "scenario": "bare", "command": "reroll" }
+  ],
+  "resize room": [
+    { "scenario": "bare", "command": "resize room" }
+  ],
+  "reskin": [
+    { "scenario": "bare", "command": "reskin" }
+  ],
+  "roll": [
+    { "scenario": "bare", "command": "roll" },
+    { "scenario": "with_args", "command": "roll strength", "ignore_text": true }
+  ],
+  "roomtitle": [
+    { "scenario": "bare", "command": "roomtitle" }
+  ],
+  "save": [
+    { "scenario": "bare", "command": "save" }
+  ],
+  "save gradient": [
+    { "scenario": "bare", "command": "save gradient" }
+  ],
+  "save location": [
+    { "scenario": "bare", "command": "save location" }
+  ],
+  "say": [
+    { "scenario": "social", "setup": ["ensure_second_agent"], "command": "say hello" }
+  ],
+  "scene": [
+    { "scenario": "bare", "command": "scene" }
+  ],
+  "sceneinstructions": [
+    { "scenario": "bare", "command": "sceneinstructions" }
+  ],
+  "score": [
+    { "scenario": "bare", "command": "score" }
+  ],
+  "search": [
+    { "scenario": "bare", "command": "search" },
+    { "scenario": "with_target", "setup": ["ensure_second_agent"], "command": "search {agent2}" }
+  ],
+  "searchmemory": [
+    { "scenario": "bare", "command": "searchmemory" }
+  ],
+  "seed": [
+    { "scenario": "bare", "command": "seed" }
+  ],
+  "semiafk": [
+    { "scenario": "bare", "command": "semiafk", "run_twice": true }
+  ],
+  "semote": [
+    { "scenario": "bare", "command": "semote" }
+  ],
+  "set background": [
+    { "scenario": "bare", "command": "set background" }
+  ],
+  "set seasonal": [
+    { "scenario": "bare", "command": "set seasonal" }
+  ],
+  "shop": [
+    { "scenario": "bare", "command": "shop" }
+  ],
+  "show": [
+    { "scenario": "bare", "command": "show" }
+  ],
+  "showdesc": [
+    { "scenario": "bare", "command": "showdesc" }
+  ],
+  "sit": [
+    { "scenario": "bare", "command": "sit" }
+  ],
+  "smoke": [
+    { "scenario": "bare", "command": "smoke" }
+  ],
+  "south": [
+    { "scenario": "bare", "command": "south" }
+  ],
+  "southeast": [
+    { "scenario": "bare", "command": "southeast" }
+  ],
+  "southwest": [
+    { "scenario": "bare", "command": "southwest" }
+  ],
+  "spar": [
+    { "scenario": "bare", "command": "spar" },
+    { "scenario": "with_target", "setup": ["ensure_second_agent"], "command": "spar {agent2}" }
+  ],
+  "staffroom": [
+    { "scenario": "bare", "command": "staffroom" }
+  ],
+  "stand": [
+    { "scenario": "bare", "command": "stand" }
+  ],
+  "start event": [
+    { "scenario": "bare", "command": "start event" }
+  ],
+  "stop": [
+    { "scenario": "bare", "command": "stop" }
+  ],
+  "strip": [
+    { "scenario": "bare", "command": "strip" }
+  ],
+  "style": [
+    { "scenario": "bare", "command": "style" }
+  ],
+  "subtle": [
+    { "scenario": "bare", "command": "subtle" }
+  ],
+  "summon": [
+    { "scenario": "bare", "command": "summon" }
+  ],
+  "tattoo": [
+    { "scenario": "bare", "command": "tattoo" }
+  ],
+  "taxi": [
+    { "scenario": "bare", "command": "taxi" }
+  ],
+  "think": [
+    { "scenario": "bare", "command": "think" }
+  ],
+  "tickets": [
+    { "scenario": "bare", "command": "tickets" }
+  ],
+  "tie": [
+    { "scenario": "bare", "command": "tie" },
+    { "scenario": "with_target", "setup": ["ensure_second_agent"], "command": "tie {agent2}" }
+  ],
+  "time": [
+    { "scenario": "bare", "command": "time", "ignore_text": true }
+  ],
+  "timeline": [
+    { "scenario": "bare", "command": "timeline" }
+  ],
+  "trash": [
+    { "scenario": "bare", "command": "trash" }
+  ],
+  "undo": [
+    { "scenario": "bare", "command": "undo" }
+  ],
+  "unpuppet": [
+    { "scenario": "bare", "command": "unpuppet" }
+  ],
+  "untie": [
+    { "scenario": "bare", "command": "untie" },
+    { "scenario": "with_target", "setup": ["ensure_second_agent"], "command": "untie {agent2}" }
+  ],
+  "unzip": [
+    { "scenario": "bare", "command": "unzip" }
+  ],
+  "up": [
+    { "scenario": "bare", "command": "up" }
+  ],
+  "use": [
+    { "scenario": "bare", "command": "use" }
+  ],
+  "viewmemory": [
+    { "scenario": "bare", "command": "viewmemory" }
+  ],
+  "wake": [
+    { "scenario": "bare", "command": "wake" },
+    { "scenario": "with_target", "setup": ["ensure_second_agent"], "command": "wake {agent2}" }
+  ],
+  "walk": [
+    { "scenario": "bare", "command": "walk" }
+  ],
+  "wardrobe": [
+    { "scenario": "bare", "command": "wardrobe" }
+  ],
+  "wear": [
+    { "scenario": "bare", "command": "wear" }
+  ],
+  "weather": [
+    { "scenario": "bare", "command": "weather", "ignore_text": true }
+  ],
+  "west": [
+    { "scenario": "bare", "command": "west" }
+  ],
+  "whisper": [
+    { "scenario": "social", "setup": ["ensure_second_agent"], "command": "whisper {agent2} hello" }
+  ],
+  "who": [
+    { "scenario": "bare", "command": "who" }
+  ],
+  "windows": [
+    { "scenario": "bare", "command": "windows" }
+  ],
+  "withdraw": [
+    { "scenario": "bare", "command": "withdraw" }
+  ],
+  "zipup": [
+    { "scenario": "bare", "command": "zipup" }
+  ]
+}

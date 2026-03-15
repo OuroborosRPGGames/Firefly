@@ -1,0 +1,80 @@
+<% @page_title = 'Admin Console' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }] %>
+
+<%= admin_content_start %>
+      <h2 class="mb-4 text-2xl font-bold">Dashboard</h2>
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <div class="mb-3">
+          <div class="card bg-primary text-primary-content">
+            <div class="card-body">
+              <div class="flex justify-between items-center">
+                <div>
+                  <h6 class="card-title mb-0 text-sm">Users</h6>
+                  <h2 class="mb-0 text-3xl font-bold"><%= @user_count %></h2>
+                </div>
+                <i class="bi bi-people text-4xl opacity-50"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="card bg-success text-success-content">
+            <div class="card-body">
+              <div class="flex justify-between items-center">
+                <div>
+                  <h6 class="card-title mb-0 text-sm">Characters</h6>
+                  <h2 class="mb-0 text-3xl font-bold"><%= @character_count %></h2>
+                </div>
+                <i class="bi bi-person-badge text-4xl opacity-50"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="card bg-info text-info-content">
+            <div class="card-body">
+              <div class="flex justify-between items-center">
+                <div>
+                  <h6 class="card-title mb-0 text-sm">Rooms</h6>
+                  <h2 class="mb-0 text-3xl font-bold"><%= @room_count %></h2>
+                </div>
+                <i class="bi bi-door-open text-4xl opacity-50"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="card bg-warning text-warning-content">
+            <div class="card-body">
+              <div class="flex justify-between items-center">
+                <div>
+                  <h6 class="card-title mb-0 text-sm">Online</h6>
+                  <h2 class="mb-0 text-3xl font-bold"><%= @online_count %></h2>
+                </div>
+                <i class="bi bi-circle-fill text-4xl opacity-50"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <h5 class="card-title"><i class="bi bi-lightning mr-2"></i>Quick Actions</h5>
+          <div class="flex flex-wrap gap-2">
+            <a href="/admin/settings" class="btn btn-outline">
+              <i class="bi bi-gear mr-1"></i>Game Settings
+            </a>
+            <a href="/admin/users" class="btn btn-outline">
+              <i class="bi bi-people mr-1"></i>Manage Users
+            </a>
+          </div>
+        </div>
+      </div>
+<%= admin_content_end %>

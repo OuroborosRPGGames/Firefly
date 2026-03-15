@@ -1,0 +1,239 @@
+/**
+ * Dice Roll Animations
+ * Ravencroft-style animated dice rolls with exploding effects
+ */
+
+/* Container for dice roll display */
+.dice-roll-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 3px 6px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+  margin: 2px 0;
+}
+
+.dice-roll-header {
+  width: 100%;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.dice-roll-result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.dice-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 1.3em;
+  padding: 1px 0;
+}
+
+/* Individual die display */
+.die {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.3em;
+  height: 1.3em;
+  font-family: monospace;
+  font-weight: bold;
+  font-size: 0.85em;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Die type colors */
+.die--normal {
+  color: #fff;
+}
+
+.die--success {
+  color: #4ade80;
+  border-color: #4ade80;
+}
+
+.die--exploded {
+  color: #f97316;
+  border-color: #f97316;
+  box-shadow: 0 0 6px rgba(249, 115, 22, 0.5);
+}
+
+.die--critical {
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.die--willpower {
+  color: #60a5fa;
+  border-color: #60a5fa;
+}
+
+/* Roll in animation - die rotates in from the side */
+.anim_roll_in {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: roll_in_anim 0.4s ease-out;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+@keyframes roll_in_anim {
+  0% {
+    transform: rotateY(-60deg) scale(1.15);
+    opacity: 0.3;
+  }
+  100% {
+    transform: rotateY(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Roll out animation - old value exits */
+.anim_roll_out {
+  display: inline-flex;
+  animation: roll_out_anim 0.4s ease-in forwards;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+@keyframes roll_out_anim {
+  0% {
+    transform: rotateY(0deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: rotateY(60deg) scale(1.15);
+    opacity: 0;
+  }
+}
+
+/* Vanish in animation - final result appears with blur */
+.anim_vanish_in {
+  display: inline-flex;
+  animation: vanish_in_anim 0.8s ease-out;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+@keyframes vanish_in_anim {
+  0% {
+    opacity: 0;
+    transform: scale(1.3);
+    filter: blur(8px);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0px);
+  }
+}
+
+/* Vanish out animation - value fades with blur */
+.anim_vanish_out {
+  display: inline-flex;
+  animation: vanish_out_anim 0.6s ease-in forwards;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+@keyframes vanish_out_anim {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.5);
+    filter: blur(20px);
+  }
+}
+
+/* Explosion flash effect */
+.anim_explode {
+  animation: explode_anim 0.5s ease-out;
+}
+
+@keyframes explode_anim {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.5);
+    filter: brightness(2);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+/* Modifier display */
+.dice-modifier {
+  color: #a78bfa;
+  font-weight: bold;
+}
+
+.dice-modifier--positive {
+  color: #4ade80;
+}
+
+.dice-modifier--negative {
+  color: #ef4444;
+}
+
+/* Total display */
+.dice-total {
+  font-size: 1em;
+  font-weight: bold;
+  color: #fbbf24;
+  margin-left: 6px;
+  padding: 1px 5px;
+  background: rgba(251, 191, 36, 0.1);
+  border-radius: 3px;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+/* Stats used label */
+.dice-stats-label {
+  color: #94a3b8;
+  margin-right: 8px;
+}
+
+/* Explosion indicator */
+.explosion-marker {
+  color: #f97316;
+  font-weight: bold;
+  animation: pulse_glow 1s ease-in-out infinite;
+  margin-left: 4px;
+}
+
+@keyframes pulse_glow {
+  0%, 100% {
+    text-shadow: 0 0 4px rgba(249, 115, 22, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 12px rgba(249, 115, 22, 0.8), 0 0 20px rgba(249, 115, 22, 0.4);
+  }
+}
+
+/* Plus sign between dice */
+.dice-separator {
+  color: #64748b;
+  margin: 0 2px;
+}

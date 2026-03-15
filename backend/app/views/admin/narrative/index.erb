@@ -1,0 +1,125 @@
+<% @page_title = 'Narrative Intelligence - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Narrative Intelligence' }] %>
+
+<%= admin_content_start %>
+      <h2 class="mb-4 text-2xl font-bold">
+        <i class="bi bi-diagram-3 mr-2"></i>Narrative Intelligence
+      </h2>
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="stat bg-base-200 rounded-lg p-4">
+          <div class="stat-title">Active Threads</div>
+          <div class="stat-value text-primary"><%= @stats[:active_threads] %></div>
+        </div>
+        <div class="stat bg-base-200 rounded-lg p-4">
+          <div class="stat-title">Total Threads</div>
+          <div class="stat-value"><%= @stats[:total_threads] %></div>
+        </div>
+        <div class="stat bg-base-200 rounded-lg p-4">
+          <div class="stat-title">Entities</div>
+          <div class="stat-value"><%= @stats[:total_entities] %></div>
+        </div>
+        <div class="stat bg-base-200 rounded-lg p-4">
+          <div class="stat-title">Unprocessed</div>
+          <div class="stat-value text-warning"><%= @stats[:unprocessed_memories] %></div>
+        </div>
+      </div>
+
+      <!-- Entity Type Breakdown -->
+      <% if @stats[:entity_types].any? %>
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold mb-2">Entity Types</h3>
+        <div class="flex flex-wrap gap-2">
+          <% @stats[:entity_types].each do |et| %>
+            <span class="badge badge-lg"><%= et[:type] %>: <%= et[:count] %></span>
+          <% end %>
+        </div>
+      </div>
+      <% end %>
+
+      <!-- Status Filter Tabs -->
+      <div class="tabs tabs-boxed mb-4">
+        <a href="/admin/narrative" class="tab <%= @filter == 'all' ? 'tab-active' : '' %>">All</a>
+        <a href="/admin/narrative?filter=active" class="tab <%= @filter == 'active' ? 'tab-active' : '' %>">Active</a>
+        <a href="/admin/narrative?filter=emerging" class="tab <%= @filter == 'emerging' ? 'tab-active' : '' %>">Emerging</a>
+        <a href="/admin/narrative?filter=climax" class="tab <%= @filter == 'climax' ? 'tab-active' : '' %>">Climax</a>
+        <a href="/admin/narrative?filter=dormant" class="tab <%= @filter == 'dormant' ? 'tab-active' : '' %>">Dormant</a>
+        <a href="/admin/narrative?filter=resolved" class="tab <%= @filter == 'resolved' ? 'tab-active' : '' %>">Resolved</a>
+      </div>
+
+      <!-- Threads Table -->
+      <% if @threads.empty? %>
+        <%= partial 'shared/empty_state', locals: { message: 'No narrative threads detected yet. Threads emerge automatically as players create world memories through roleplay.' } %>
+      <% else %>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Importance</th>
+                <th>Entities</th>
+                <th>Memories</th>
+                <th>Last Activity</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @threads.each do |thread| %>
+                <tr>
+                  <td>
+                    <a href="/admin/narrative/threads/<%= thread.id %>" class="link link-primary font-medium">
+                      <%= h thread.name %>
+                    </a>
+                    <% if thread.summary %>
+                      <div class="text-xs text-base-content/60 mt-1 line-clamp-2"><%= h thread.summary %></div>
+                    <% end %>
+                  </td>
+                  <td>
+                    <%
+                      badge_class = case thread.status
+                                    when 'emerging' then 'badge-info'
+                                    when 'active' then 'badge-success'
+                                    when 'climax' then 'badge-warning'
+                                    when 'dormant' then 'badge-ghost'
+                                    when 'resolved' then 'badge-neutral'
+                                    else 'badge-ghost'
+                                    end
+                    %>
+                    <span class="badge <%= badge_class %>"><%= thread.status %></span>
+                  </td>
+                  <td>
+                    <div class="flex items-center gap-1">
+                      <span><%= thread.importance.round(1) %></span>
+                      <progress class="progress progress-primary w-12" value="<%= thread.importance %>" max="10"></progress>
+                    </div>
+                  </td>
+                  <td><%= thread.entity_count %></td>
+                  <td><%= thread.memory_count %></td>
+                  <td>
+                    <% if thread.last_activity_at %>
+                      <span class="text-sm"><%= thread.last_activity_at.strftime('%Y-%m-%d %H:%M') %></span>
+                    <% else %>
+                      <span class="text-base-content/40">—</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <a href="/admin/narrative/threads/<%= thread.id %>" class="btn btn-primary btn-outline btn-sm">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+
+      <!-- Quick Links -->
+      <div class="mt-6">
+        <a href="/admin/narrative/entities" class="btn btn-outline btn-sm">
+          <i class="bi bi-search mr-1"></i>Browse Entities
+        </a>
+      </div>
+<%= admin_content_end %>

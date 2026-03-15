@@ -1,0 +1,44 @@
+<%
+  # Required locals:
+  #   id:      String  — the dialog element id
+  #   title:   String  — header text (HTML allowed)
+  #   content: String  — body HTML (may include modal-action if auto_actions is false)
+  # Optional locals:
+  #   size:         String  — Tailwind max-w suffix (e.g. 'lg', '2xl', '4xl', '5xl').
+  #                           Defaults to '2xl'.
+  #   actions:      String  — HTML for extra action buttons; when set, a Cancel button is
+  #                           auto-generated alongside them inside modal-action
+  #   close_label:  String  — label for the auto-generated close button (default: 'Close')
+  #   auto_actions: Boolean — set to false to suppress the auto modal-action block
+  #                           (use when content already includes modal-action, default: true)
+  # WARNING: title: and content: are rendered as raw HTML. Always use h() when
+  #          interpolating user-controlled data to prevent XSS.
+  size         ||= '2xl'
+  actions      ||= nil
+  close_label  ||= 'Close'
+  auto_actions = auto_actions.nil? ? true : auto_actions
+  size_class   = " max-w-#{size}"
+%>
+<dialog id="<%= id %>" class="modal">
+  <div class="modal-box bg-base-200<%= size_class %>">
+    <h3 class="font-bold text-lg"><%= title %></h3>
+    <%= content %>
+    <% if auto_actions %>
+    <div class="modal-action">
+      <% if actions %>
+        <form method="dialog">
+          <button class="btn btn-ghost"><%= close_label %></button>
+        </form>
+        <%= actions %>
+      <% else %>
+        <form method="dialog">
+          <button class="btn btn-ghost"><%= close_label %></button>
+        </form>
+      <% end %>
+    </div>
+    <% end %>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>

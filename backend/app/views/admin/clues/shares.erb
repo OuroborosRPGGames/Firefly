@@ -1,0 +1,98 @@
+<% @page_title = "Share History: #{@clue.name} - Admin" %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Clues', path: '/admin/clues' }, { label: 'Share History' }] %>
+
+<%= admin_content_start %>
+      <h2 class="mb-4 text-2xl font-bold">Share History: <%= h @clue.name %></h2>
+
+      <div class="mb-4 flex gap-2">
+        <a href="/admin/clues/<%= @clue.id %>" class="btn btn-outline btn-ghost">
+          <i class="bi bi-arrow-left mr-1"></i>Back to Clue
+        </a>
+        <a href="/admin/clues" class="btn btn-outline btn-ghost">
+          <i class="bi bi-list mr-1"></i>All Clues
+        </a>
+      </div>
+
+      <div class="card bg-base-200 shadow-lg mb-4">
+        <div class="card-body">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <span class="font-semibold">Clue Content:</span>
+              <p class="text-base-content/70"><%= h @clue.content %></p>
+            </div>
+            <div>
+              <span class="font-semibold">Base Likelihood:</span>
+              <p><%= (@clue.share_likelihood * 100).round %>%</p>
+            </div>
+            <div>
+              <span class="font-semibold">Min Trust:</span>
+              <p><%= @clue.min_trust_required || 0 %></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <% if @shares.empty? %>
+        <%= partial 'shared/empty_state', locals: { message: 'This clue has not been shared yet.' } %>
+      <% else %>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>NPC</th>
+                <th>Recipient</th>
+                <th>Location</th>
+                <th>Context</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @shares.each do |share| %>
+                <tr>
+                  <td><%= share.shared_at&.strftime('%Y-%m-%d %H:%M:%S') %></td>
+                  <td>
+                    <% if share.npc_character %>
+                      <%= h share.npc_character.full_name %>
+                    <% else %>
+                      <span class="text-base-content/50">Unknown NPC</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if share.recipient_character %>
+                      <%= h share.recipient_character.full_name %>
+                    <% else %>
+                      <span class="text-base-content/50">Unknown</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if share.room %>
+                      <%= h share.room.name %>
+                    <% else %>
+                      <span class="text-base-content/50">-</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if share.context && !share.context.empty? %>
+                      <span class="text-sm"><%= truncate_text(share.context, 80) %></span>
+                    <% else %>
+                      <span class="text-base-content/50">-</span>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="text-base-content/70 text-sm mt-4">
+          Total shares: <%= @shares.count %>
+        </div>
+      <% end %>
+
+      <%
+      def truncate_text(text, len)
+        return '' if text.nil?
+        text.length > len ? text[0, len] + '...' : text
+      end
+      %>
+<%= admin_content_end %>

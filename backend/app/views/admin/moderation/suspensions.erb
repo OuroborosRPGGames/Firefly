@@ -1,0 +1,84 @@
+<% @page_title = 'Suspended Users' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Moderation', path: '/admin/moderation' }, { label: 'Suspensions', path: '/admin/moderation/suspensions' }] %>
+
+<%= admin_content_start %>
+      <h2 class="text-2xl font-bold mb-4"><i class="bi bi-person-x mr-2"></i>Suspended Users</h2>
+
+      <div class="card bg-base-200 shadow-lg">
+        <div class="p-4 border-b border-base-content/10">
+          <h5 class="font-semibold">Currently Suspended Accounts</h5>
+        </div>
+        <div class="card-body">
+          <% if @suspended_users.empty? %>
+            <div class="alert alert-success">
+              <i class="bi bi-check-circle"></i>
+              <span>No users are currently suspended.</span>
+            </div>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Reason</th>
+                    <th>Suspended At</th>
+                    <th>Until</th>
+                    <th>By</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @suspended_users.each do |user| %>
+                  <tr>
+                    <td>
+                      <a href="/admin/moderation/connections/user/<%= user.id %>" class="link link-primary">
+                        <%= h user.username %>
+                      </a>
+                    </td>
+                    <td><%= h user.email %></td>
+                    <td><%= h(user.suspension_reason || '-') %></td>
+                    <td><%= user.suspended_at&.strftime('%Y-%m-%d %H:%M') %></td>
+                    <td>
+                      <% if user.suspension_permanent? %>
+                        <span class="badge badge-error">Permanent</span>
+                      <% elsif user.suspended_until %>
+                        <%= user.suspended_until.strftime('%Y-%m-%d %H:%M') %>
+                        <% remaining = user.suspension_remaining %>
+                        <% if remaining && remaining > 0 %>
+                          <br><small class="text-base-content/70">
+                            <% if remaining > 86400 %>
+                              <%= (remaining / 86400).ceil %> days left
+                            <% elsif remaining > 3600 %>
+                              <%= (remaining / 3600).ceil %> hours left
+                            <% else %>
+                              <%= (remaining / 60).ceil %> minutes left
+                            <% end %>
+                          </small>
+                        <% end %>
+                      <% else %>
+                        <span class="badge badge-error">Permanent</span>
+                      <% end %>
+                    </td>
+                    <td><%= h(user.suspended_by&.username || '-') %></td>
+                    <td>
+                      <div class="flex gap-1">
+                        <form action="/admin/moderation/users/<%= user.id %>/unsuspend" method="post" class="inline">
+                          <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Unsuspend this user?')">
+                            <i class="bi bi-check-circle mr-1"></i>Unsuspend
+                          </button>
+                        </form>
+                        <a href="/admin/moderation/connections/user/<%= user.id %>" class="btn btn-sm btn-outline btn-info">
+                          <i class="bi bi-eye"></i>
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+      </div>
+<%= admin_content_end %>

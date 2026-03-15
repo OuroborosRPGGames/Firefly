@@ -1,0 +1,294 @@
+<!-- Page Banner -->
+<section class="page-banner" style="background-image: url('/images/library.jpg');">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <div class="breadcrumbs text-sm mb-2">
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/dashboard">Dashboard</a></li>
+          <li><a href="/missions">Mission Logs</a></li>
+          <li><%= h(@activity&.name || "Mission ##{@instance.id}") %></li>
+        </ul>
+      </div>
+      <h1><i class="bi bi-book mr-2"></i><%= h(@activity&.name || "Mission Log") %></h1>
+      <p class="lead">
+        <% if @activity&.activity_type %>
+          <span class="badge badge-info mr-2"><%= @activity.activity_type.capitalize %></span>
+        <% end %>
+        Completed <%= @instance.completed_at&.strftime('%B %d, %Y') || 'In Progress' %>
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="py-12">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Main Log Content -->
+      <div class="lg:col-span-8">
+        <div class="card bg-base-200 shadow-xl mb-6">
+          <div class="card-body">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="card-title"><i class="bi bi-journal-text mr-2"></i>Mission Log</h2>
+              <a href="/missions/<%= @instance.id %>/download" class="btn btn-outline btn-primary btn-sm">
+                <i class="bi bi-download mr-1"></i>Download HTML
+              </a>
+            </div>
+            <div class="mission-log-content">
+              <% if @logs && @logs.any? %>
+                <% @logs.each do |log| %>
+                  <div class="mission-log-entry log-type-<%= log.log_type %> mb-6">
+                    <% if log.title && !log.title.empty? %>
+                      <h5 class="log-title">
+                        <% case log.log_type %>
+                        <% when 'round_start' %>
+                          <i class="bi bi-play-circle text-primary mr-2"></i>
+                        <% when 'round_end' %>
+                          <i class="bi bi-stop-circle text-success mr-2"></i>
+                        <% when 'action' %>
+                          <i class="bi bi-lightning text-warning mr-2"></i>
+                        <% when 'outcome' %>
+                          <i class="bi bi-check2-circle text-info mr-2"></i>
+                        <% when 'combat' %>
+                          <i class="bi bi-fire text-error mr-2"></i>
+                        <% when 'summary' %>
+                          <i class="bi bi-trophy text-warning mr-2"></i>
+                        <% else %>
+                          <i class="bi bi-chat-quote mr-2"></i>
+                        <% end %>
+                        <%= h log.title %>
+                      </h5>
+                    <% end %>
+
+                    <% if log.character %>
+                      <div class="log-character mb-2 flex flex-wrap gap-2">
+                        <span class="badge badge-neutral">
+                          <i class="bi bi-person mr-1"></i><%= h log.character.full_name %>
+                        </span>
+                        <% if log.outcome %>
+                          <span class="badge badge-<%= log.outcome == 'success' ? 'success' : (log.outcome == 'partial' ? 'warning' : 'error') %>">
+                            <%= log.outcome.capitalize %>
+                          </span>
+                        <% end %>
+                        <% if log.roll_result %>
+                          <span class="badge badge-ghost">
+                            Roll: <%= log.roll_result %><%= log.difficulty ? " vs DC #{log.difficulty}" : '' %>
+                          </span>
+                        <% end %>
+                      </div>
+                    <% end %>
+
+                    <div class="log-content">
+                      <%= log.formatted_content %>
+                    </div>
+
+                    <div class="log-meta text-base-content/70 text-sm mt-2">
+                      <i class="bi bi-clock mr-1"></i>
+                      <%= log.created_at&.strftime('%I:%M %p') %>
+                      <% if log.round_number %>
+                        <span class="ml-4">
+                          <i class="bi bi-arrow-repeat mr-1"></i>
+                          Round <%= log.round_number %>
+                        </span>
+                      <% end %>
+                    </div>
+                  </div>
+
+                  <% unless log == @logs.last %>
+                    <div class="divider log-separator"></div>
+                  <% end %>
+                <% end %>
+              <% else %>
+                <div class="text-center py-12 text-base-content/70">
+                  <i class="bi bi-journal-x text-6xl mb-4"></i>
+                  <p>No log entries recorded for this mission.</p>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="lg:col-span-4">
+        <!-- Mission Summary -->
+        <div class="card bg-base-200 shadow-xl mb-6">
+          <div class="card-body">
+            <h2 class="card-title"><i class="bi bi-info-circle mr-2"></i>Mission Details</h2>
+            <dl class="space-y-2">
+              <div>
+                <dt class="font-semibold">Status</dt>
+                <dd>
+                  <span class="badge badge-<%= @instance.completed_at ? 'success' : 'warning' %>">
+                    <%= @instance.completed_at ? 'Completed' : 'In Progress' %>
+                  </span>
+                </dd>
+              </div>
+
+              <div>
+                <dt class="font-semibold">Rounds</dt>
+                <dd><%= @instance.rounds_done || 0 %> of <%= @instance.rcount || '?' %></dd>
+              </div>
+
+              <% if @instance.completed_at %>
+                <div>
+                  <dt class="font-semibold">Completed</dt>
+                  <dd><%= @instance.completed_at.strftime('%B %d, %Y at %I:%M %p') %></dd>
+                </div>
+              <% end %>
+            </dl>
+          </div>
+        </div>
+
+        <!-- Participants -->
+        <div class="card bg-base-200 shadow-xl mb-6">
+          <div class="card-body">
+            <h2 class="card-title"><i class="bi bi-people mr-2"></i>Participants</h2>
+            <% if @participants && @participants.any? %>
+              <ul class="space-y-2">
+                <% @participants.each do |p| %>
+                  <li class="flex justify-between items-center">
+                    <span>
+                      <i class="bi bi-person mr-1"></i>
+                      <%= h(p[:character]&.full_name || 'Unknown') %>
+                    </span>
+                    <% if p[:score] && p[:score] > 0 %>
+                      <span class="badge badge-primary"><%= p[:score] %> pts</span>
+                    <% end %>
+                  </li>
+                <% end %>
+              </ul>
+            <% else %>
+              <p class="text-base-content/70">No participants recorded.</p>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <% if @instance.log_summary %>
+          <div class="card bg-base-200 shadow-xl mb-6">
+            <div class="card-body">
+              <h2 class="card-title"><i class="bi bi-trophy mr-2"></i>Summary</h2>
+              <p><%= h @instance.log_summary %></p>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Back Link -->
+        <div class="mt-6">
+          <a href="/missions" class="btn btn-ghost">
+            <i class="bi bi-arrow-left mr-1"></i>Back to Mission Logs
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .mission-log-content {
+    font-family: Georgia, 'Times New Roman', serif;
+    line-height: 1.8;
+  }
+
+  .mission-log-entry {
+    padding: 15px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .log-type-round_start {
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.2) 0%, rgba(52, 152, 219, 0.05) 100%);
+    border-left: 4px solid #3498db;
+  }
+
+  .log-type-round_end {
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.2) 0%, rgba(46, 204, 113, 0.05) 100%);
+    border-left: 4px solid #2ecc71;
+  }
+
+  .log-type-action {
+    background: rgba(241, 196, 15, 0.1);
+    border-left: 4px solid #f1c40f;
+  }
+
+  .log-type-outcome {
+    padding-left: 20px;
+  }
+
+  .log-type-combat {
+    background: rgba(231, 76, 60, 0.1);
+    border-left: 4px solid #e74c3c;
+  }
+
+  .log-type-narrative {
+    font-style: italic;
+    color: #bdc3c7;
+  }
+
+  .log-type-summary {
+    background: linear-gradient(135deg, rgba(155, 89, 182, 0.3) 0%, rgba(142, 68, 173, 0.1) 100%);
+    border: 2px solid #9b59b6;
+  }
+
+  .log-type-system {
+    font-size: 0.9em;
+    color: #7f8c8d;
+    font-style: italic;
+  }
+
+  .log-title {
+    margin-bottom: 10px;
+    color: #ecf0f1;
+  }
+
+  .log-content {
+    color: #ecf0f1;
+  }
+
+  .log-separator {
+    margin: 25px 0;
+  }
+
+  /* Styling for HTML content inside logs */
+  .log-content .activity-log-round-start,
+  .log-content .activity-log-round-end,
+  .log-content .activity-log-action,
+  .log-content .activity-log-outcome,
+  .log-content .activity-log-combat,
+  .log-content .activity-log-summary,
+  .log-content .activity-log-system {
+    background: transparent;
+    padding: 0;
+    border: none;
+  }
+
+  .log-content .round-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .log-content .round-number {
+    background: #3498db;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 0.85em;
+  }
+
+  .log-content .outcome-success { background: rgba(39, 174, 96, 0.3); padding: 10px; border-radius: 5px; }
+  .log-content .outcome-partial { background: rgba(243, 156, 18, 0.3); padding: 10px; border-radius: 5px; }
+  .log-content .outcome-failure { background: rgba(231, 76, 60, 0.3); padding: 10px; border-radius: 5px; }
+
+  .log-content .outcome-badge {
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: bold;
+  }
+
+  .log-content .outcome-success .outcome-badge { background: #27ae60; }
+  .log-content .outcome-partial .outcome-badge { background: #f39c12; }
+  .log-content .outcome-failure .outcome-badge { background: #e74c3c; }
+</style>

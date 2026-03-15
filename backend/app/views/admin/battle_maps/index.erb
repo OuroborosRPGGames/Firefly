@@ -1,0 +1,156 @@
+<% @page_title = 'Battle Maps - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Battle Maps' }] %>
+
+<%= admin_content_start %>
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold">Battle Map Editor</h2>
+      </div>
+
+      <div class="mb-6">
+        <div class="card bg-base-200">
+          <div class="card-body">
+            <h5 class="card-title">About Battle Maps</h5>
+            <p class="text-base-content/70">
+              Battle maps define tactical hex grids for combat encounters. Each room can have a custom battle map
+              with cover objects, hazards, water, elevation, and other terrain features that affect combat.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="card bg-base-200 text-center">
+          <div class="card-body">
+            <h3 class="text-3xl font-bold text-primary"><%= @rooms.count { |r| r.has_battle_map } %></h3>
+            <p class="text-base-content/70">Rooms with Battle Maps</p>
+          </div>
+        </div>
+        <div class="card bg-base-200 text-center">
+          <div class="card-body">
+            <h3 class="text-3xl font-bold text-success"><%= @cover_types.count %></h3>
+            <p class="text-base-content/70">Cover Object Types</p>
+          </div>
+        </div>
+        <div class="card bg-base-200 text-center">
+          <div class="card-body">
+            <h3 class="text-3xl font-bold text-warning"><%= Room::VALID_ROOM_TYPES.count %></h3>
+            <p class="text-base-content/70">Supported Room Types</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card bg-base-200">
+        <div class="p-4 border-b border-base-content/10 flex justify-between items-center">
+          <h5 class="font-semibold">Combat-Ready Rooms</h5>
+          <span class="badge badge-neutral"><%= @rooms.count %> rooms</span>
+        </div>
+        <div class="card-body p-0">
+          <% if @rooms.empty? %>
+            <div class="p-8 text-center text-base-content/70">
+              <i class="bi bi-map text-4xl block mb-3"></i>
+              <p>No combat-ready rooms found.</p>
+              <p class="text-sm">Create rooms with types: combat, arena, dojo, or gym to get started.</p>
+            </div>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra">
+                <thead>
+                  <tr>
+                    <th>Room</th>
+                    <th>Type</th>
+                    <th>Size</th>
+                    <th>Battle Map</th>
+                    <th>Hexes</th>
+                    <th class="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @rooms.each do |room| %>
+                    <tr>
+                      <td>
+                        <strong><%= h room.name %></strong>
+                        <% if room.location %>
+                          <br><span class="text-base-content/50 text-sm"><%= h room.location.name %></span>
+                        <% end %>
+                      </td>
+                      <td>
+                        <span class="badge badge-<%= room_type_badge_color(room.room_type) %>">
+                          <%= room.room_type %>
+                        </span>
+                      </td>
+                      <td>
+                        <% if room.min_x && room.max_x && room.min_y && room.max_y %>
+                          <%= room.max_x - room.min_x + 1 %> x <%= room.max_y - room.min_y + 1 %>
+                        <% else %>
+                          <span class="text-base-content/50">Unbounded</span>
+                        <% end %>
+                      </td>
+                      <td>
+                        <% if room.has_battle_map %>
+                          <span class="badge badge-success">
+                            <i class="bi bi-check-circle mr-1"></i>Ready
+                          </span>
+                        <% else %>
+                          <span class="badge badge-neutral">
+                            <i class="bi bi-x-circle mr-1"></i>None
+                          </span>
+                        <% end %>
+                      </td>
+                      <td>
+                        <% hex_count = room.room_hexes_dataset.count %>
+                        <% if hex_count > 0 %>
+                          <%= hex_count %>
+                          <% cover_count = room.cover_hexes.count rescue 0 %>
+                          <% if cover_count > 0 %>
+                            <span class="text-base-content/50 text-sm">(<%= cover_count %> cover)</span>
+                          <% end %>
+                        <% else %>
+                          <span class="text-base-content/50">-</span>
+                        <% end %>
+                      </td>
+                      <td class="text-right">
+                        <div class="flex gap-1 justify-end">
+                          <% if File.exist?(File.join('public', 'uploads', 'battle_map_debug', "room_#{room.id}", 'inspection.json')) %>
+                            <a href="/admin/battle_maps/inspect/<%= room.id %>" class="btn btn-sm btn-outline btn-info" title="View last generation">
+                              <i class="bi bi-search"></i>
+                            </a>
+                          <% end %>
+                          <a href="/admin/battle_maps/<%= room.id %>/edit" class="btn btn-sm btn-outline btn-primary">
+                            <i class="bi bi-pencil-square"></i> Edit
+                          </a>
+                        </div>
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="card bg-base-200 mt-6">
+        <div class="p-4 border-b border-base-content/10">
+          <h5 class="font-semibold">Cover Object Types</h5>
+        </div>
+        <div class="card-body">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <% @cover_types.group_by(&:category).each do |category, objects| %>
+              <div>
+                <h6 class="font-medium text-<%= category_color(category) %> mb-2"><%= (category || 'other').capitalize %></h6>
+                <ul class="text-sm space-y-1">
+                  <% objects.each do |obj| %>
+                    <li>
+                      <span class="badge badge-neutral badge-sm mr-1">+<%= obj.default_cover_value %></span>
+                      <%= obj.name.gsub('_', ' ').split.map(&:capitalize).join(' ') %>
+                      <% if obj.is_explosive %><i class="bi bi-exclamation-triangle text-error ml-1" title="Explosive"></i><% end %>
+                      <% if obj.is_flammable %><i class="bi bi-fire text-warning ml-1" title="Flammable"></i><% end %>
+                    </li>
+                  <% end %>
+                </ul>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+<%= admin_content_end %>

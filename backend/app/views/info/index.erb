@@ -1,0 +1,51 @@
+<div class="container mx-auto px-4 py-12">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6"><i class="bi bi-info-circle mr-2"></i>Game Information</h1>
+
+        <div class="card bg-base-200 mb-6">
+            <div class="card-body">
+                <p class="text-lg text-base-content/70">Welcome to <%= game_name %> - a modern text-based roleplaying game.</p>
+                <p>Explore the links below to learn more about our game.</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="card bg-base-200 h-full">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-rocket-takeoff mr-2 text-primary"></i>Getting Started</h5>
+                    <p class="text-base-content/70">New to <%= game_name %>? Learn the basics here.</p>
+                    <div class="card-actions">
+                        <a href="/info/getting-started" class="btn btn-outline btn-primary btn-sm">Read Guide</a>
+                    </div>
+                </div>
+            </div>
+            <div class="card bg-base-200 h-full">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-book mr-2 text-warning"></i>Rules</h5>
+                    <p class="text-base-content/70">Our community guidelines and game rules.</p>
+                    <div class="card-actions">
+                        <a href="/info/rules" class="btn btn-outline btn-warning btn-sm">View Rules</a>
+                    </div>
+                </div>
+            </div>
+            <div class="card bg-base-200 h-full">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-file-text mr-2 text-info"></i>Terms of Service</h5>
+                    <p class="text-base-content/70">Legal terms for using <%= game_name %>.</p>
+                    <div class="card-actions">
+                        <a href="/info/terms" class="btn btn-outline btn-info btn-sm">Read Terms</a>
+                    </div>
+                </div>
+            </div>
+            <div class="card bg-base-200 h-full">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-envelope mr-2 text-success"></i>Contact Us</h5>
+                    <p class="text-base-content/70">Get in touch with the team.</p>
+                    <div class="card-actions">
+                        <a href="/info/contact" class="btn btn-outline btn-success btn-sm">Contact</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

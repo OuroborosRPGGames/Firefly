@@ -1,0 +1,122 @@
+/* Grammar Checker Styles */
+
+/* === Error Underlines === */
+
+mark.grammar-error {
+  background: none;
+  position: relative;
+  border-bottom: 2px wavy;
+  cursor: pointer;
+}
+
+mark.grammar-error-spelling {
+  border-bottom-color: #ef4444;
+}
+
+mark.grammar-error-grammar {
+  border-bottom-color: #3b82f6;
+}
+
+mark.grammar-error-style {
+  border-bottom-color: #eab308;
+}
+
+/* === Textarea Overlay === */
+
+.grammar-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: transparent;
+  z-index: 1;
+}
+
+.grammar-overlay mark.grammar-error {
+  color: transparent;
+  pointer-events: auto;
+}
+
+.grammar-overlay-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+/* === Suggestion Tooltip === */
+
+.grammar-tooltip {
+  position: absolute;
+  z-index: 1000;
+  background: oklch(var(--b2));
+  border: 1px solid oklch(var(--b3));
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  max-width: 320px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.grammar-tooltip-message {
+  margin-bottom: 0.5rem;
+  color: oklch(var(--bc));
+}
+
+.grammar-tooltip-replacements {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.grammar-tooltip-replacement {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  background: oklch(var(--p));
+  color: oklch(var(--pc));
+  cursor: pointer;
+  font-size: 0.8125rem;
+  border: none;
+  transition: opacity 0.15s;
+}
+
+.grammar-tooltip-replacement:hover {
+  opacity: 0.8;
+}
+
+.grammar-tooltip-dismiss {
+  font-size: 0.75rem;
+  color: oklch(var(--bc) / 0.5);
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+.grammar-tooltip-dismiss:hover {
+  color: oklch(var(--bc) / 0.8);
+}
+
+.grammar-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: oklch(var(--bc) / 0.5);
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+.grammar-toggle:hover {
+  color: oklch(var(--bc) / 0.8);
+}
+
+.grammar-toggle.active {
+  color: oklch(var(--su));
+}

@@ -1,0 +1,427 @@
+/**
+ * Wardrobe GUI Styles
+ */
+
+/* Main container */
+.wardrobe-container {
+  position: relative;
+}
+
+/* Subcategory tabs */
+.subcategory-tabs .subcategory-btn {
+  border-radius: 20px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+/* Item cards */
+.item-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.item-card:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.item-card .card-title {
+  color: #fff;
+}
+
+/* Pattern cards */
+.pattern-card {
+  background: rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.pattern-card:hover {
+  border-color: rgba(40, 167, 69, 0.5) !important;
+  background: rgba(40, 167, 69, 0.1);
+}
+
+.pattern-card .card-title {
+  color: #ccc;
+}
+
+/* Card images - smaller 64px height */
+.item-card figure img,
+.pattern-card figure img {
+  height: 4rem; /* 64px */
+  width: 100%;
+  object-fit: cover;
+}
+
+/* Icon-only action buttons */
+.wardrobe-action-group {
+  margin-top: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.wardrobe-action-group .btn-xs {
+  min-height: 1.75rem;
+  height: 1.75rem;
+  min-width: 1.75rem;
+  padding: 0 0.35rem;
+}
+
+/* Disabled state */
+.wardrobe-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Tooltip */
+.wardrobe-tooltip {
+  position: fixed;
+  z-index: 10000;
+  background: #1a1a2e;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0;
+  max-width: 280px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.wardrobe-tooltip .tooltip-image {
+  width: 100%;
+  max-height: 150px;
+  overflow: hidden;
+}
+
+.wardrobe-tooltip .tooltip-image img {
+  width: 100%;
+  max-height: 150px;
+  object-fit: cover;
+  display: block;
+}
+
+.wardrobe-tooltip .tooltip-content {
+  padding: 0.75rem;
+}
+
+.wardrobe-tooltip .tooltip-title {
+  color: #fff;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.wardrobe-tooltip .tooltip-description {
+  color: #adb5bd;
+  font-size: 0.8rem;
+  margin-bottom: 0;
+  line-height: 1.4;
+}
+
+/* Loading states */
+.loading-state {
+  padding: 2rem;
+}
+
+/* Empty states */
+.no-cards-message {
+  opacity: 0.7;
+}
+
+/* Popout specific styles - dark background */
+body.popout-mode {
+  background: #000;
+  min-height: 100vh;
+}
+
+body.popout-mode .card-glass {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Vault warning */
+#vaultWarning {
+  background: rgba(255, 193, 7, 0.15);
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+#vaultWarning i {
+  font-size: 1.2rem;
+}
+
+/* Toast container */
+.toast-container {
+  z-index: 9999;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .item-card figure img,
+  .pattern-card figure img {
+    height: 3rem !important;
+  }
+
+  .subcategory-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap !important;
+    padding-bottom: 0.5rem;
+  }
+
+  .subcategory-tabs .subcategory-btn {
+    white-space: nowrap;
+  }
+
+  .wardrobe-tooltip {
+    max-width: 200px;
+  }
+}
+
+/* Animation for cards appearing */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cards-grid > div {
+  animation: fadeInUp 0.3s ease forwards;
+}
+
+.cards-grid > div:nth-child(2) { animation-delay: 0.05s; }
+.cards-grid > div:nth-child(3) { animation-delay: 0.1s; }
+.cards-grid > div:nth-child(4) { animation-delay: 0.15s; }
+.cards-grid > div:nth-child(5) { animation-delay: 0.2s; }
+.cards-grid > div:nth-child(6) { animation-delay: 0.25s; }
+
+/* Redesigned item cards - thumbnail-focused */
+.wardrobe-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.wardrobe-card:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.wardrobe-card .card-thumb {
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.wardrobe-card .card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wardrobe-card .card-thumb .placeholder-icon {
+  font-size: 2rem;
+  opacity: 0.3;
+  color: #fff;
+}
+
+.wardrobe-card .card-thumb .placeholder-name {
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+  padding: 0 4px;
+  line-height: 1.2;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.wardrobe-card .card-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 2px;
+  padding: 3px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.wardrobe-card .card-actions .action-btn {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: unset;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  background: transparent;
+  border: 1px solid transparent;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.wardrobe-card .card-actions .action-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.wardrobe-card .card-actions .action-btn.action-wear:hover:not(:disabled) {
+  color: #7dd3fc;
+  border-color: rgba(125, 211, 252, 0.3);
+}
+
+.wardrobe-card .card-actions .action-btn.action-retrieve:hover:not(:disabled) {
+  color: #a5f3fc;
+  border-color: rgba(165, 243, 252, 0.3);
+}
+
+.wardrobe-card .card-actions .action-btn.action-copy:hover:not(:disabled) {
+  color: #86efac;
+  border-color: rgba(134, 239, 172, 0.3);
+}
+
+.wardrobe-card .card-actions .action-btn.action-delete:hover:not(:disabled) {
+  color: #fca5a5;
+  border-color: rgba(252, 165, 165, 0.3);
+}
+
+.wardrobe-card .card-actions .action-btn.action-store:hover:not(:disabled) {
+  color: #fde68a;
+  border-color: rgba(253, 230, 138, 0.3);
+}
+
+.wardrobe-card .card-actions .action-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.wardrobe-card .card-actions .item-count {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-left: auto;
+  padding-right: 2px;
+  white-space: nowrap;
+}
+
+/* Wardrobe lightbox */
+.wardrobe-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.wardrobe-lightbox {
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.wardrobe-lightbox img {
+  width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  border-radius: 12px 12px 0 0;
+}
+
+.wardrobe-lightbox .lightbox-body {
+  padding: 1rem;
+}
+
+.wardrobe-lightbox .lightbox-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.wardrobe-lightbox .lightbox-desc {
+  color: #adb5bd;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+
+.wardrobe-lightbox .lightbox-meta {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.wardrobe-lightbox .lightbox-meta span {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.wardrobe-lightbox .lightbox-close {
+  display: block;
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #adb5bd;
+  cursor: pointer;
+  text-align: center;
+}
+
+.wardrobe-lightbox .lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* Top controls bar */
+.wardrobe-top-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+/* Cards grid - more columns for smaller thumbnail cards */
+.wardrobe-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .wardrobe-cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 6px;
+  }
+  .wardrobe-card .card-actions .action-btn {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    font-size: 0.65rem;
+  }
+}

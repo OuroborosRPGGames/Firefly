@@ -1,0 +1,551 @@
+<link rel="stylesheet" href="/css/descriptions.css?v=3">
+<div class="container mx-auto px-4 py-6">
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-6">
+    <div class="flex items-center gap-4">
+      <a href="/admin/world_builder/<%= @world.id %>" class="btn btn-ghost btn-sm">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <h2 class="text-2xl font-bold"><%= h(@location.name) %></h2>
+        <p class="text-base-content/70">
+          <i class="bi bi-globe mr-1"></i><%= h(@world.name) %>
+          <% if @location.zone %>
+            <span class="mx-2">|</span>
+            <i class="bi bi-hexagon mr-1"></i><%= h(@location.zone.name) %>
+          <% end %>
+        </p>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <% if @location.city_built_at %>
+        <a href="/admin/city_builder/<%= @location.id %>" class="btn btn-warning">
+          <i class="bi bi-building mr-2"></i>Open City Builder
+        </a>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-12 gap-6">
+    <!-- Main Content -->
+    <div class="col-span-12 lg:col-span-8">
+      <!-- Location Details Form -->
+      <div class="card bg-base-200 mb-6">
+        <div class="card-body">
+          <h3 class="card-title"><i class="bi bi-info-circle mr-2"></i>Location Details</h3>
+          <form method="post" action="/admin/world_builder/<%= @world.id %>/location/<%= @location.id %>">
+            <input type="hidden" name="_csrf" value="<%= csrf_token %>">
+
+            <div class="form-control mb-4">
+              <label class="label"><span class="label-text">Name</span></label>
+              <input type="text" name="name" class="input input-bordered w-full" value="<%= h(@location.name) %>" required>
+            </div>
+
+            <div class="form-control mb-4">
+              <label class="label"><span class="label-text">Description</span></label>
+              <input type="text" name="description" class="input input-bordered w-full" value="<%= h(@location.description) %>" placeholder="Brief description shown in lists">
+            </div>
+
+            <div class="form-control mb-4">
+              <label class="label">
+                <span class="label-text">Default Room Description</span>
+                <button type="button" id="locationAiDescBtn" class="btn btn-xs btn-ghost" title="AI Generate Description">
+                  <i class="bi bi-stars mr-1"></i>AI Generate
+                </button>
+              </label>
+              <div id="locationDescEditor" class="description-editor-container"
+                   style="min-height: 80px;"
+                   data-initial="<%= (@location.default_description || '').gsub('"', '&quot;').gsub('<', '&lt;').gsub('>', '&gt;') %>"></div>
+              <input type="hidden" name="default_description" id="locationDescValue"
+                     value="<%= (@location.default_description || '').gsub('"', '&quot;') %>">
+            </div>
+
+            <div class="form-control mb-4">
+              <label class="label"><span class="label-text">Default Background Image</span></label>
+              <div class="flex gap-2 mb-1">
+                <input type="file" id="locationBgUpload" class="file-input file-input-sm file-input-bordered flex-1" accept="image/*">
+                <button type="button" id="locationUploadBtn" class="btn btn-sm btn-square btn-primary">
+                  <i class="bi bi-upload"></i>
+                </button>
+                <% if defined?(WorldBuilderImageService) && WorldBuilderImageService.available? %>
+                  <button type="button" id="locationAiGenBtn" class="btn btn-sm btn-primary" title="AI Generate Background">
+                    <i class="bi bi-stars"></i>
+                  </button>
+                <% end %>
+              </div>
+              <input type="url" name="default_background_url" id="locationBgUrl" class="input input-bordered w-full" value="<%= h(@location.default_background_url) %>" placeholder="Or paste image URL">
+              <label class="label">
+                <span class="label-text-alt text-base-content/60">Shown in the webclient for rooms in this location</span>
+              </label>
+            </div>
+
+            <!-- Seasonal Backgrounds -->
+            <div class="collapse collapse-arrow bg-base-300 mb-4">
+              <input type="checkbox" id="locationSeasonalToggle">
+              <div class="collapse-title text-sm font-medium py-2 min-h-0">
+                <i class="bi bi-calendar3 mr-1"></i>Time & Season Background Variants
+              </div>
+              <div class="collapse-content pt-2">
+                <p class="text-xs text-base-content/60 mb-3">
+                  Override the default background for specific times of day or seasons. Leave blank to inherit the default.
+                </p>
+                <div class="overflow-x-auto">
+                  <table class="table table-xs">
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th class="text-center">Spring</th>
+                        <th class="text-center">Summer</th>
+                        <th class="text-center">Fall</th>
+                        <th class="text-center">Winter</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% %w[dawn day dusk night].each do |time| %>
+                        <tr>
+                          <td class="font-bold text-xs py-1"><%= time.capitalize %></td>
+                          <% %w[spring summer fall winter].each do |season| %>
+                            <%
+                              key = "#{time}_#{season}"
+                              existing = (@location.default_backgrounds || {}).to_h
+                              val = existing[key] || ''
+                            %>
+                            <td class="py-1">
+                              <div class="flex gap-1">
+                                <input type="url" name="seasonal_backgrounds[<%= key %>]"
+                                  id="seasonal_<%= key %>_url"
+                                  class="input input-xs input-bordered flex-1"
+                                  value="<%= h(val) %>"
+                                  placeholder="URL">
+                                <label class="btn btn-xs btn-square btn-ghost" title="Upload image">
+                                  <i class="bi bi-upload text-xs"></i>
+                                  <input type="file" class="seasonal-upload hidden" accept="image/*"
+                                         data-target="seasonal_<%= key %>_url">
+                                </label>
+                              </div>
+                            </td>
+                          <% end %>
+                        </tr>
+                      <% end %>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex justify-end gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg mr-2"></i>Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Add Room Modal -->
+      <dialog id="addRoomModal" class="modal">
+        <div class="modal-box bg-base-200">
+          <h3 class="font-bold text-lg mb-4"><i class="bi bi-plus-circle mr-2"></i>Add Room</h3>
+          <form method="post" action="/admin/world_builder/<%= @world.id %>/location/<%= @location.id %>/rooms">
+            <input type="hidden" name="_csrf" value="<%= csrf_token %>">
+            <div class="form-control mb-4">
+              <label class="label"><span class="label-text">Room Name</span></label>
+              <input type="text" name="name" class="input input-bordered w-full" placeholder="e.g. Forest Clearing" required autofocus>
+            </div>
+            <div class="form-control mb-4">
+              <label class="label"><span class="label-text">Short Description</span></label>
+              <input type="text" name="short_description" class="input input-bordered w-full" placeholder="Brief description (optional)">
+            </div>
+            <div class="form-control mb-4">
+              <label class="label"><span class="label-text">Room Type</span></label>
+              <select name="room_type" id="addRoomType" class="select select-bordered w-full">
+                <% Room::ROOM_TYPES.each do |category, types| %>
+                  <optgroup label="<%= category.to_s.split('_').map(&:capitalize).join(' ') %>">
+                    <% types.each do |t| %>
+                      <option value="<%= t %>"><%= t.split('_').map(&:capitalize).join(' ') %></option>
+                    <% end %>
+                  </optgroup>
+                <% end %>
+              </select>
+            </div>
+            <div class="form-control mb-4">
+              <label class="label"><span class="label-text">Environment</span></label>
+              <label class="label cursor-pointer justify-start gap-3">
+                <input type="hidden" name="indoors" value="false">
+                <input type="checkbox" name="indoors" value="true" id="addRoomIndoors" class="toggle toggle-sm" checked>
+                <span class="label-text" id="addRoomIndoorsLabel">Indoors</span>
+              </label>
+            </div>
+            <div class="modal-action">
+              <form method="dialog"><button class="btn btn-ghost">Cancel</button></form>
+              <button type="submit" class="btn btn-primary"><i class="bi bi-plus-circle mr-2"></i>Create Room</button>
+            </div>
+          </form>
+        </div>
+        <form method="dialog" class="modal-backdrop"><button>close</button></form>
+      </dialog>
+
+      <!-- Rooms in this location -->
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="card-title"><i class="bi bi-grid-3x3 mr-2"></i>Rooms</h3>
+            <button class="btn btn-sm btn-primary" onclick="document.getElementById('addRoomModal').showModal()">
+              <i class="bi bi-plus-circle mr-1"></i>Add Room
+            </button>
+          </div>
+          <%
+            rooms = @location.rooms_dataset.limit(50).all rescue []
+            room_count = @location.rooms_dataset.count rescue 0
+          %>
+          <% if rooms.empty? %>
+            <div class="alert alert-info">
+              <i class="bi bi-info-circle mr-2"></i>
+              No rooms have been created in this location yet.
+              <% unless @location.city_built_at %>
+                Add a room above or convert to a city to auto-generate streets and intersections.
+              <% end %>
+            </div>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% rooms.each do |room| %>
+                    <tr>
+                      <td><%= h(room.name) %></td>
+                      <td><span class="badge badge-ghost badge-sm"><%= room.room_type %></span></td>
+                      <td><%= room.city_role || '-' %></td>
+                      <td>
+                        <a href="/admin/room_builder/<%= room.id %>" class="btn btn-ghost btn-xs">
+                          <i class="bi bi-pencil"></i>
+                        </a>
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+            <% if room_count > 50 %>
+              <div class="text-sm text-base-content/60 mt-2">
+                Showing 50 of <%= room_count %> rooms
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-span-12 lg:col-span-4">
+      <!-- Location Info -->
+      <div class="card bg-base-200 mb-6">
+        <div class="card-body">
+          <h3 class="card-title text-sm"><i class="bi bi-info-square mr-2"></i>Info</h3>
+          <dl class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <dt class="text-base-content/60">ID</dt>
+              <dd class="font-mono"><%= @location.id %></dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-base-content/60">Type</dt>
+              <dd><%= @location.location_type || 'area' %></dd>
+            </div>
+            <% if @location.city_built_at %>
+              <div class="flex justify-between">
+                <dt class="text-base-content/60">City Built</dt>
+                <dd><%= @location.city_built_at.strftime('%Y-%m-%d') %></dd>
+              </div>
+              <div class="flex justify-between">
+                <dt class="text-base-content/60">Grid Size</dt>
+                <dd><%= @location.horizontal_streets || 10 %> x <%= @location.vertical_streets || 10 %></dd>
+              </div>
+            <% end %>
+            <% if @location.globe_hex_id %>
+              <div class="flex justify-between">
+                <dt class="text-base-content/60">Globe Hex ID</dt>
+                <dd><%= @location.globe_hex_id %></dd>
+              </div>
+            <% end %>
+          </dl>
+        </div>
+      </div>
+
+      <!-- Convert to City -->
+      <% unless @location.city_built_at %>
+        <div class="card bg-base-200 mb-6">
+          <div class="card-body">
+            <h3 class="card-title text-sm"><i class="bi bi-building mr-2"></i>Convert to City</h3>
+            <p class="text-sm text-base-content/60 mb-4">
+              Generate a city grid with streets, avenues, and intersections.
+            </p>
+            <form method="post" action="/admin/world_builder/<%= @world.id %>/location/<%= @location.id %>/convert_to_city">
+              <input type="hidden" name="_csrf" value="<%= csrf_token %>">
+
+              <!-- Grid Structure -->
+              <div class="grid grid-cols-2 gap-2 mb-3">
+                <div class="form-control">
+                  <label class="label py-1"><span class="label-text text-xs">Streets (E-W)</span></label>
+                  <input type="number" name="horizontal_streets" class="input input-sm input-bordered" value="10" min="2" max="50">
+                </div>
+                <div class="form-control">
+                  <label class="label py-1"><span class="label-text text-xs">Avenues (N-S)</span></label>
+                  <input type="number" name="vertical_streets" class="input input-sm input-bordered" value="10" min="2" max="50">
+                </div>
+              </div>
+              <div class="form-control mb-2">
+                <label class="label py-1"><span class="label-text text-xs">Max Building Height (ft)</span></label>
+                <input type="number" name="max_building_height" class="input input-sm input-bordered" value="200" min="20" max="1000">
+              </div>
+              <div class="form-control mb-2">
+                <label class="label py-1"><span class="label-text text-xs">Setting / Theme</span></label>
+                <select name="setting" class="select select-bordered select-sm w-full">
+                  <option value="fantasy">Fantasy</option>
+                  <option value="medieval">Medieval</option>
+                  <option value="modern">Modern</option>
+                  <option value="sci-fi">Sci-Fi</option>
+                </select>
+              </div>
+              <div class="form-control mb-3">
+                <label class="label py-1"><span class="label-text text-xs">City Name Override (blank = auto-generate)</span></label>
+                <input type="text" name="city_name_override" class="input input-sm input-bordered" placeholder="Leave blank for AI-generated name">
+              </div>
+
+              <!-- AI Generation Options -->
+              <div class="collapse collapse-arrow bg-base-300 mb-3">
+                <input type="checkbox">
+                <div class="collapse-title text-xs font-semibold py-2 min-h-0">AI Generation Options</div>
+                <div class="collapse-content">
+                  <label class="label cursor-pointer justify-start gap-2 py-1">
+                    <input type="checkbox" class="checkbox checkbox-sm" name="generate_city_name" value="1" checked>
+                    <span class="label-text text-sm">Generate city name</span>
+                  </label>
+                  <label class="label cursor-pointer justify-start gap-2 py-1">
+                    <input type="checkbox" class="checkbox checkbox-sm" name="generate_street_names" value="1" checked>
+                    <span class="label-text text-sm">Generate street names</span>
+                  </label>
+                  <label class="label cursor-pointer justify-start gap-2 py-1">
+                    <input type="checkbox" class="checkbox checkbox-sm" name="generate_building_names" value="1" checked>
+                    <span class="label-text text-sm">Generate building names</span>
+                  </label>
+                  <label class="label cursor-pointer justify-start gap-2 py-1">
+                    <input type="checkbox" class="checkbox checkbox-sm" name="populate_npcs" value="1">
+                    <span class="label-text text-sm">Populate NPCs</span>
+                  </label>
+                  <label class="label cursor-pointer justify-start gap-2 py-1">
+                    <input type="checkbox" class="checkbox checkbox-sm" name="populate_inventories" value="1">
+                    <span class="label-text text-sm">Populate shop inventories</span>
+                  </label>
+
+                  <div class="divider text-xs my-1">Location Images</div>
+                  <label class="label cursor-pointer justify-start gap-2 py-1">
+                    <input type="checkbox" class="checkbox checkbox-sm" name="generate_location_images" value="1"
+                           onchange="this.closest('form').querySelector('.location-image-options').style.display = this.checked ? 'block' : 'none'">
+                    <span class="label-text text-sm">Generate location images</span>
+                  </label>
+                  <div class="location-image-options ml-6" style="display: none;">
+                    <label class="label cursor-pointer justify-start gap-2 py-1">
+                      <input type="checkbox" class="checkbox checkbox-xs" name="generate_location_default" value="1" checked>
+                      <span class="label-text text-xs">Default background</span>
+                    </label>
+                    <label class="label cursor-pointer justify-start gap-2 py-1">
+                      <input type="checkbox" class="checkbox checkbox-xs" name="generate_location_seasonal" value="1">
+                      <span class="label-text text-xs">Seasonal variants (dawn/day/dusk/night × spring/summer/fall/winter)</span>
+                    </label>
+                    <label class="label cursor-pointer justify-start gap-2 py-1">
+                      <input type="checkbox" class="checkbox checkbox-xs" name="generate_location_timeofday" value="1">
+                      <span class="label-text text-xs">Time-of-day variants (dawn/day/dusk/night)</span>
+                    </label>
+                  </div>
+
+                  <div class="divider text-xs my-1">Shop Images</div>
+                  <label class="label cursor-pointer justify-start gap-2 py-1">
+                    <input type="checkbox" class="checkbox checkbox-sm" name="generate_shop_images" value="1"
+                           onchange="this.closest('form').querySelector('.shop-image-options').style.display = this.checked ? 'block' : 'none'">
+                    <span class="label-text text-sm">Generate shop images</span>
+                  </label>
+                  <div class="shop-image-options ml-6" style="display: none;">
+                    <label class="label cursor-pointer justify-start gap-2 py-1">
+                      <input type="checkbox" class="checkbox checkbox-xs" name="generate_shop_default" value="1" checked>
+                      <span class="label-text text-xs">Default image per shop</span>
+                    </label>
+                    <label class="label cursor-pointer justify-start gap-2 py-1">
+                      <input type="checkbox" class="checkbox checkbox-xs" name="generate_shop_seasonal" value="1">
+                      <span class="label-text text-xs">Seasonal variants per shop</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-warning btn-sm w-full" onclick="return confirm('This will create a city grid. Continue?')">
+                <i class="bi bi-grid-3x3 mr-2"></i>Build City Grid
+              </button>
+            </form>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Danger Zone -->
+      <div class="card bg-error/10 border border-error/30">
+        <div class="card-body">
+          <h3 class="card-title text-sm text-error"><i class="bi bi-exclamation-triangle mr-2"></i>Danger Zone</h3>
+          <p class="text-sm text-base-content/60 mb-4">
+            Deleting this location will also delete all rooms within it.
+          </p>
+          <%= partial 'admin/delete_button', locals: { path: "/admin/locations/#{@location.id}/delete", label: 'location' } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const outdoorTypes = <%= (Room::ROOM_TYPES[:outdoor_nature].to_a + Room::ROOM_TYPES[:outdoor_urban].to_a + Room::ROOM_TYPES[:water].to_a).to_json %>;
+  const typeSelect = document.getElementById('addRoomType');
+  const indoorsToggle = document.getElementById('addRoomIndoors');
+  const indoorsLabel = document.getElementById('addRoomIndoorsLabel');
+
+  function updateIndoors() {
+    if (!typeSelect) return;
+    const isOutdoor = outdoorTypes.includes(typeSelect.value);
+    if (indoorsToggle) indoorsToggle.checked = !isOutdoor;
+    if (indoorsLabel) indoorsLabel.textContent = isOutdoor ? 'Outdoors' : 'Indoors';
+  }
+
+  typeSelect?.addEventListener('change', updateIndoors);
+  updateIndoors();
+})();
+</script>
+
+<script>
+(function() {
+  const locationId = <%= @location.id %>;
+  const worldId = <%= @world.id %>;
+  const baseUrl = `/admin/world_builder/${worldId}/location/${locationId}`;
+
+  // File upload
+  document.getElementById('locationUploadBtn')?.addEventListener('click', async () => {
+    const fileInput = document.getElementById('locationBgUpload');
+    const file = fileInput?.files?.[0];
+    if (!file) { alert('Select a file first.'); return; }
+    const btn = document.getElementById('locationUploadBtn');
+    btn.disabled = true;
+    try {
+      const fd = new FormData();
+      fd.append('image', file);
+      const res = await fetch(`${baseUrl}/api/upload_image`, { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('locationBgUrl').value = data.url;
+        fileInput.value = '';
+      } else {
+        alert('Upload failed: ' + (data.error || 'unknown'));
+      }
+    } catch(e) {
+      alert('Upload error: ' + e.message);
+    } finally { btn.disabled = false; }
+  });
+
+  // AI generate background
+  document.getElementById('locationAiGenBtn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('locationAiGenBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span>';
+    try {
+      const res = await fetch(`${baseUrl}/api/generate_background`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success && data.url) {
+        document.getElementById('locationBgUrl').value = data.url;
+      } else {
+        alert('Generation failed: ' + (data.error || 'unknown'));
+      }
+    } catch(e) {
+      alert('Error: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-stars"></i>';
+    }
+  });
+
+  // AI generate description
+  document.getElementById('locationAiDescBtn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('locationAiDescBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Generating...';
+    try {
+      const res = await fetch(`${baseUrl}/api/generate_description`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success && data.description) {
+        document.getElementById('locationDescValue').value = data.description;
+        if (window.locationDescEditor && window.locationDescEditor.editorEl) {
+          window.locationDescEditor.editorEl.innerHTML = data.description;
+        }
+      } else {
+        alert('Generation failed: ' + (data.error || 'Unknown error'));
+      }
+    } catch(e) {
+      alert('Error: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-stars mr-1"></i>AI Generate';
+    }
+  });
+
+  // Seasonal background upload handlers
+  document.querySelectorAll('.seasonal-upload').forEach(input => {
+    input.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const targetId = e.target.dataset.target;
+      const fd = new FormData();
+      fd.append('image', file);
+      try {
+        const res = await fetch(`${baseUrl}/api/upload_image`, { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.success && data.url) {
+          document.getElementById(targetId).value = data.url;
+        } else {
+          alert('Upload failed: ' + (data.error || 'unknown'));
+        }
+      } catch(err) {
+        alert('Upload error: ' + err.message);
+      }
+      e.target.value = '';
+    });
+  });
+})();
+</script>
+
+<script src="/js/gradient-ciede2000.js?v=3"></script>
+<script src="/js/gradient-creator.js?v=3"></script>
+<script src="/js/gradient-picker.js?v=3"></script>
+<script src="/js/description-editor.js?v=6"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialize rich text description editor
+  const descContainer = document.getElementById('locationDescEditor');
+  if (descContainer && typeof DescriptionEditor !== 'undefined') {
+    const initialContent = descContainer.dataset.initial || '';
+    window.locationDescEditor = new DescriptionEditor('#locationDescEditor', {
+      placeholder: 'Enter default room description...',
+      maxLength: 5000,
+      onChange: (html) => {
+        const hiddenInput = document.getElementById('locationDescValue');
+        if (hiddenInput) hiddenInput.value = html;
+      }
+    });
+    // Set initial HTML content after initialization
+    if (initialContent && window.locationDescEditor.editorEl) {
+      window.locationDescEditor.editorEl.innerHTML = initialContent;
+    }
+  }
+});
+</script>

@@ -1,0 +1,2795 @@
+# frozen_string_literal: true
+# ==============================================================================
+# LLM PROMPTS CONFIGURATION
+# ==============================================================================
+# All LLM prompts used throughout Firefly are centralized here for:
+# - Easy review and auditing
+# - Quick iteration on prompt engineering
+# - Consistency across services
+#
+# Usage in Ruby:
+#   prompt = GamePrompts.get('abuse_detection.first_pass')
+#   prompt = GamePrompts.get('combat.prose_enhancement', paragraph: text)
+#
+# Interpolation uses %{variable} syntax for named parameters.
+# ==============================================================================
+
+# ==============================================================================
+# ABUSE DETECTION
+# ==============================================================================
+abuse_detection:
+  # First-pass screening with fast model (Gemini Flash)
+  first_pass: |
+    You are a content moderation assistant for a text-based roleplaying game (MUD).
+
+    Analyze this player message for potential abuse:
+
+    Message Type: %{message_type}
+    Content: %{content}
+    Game Setting: %{universe_theme}
+
+    Check for:
+    1. Real-world harassment or personal attacks (NOT in-character conflict)
+    2. Hate speech or slurs targeting real identity groups
+    3. Real-world threats or doxxing attempts
+    4. Spam or obnoxious behavior (see below)
+    5. Sexual content involving minors (even fictional)
+    6. Immersion breaking (see below)
+    7. Griefing/trolling behavior (see below)
+
+    === SPAM / OBNOXIOUS BEHAVIOR ===
+    Flag if the player appears to be spamming or being deliberately obnoxious:
+    - Repetitive messages (same or similar content repeatedly)
+    - Wall-of-text messages designed to flood the screen
+    - Excessive emoting/actions to drown out other players
+    - Constant OOC interruptions in IC scenes
+    - Advertising or soliciting outside services
+    - Keyboard mashing or gibberish to annoy
+    - Any behavior intended to overwhelm or annoy other players
+
+    Consider ALL communication methods: say, emote, whisper, PM, channel, etc.
+
+    DO NOT flag:
+    - Normal conversation even if enthusiastic
+    - Long descriptive emotes that serve roleplay
+    - Players asking questions or seeking help
+
+    === IMMERSION BREAKING ===
+    Flag if the content breaks the game world's immersion inappropriately:
+    - Modern memes/slang in a medieval fantasy setting
+    - Breaking the fourth wall ("this game sucks", "the admin should...")
+    - References to real-world pop culture that don't fit the setting
+    - OOC chatter in IC contexts without proper marking
+
+    DO NOT flag:
+    - Content that fits the game setting (cyberpunk slang in cyberpunk games)
+    - Properly marked OOC content (e.g., "(( OOC: ... ))")
+    - New players making honest mistakes
+
+    === GRIEFING/TROLLING ===
+    Flag if the player appears to be intentionally disrupting others' experience:
+    - Repeatedly ignoring IC logic to annoy others
+    - Refusing all engagement while staying to disrupt
+    - Deliberately misinterpreting everything to derail RP
+    - Persistent unwanted attention after being asked to stop
+
+    DO NOT flag:
+    - IC villains or antagonists engaging in story
+    - Players who simply have different play styles
+    - Disagreements about IC events
+
+    IMPORTANT: This is a roleplaying game. In-character conflict, villain roleplay,
+    and mature themes between consenting adult characters are ALLOWED.
+    Only flag content that crosses into real-world abuse, breaks immersion inappropriately,
+    or is clearly griefing behavior.
+
+    Respond with JSON only:
+    {
+      "flagged": true/false,
+      "confidence": 0.0-1.0,
+      "reasoning": "Brief explanation",
+      "category": "harassment|hate_speech|threats|doxxing|spam|csam|immersion_breaking|griefing|none"
+    }
+
+  # Verification with stronger model (Claude Opus)
+  verification: |
+    You are a senior content moderator for a text-based roleplaying game (MUD).
+
+    A message was flagged by our first-pass filter. Please verify whether this
+    truly constitutes abuse or is acceptable roleplay content.
+
+    ## Flagged Message
+    Type: %{message_type}
+    Content: %{content}
+
+    ## Initial Assessment
+    Category: %{gemini_category}
+    Confidence: %{gemini_confidence}
+    Reasoning: %{gemini_reasoning}
+
+    ## Game Context
+    Game Setting: %{universe_theme}
+    Room: %{room_name}
+    Recent conversation:
+    %{recent_messages}
+
+    ## Guidelines
+
+    ACCEPTABLE content includes:
+    - In-character conflict, arguments, or threats between fictional characters
+    - Villain roleplay, dark themes, morally gray scenarios
+    - Mature content between consenting adult characters
+    - Strong language used in character
+    - Roleplaying historical prejudices in appropriate settings
+    - Setting-appropriate humor and references
+    - New players learning the ropes (for immersion issues)
+
+    UNACCEPTABLE content includes:
+    - OOC (out-of-character) harassment targeting the player, not the character
+    - Real-world slurs or hate speech targeting actual identity groups
+    - Genuine threats or attempts to obtain real-world information
+    - Sexual content involving minors, even if "fictional"
+    - Persistent harassment after being asked to stop OOC
+    - Deliberate immersion breaking to annoy others (not honest mistakes)
+    - Griefing behavior designed to ruin others' experience
+    - Spamming or obnoxious behavior to overwhelm other players
+
+    ## Special Consideration: Spam
+    For spam flags:
+    - Look for intent to annoy or overwhelm
+    - Consider if behavior is repetitive or disruptive
+    - Enthusiastic conversation is NOT spam
+
+    ## Special Consideration: Immersion Breaking
+    For immersion_breaking flags:
+    - First offense from new players: Suggest warning only (low severity)
+    - Repeated behavior after warnings: Consider medium severity
+    - Deliberate disruption: Treat as griefing
+
+    ## Special Consideration: Griefing
+    For griefing flags:
+    - Look for pattern of behavior, not isolated incidents
+    - Consider if player was asked to stop OOC and continued
+    - True griefing requires malicious intent, not just different play styles
+
+    ## Your Task
+
+    Determine if this content truly violates our policies or was incorrectly flagged.
+    Consider the roleplaying context and game setting carefully.
+
+    Respond with JSON only:
+    {
+      "confirmed": true/false,
+      "confidence": 0.0-1.0,
+      "reasoning": "Detailed explanation of your decision",
+      "category": "harassment|hate_speech|threats|doxxing|spam|csam|immersion_breaking|griefing|false_positive",
+      "severity": "low|medium|high|critical",
+      "recommended_action": "none|warn|temp_mute|suspend|ban"
+    }
+
+# ==============================================================================
+# COMBAT & PROSE
+# ==============================================================================
+combat:
+  prose_enhancement: |
+    Rewrite this combat. Crisp, clear, exciting. No purple prose. Preserve the outcome and important events. Keep all character names exactly as written. Output only the paragraph.
+
+    %{paragraph}
+
+# ==============================================================================
+# TRIGGERS & AUTOMATION
+# ==============================================================================
+triggers:
+  behavior_matching: |
+    You are evaluating whether NPC behavior matches a trigger condition.
+
+    NPC BEHAVIOR:
+    %{content}
+
+    TRIGGER CONDITION:
+    %{trigger_condition}
+
+    Does the NPC behavior match or indicate the trigger condition?
+    Consider semantic meaning, not just exact words.
+    Look for actions, statements, or implications that fulfill the condition.
+
+    Respond with JSON only:
+    {
+      "matches": true or false,
+      "confidence": 0.0 to 1.0,
+      "reasoning": "Brief explanation of why it matches or doesn't"
+    }
+
+# ==============================================================================
+# IMAGE GENERATION
+# ==============================================================================
+images:
+  # Prompt templates for different image types
+  # Each has prefix (before description), suffix (after description), ratio, and style
+  templates:
+    # Items - product photography style
+    item_on_black:
+      prefix: "Product photography, centered on pure black background, studio lighting,"
+      suffix: "high detail, professional product shot, isolated object, no reflections"
+      ratio: "1:1"
+      style: "photographic"
+
+    item_on_gray:
+      prefix: "Product photography, centered on neutral gray background, soft lighting,"
+      suffix: "high detail, professional product shot, isolated object"
+      ratio: "1:1"
+      style: "photographic"
+
+    item_on_model:
+      prefix: "Fashion photography, invisible mannequin technique, gray studio background,"
+      suffix: "professional clothing photography, clean presentation, no visible support"
+      ratio: "3:4"
+      style: "photographic"
+
+    # NPCs - portrait style
+    npc_portrait:
+      prefix: "Portrait headshot, plain neutral background, professional lighting,"
+      suffix: "detailed face, expressive eyes, character portrait, bust shot"
+      ratio: "3:4"
+      style: "photographic"
+      image_framing:
+        lens_override: "85mm f/1.4"
+        framing: "studio portrait, head and shoulders, shallow depth of field, plain dark background"
+        lighting_extra: "soft key light with warm fill, subtle rim light"
+        directives: "3:4 portrait composition"
+
+    npc_full_body:
+      prefix: "Full body character portrait, simple background,"
+      suffix: "detailed clothing, standing pose, character design sheet style"
+      ratio: "2:3"
+      style: "photographic"
+      image_framing:
+        lens_override: "50mm"
+        framing: "full body standing pose, environmental portrait, medium distance"
+        lighting_extra: "soft directional light"
+        directives: "2:3 full body composition"
+
+    # Rooms - environment/wallpaper style
+    room_background:
+      prefix: ""
+      suffix: ""
+      ratio: "16:9"
+      style: "photographic"
+
+    room_background_4k:
+      prefix: ""
+      suffix: ""
+      ratio: "16:9"
+      style: "photographic"
+
+    location_background:
+      prefix: ""
+      suffix: ""
+      ratio: "16:9"
+      style: "photographic"
+
+    # Furniture - product style
+    furniture:
+      prefix: "Furniture product photography, white studio background, professional lighting,"
+      suffix: "high detail, isolated piece, catalog style, no props"
+      ratio: "1:1"
+      style: "photographic"
+
+    # Exterior/Places
+    building_exterior:
+      prefix: "Architectural exterior, establishing shot,"
+      suffix: "detailed facade, atmospheric, street level perspective"
+      ratio: "4:3"
+      style: "photographic"
+      image_framing:
+        lens_override: "35mm"
+        framing: "architectural exterior, street level establishing shot, slight low angle"
+        lighting_extra: "natural environmental lighting"
+        directives: "No people. 4:3 composition"
+
+    city_overview:
+      prefix: "City aerial view, bird's eye perspective,"
+      suffix: "detailed urban layout, atmospheric, map-like quality"
+      ratio: "1:1"
+      style: "photographic"
+      image_framing:
+        lens_override: "24mm wide angle"
+        framing: "aerial view, bird's eye perspective, wide establishing shot"
+        lighting_extra: "natural atmospheric lighting"
+        directives: "No people. 1:1 composition"
+
+    street_scene:
+      prefix: "Street level scene, ground perspective,"
+      suffix: "atmospheric, detailed buildings, immersive environment"
+      ratio: "16:9"
+      style: "photographic"
+      image_framing:
+        lens_override: "35mm"
+        framing: "street-level view, environmental scene, atmospheric perspective"
+        lighting_extra: "mixed natural and artificial light, urban atmosphere"
+        directives: "No people. 16:9 composition"
+
+  # Setting aesthetic modifiers
+  settings:
+    fantasy: "fantasy medieval aesthetic, magical atmosphere,"
+    modern: "contemporary modern style, realistic,"
+    scifi: "futuristic sci-fi aesthetic, sleek technology,"
+    steampunk: "steampunk Victorian aesthetic, brass and copper details,"
+    noir: "noir style, high contrast, moody shadows,"
+    horror: "dark horror aesthetic, unsettling atmosphere,"
+
+  # Photographic profiles for room/area background generation
+  # Each era gets a curated camera + film stock + lighting combination
+  photo_profiles:
+    fantasy:
+      camera: "Hasselblad 500C/CM"
+      default_lens: "80mm f/2.8"
+      film_stock: "Kodak Portra 400"
+      lighting: "golden hour, volumetric fog, candlelight, practical fire lighting"
+      imperfections: "film grain, natural material textures, shallow depth of field"
+      genre_phrase: "dark fantasy epic"
+    gaslight:
+      camera: "Leica M6"
+      default_lens: "35mm f/1.4"
+      film_stock: "CineStill 50D"
+      lighting: "gas lamp glow, chiaroscuro, diffused window light, warm tungsten"
+      imperfections: "film grain, chromatic aberration, lens vignetting"
+      genre_phrase: "gaslight thriller"
+    modern:
+      camera: "Canon EOS R5"
+      default_lens: "24mm f/1.4"
+      film_stock: ""
+      lighting: "global illumination, practical lighting, ambient daylight"
+      imperfections: "shallow depth of field, subtle lens flare"
+      genre_phrase: "contemporary drama"
+    cyberpunk:
+      camera: "RED Komodo"
+      default_lens: "anamorphic 40mm"
+      film_stock: "CineStill 800T"
+      lighting: "neon lighting, volumetric haze, rim lighting, holographic glow"
+      imperfections: "film grain, chromatic aberration, halation on bright sources, oval bokeh"
+      genre_phrase: "cyberpunk noir film"
+    scifi:
+      camera: "ARRI Alexa"
+      default_lens: "50mm anamorphic"
+      film_stock: "Kodak Vision3 500T"
+      lighting: "practical LED panels, global illumination, specular highlights on metal"
+      imperfections: "subtle film grain, lens flare, clean specular reflections"
+      genre_phrase: "science fiction epic"
+
+  # Room-type framing for background generation
+  # Maps broad room categories to photographic framing choices
+  room_framing:
+    indoor:
+      lens_override: "24mm wide angle"
+      framing: "interior architectural shot at eye level"
+      lighting_extra: "practical lighting from in-scene sources"
+    outdoor_urban:
+      lens_override: "35mm"
+      framing: "street-level establishing shot, slight low angle"
+      lighting_extra: "mixed natural and artificial light, urban atmosphere"
+    outdoor_nature:
+      lens_override: "50mm"
+      framing: "landscape shot, medium distance, wide composition"
+      lighting_extra: "natural light only, environmental atmosphere"
+    underground:
+      lens_override: "35mm f/1.4"
+      framing: "moody interior shot, low angle"
+      lighting_extra: "practical lighting only, deep shadows, no natural light"
+
+# ==============================================================================
+# NPC GENERATION
+# ==============================================================================
+npc_generation:
+  character_profile: |
+    Create a complete character profile for %{name}, a %{gender} %{role} in a %{setting} setting.
+
+    INSPIRATION (pick 1-2 that fit, ignore rest): %{terms_str}
+
+    You must provide three fields:
+
+    **appearance** (3-5 sentences):
+    - Age (approximate), build/physique
+    - Hair and eye color
+    - Notable features (scars, tattoos, unusual traits)
+    - Typical clothing/attire for their role
+    - Mannerisms visible in appearance (posture, expression)
+    - Third person, present tense. Focus on what an observer would notice. No backstory.
+
+    **short_desc** (max 60 characters):
+    - Format: "a [1-3 adjectives] [role or physical descriptor]"
+    - Examples: "a buxom barmaid", "a grizzled old blacksmith", "a slender young priestess"
+    - Must match the appearance you wrote above
+    - Lowercase, no name, no backstory
+
+    **personality** (2-4 sentences):
+    - Core personality traits (2-3)
+    - How they interact with strangers
+    - What motivates them
+    - A quirk or habit
+    - Third person, present tense. Actionable for roleplay. No physical description.
+    - Should feel consistent with the appearance above
+
+  physical_appearance: |
+    Write a physical appearance description for %{name}, a %{gender} %{role} in a %{setting} setting.
+
+    INSPIRATION (pick 1-2 that fit, ignore rest): %{terms_str}
+
+    Include:
+    - Age (approximate)
+    - Build/physique
+    - Hair and eye color
+    - Notable features (scars, tattoos, unusual traits)
+    - Typical clothing/attire for their role
+    - Mannerisms visible in appearance (posture, expression)
+
+    Requirements:
+    - 3-5 sentences
+    - Third person, present tense
+    - Focus on what an observer would notice
+    - No backstory or personality
+    - Specific, not generic
+
+    Just write the description, nothing else.
+
+  short_description: |
+    Write a very brief physical description for %{name}, a %{gender} %{role}.
+    This is a quick identifier that other characters see at a glance.
+
+    Format: "a [1-3 adjectives] [role or physical descriptor]"
+    Examples: "a buxom barmaid", "a grizzled old blacksmith", "a slender young priestess",
+    "a heavyset barkeep with a crooked nose", "a wiry stable hand"
+
+    Rules:
+    - Maximum 60 characters
+    - Start with "a" or "an"
+    - Focus on the most noticeable physical trait + their role
+    - No name, no backstory
+    - Lowercase
+
+    Just write the short description, nothing else.
+
+  personality: |
+    Write a brief personality summary for %{name}, a %{role} in a %{setting} setting.
+
+    INSPIRATION (pick 1-2 that fit, ignore rest): %{terms_str}
+
+    Include:
+    - Core personality traits (2-3)
+    - How they interact with strangers
+    - What motivates them
+    - A quirk or habit
+
+    Requirements:
+    - 2-4 sentences
+    - Third person, present tense
+    - Actionable for roleplay (how they'd behave)
+    - No physical description
+    - Specific to this character
+
+    Just write the personality summary, nothing else.
+
+  daily_schedule: |
+    Create a daily schedule for %{name}, a %{role} living in %{location_name} (%{setting} setting).
+
+    Generate a realistic daily routine with 6-8 time slots covering:
+    - Morning activities (wake up, breakfast, work start)
+    - Afternoon activities (work, lunch, tasks)
+    - Evening activities (dinner, leisure, sleep)
+
+    Format as JSON array:
+    [
+      {"hour": 6, "activity": "Wakes and prepares for day", "location": "home"},
+      {"hour": 7, "activity": "Opens shop", "location": "shop"},
+      ...
+    ]
+
+    Requirements:
+    - Hours in 24-hour format (0-23)
+    - Activities should match their role
+    - Locations should be generic (home, shop, tavern, market, etc.)
+    - Include breaks and meals
+    - Be realistic for a working person
+
+    Just respond with the JSON array, nothing else.
+
+  voice_profile: |
+    Generate a voice and speech profile for %{name}, a %{role} in a %{setting} setting.
+
+    Their personality: %{personality}
+
+    Return ONLY valid JSON:
+    {
+      "example_dialogue": ["phrase 1", "phrase 2", "phrase 3"],
+      "speech_quirks": "description of speech patterns",
+      "vocabulary_notes": "vocabulary level and word preferences",
+      "character_flaws": "2-3 personality flaws visible in conversation"
+    }
+
+    Guidelines:
+    - example_dialogue: 3-5 short phrases they'd say (greeting, refusal, opinion). 5-15 words each.
+    - speech_quirks: Specific patterns (sentence structure, verbal tics, accent hints). Not generic.
+    - vocabulary_notes: Formal/casual, jargon, slang, archaic terms they use or avoid.
+    - character_flaws: Flaws visible in how they talk (impatient, condescending, gullible, etc.)
+
+  roster: |
+    Generate a complete staff roster for %{place_name}, a %{place_type} in a %{setting} setting.
+
+    INSPIRATION (pick 1-2 that fit, ignore rest): %{seed_terms}
+
+    Staff positions to fill:
+    %{roles_list}
+
+    %{existing_npcs_context}
+
+    For EACH staff member, return a JSON object. Return ONLY a valid JSON array:
+    [
+      {
+        "role": "the role from above",
+        "name": {"forename": "First", "surname": "Last", "gender": "male/female/neutral"},
+        "appearance": {
+          "summary": "2-3 sentence physical description an observer would notice",
+          "hair": "hair color, style, length",
+          "eyes": "eye color and notable features",
+          "skin_tone": "one or two words",
+          "body": "build, height, distinguishing marks",
+          "clothes": "typical attire for their role"
+        },
+        "personality": "2-3 sentences: core traits, how they treat strangers, a quirk",
+        "voice": {
+          "example_dialogue": ["greeting", "refusal", "opinion"],
+          "speech_quirks": "sentence structure, verbal tics, accent",
+          "vocabulary_notes": "formality level, jargon, word preferences",
+          "character_flaws": "1-2 flaws visible in conversation"
+        },
+        "schedule": [
+          {"hour": 6, "activity": "Wakes and prepares", "location": "home"},
+          {"hour": 8, "activity": "Opens shop", "location": "workplace"}
+        ],
+        "memories": [
+          "A memory about how they got this job",
+          "An opinion about a coworker or the establishment"
+        ]
+      }
+    ]
+
+    Requirements:
+    - All names MUST be different from each other
+    - Personalities should COMPLEMENT — not everyone gruff, not everyone cheerful
+    - Each person should look physically distinct
+    - example_dialogue: 3-5 phrases, 5-15 words each
+    - schedule: 6-8 time slots (hours 0-23), realistic for a working person
+    - memories: 2-3 short first-person memories or opinions
+    - All descriptions third person, present tense (except memories which are first person)
+
+  appearance_parse: |
+    Parse this NPC appearance description into structured fields.
+    Return ONLY valid JSON with these exact keys (use null if not mentioned):
+
+    Description: %{appearance_text}
+
+    {
+      "hair": "hair description or null",
+      "eyes": "eye description or null",
+      "skin_tone": "skin tone or null",
+      "body": "build and physical features or null",
+      "clothes": "clothing description or null"
+    }
+
+# ==============================================================================
+# ROOM GENERATION
+# ==============================================================================
+room_generation:
+  name_and_description: |
+    Generate a room name and description for a %{setting} %{room_type} %{parent_context}.
+
+    %{tech_constraints}
+
+    INSPIRATION (pick 1-2 that fit, ignore rest): %{terms_str}
+
+    %{category_guidance}
+
+    **name** (1-4 words):
+    - Evocative but practical, could be used on a map or sign
+    - Fits the %{setting} setting
+    - Examples for tavern: "The Common Room", "Smoky Hearth"
+    - Examples for bedroom: "Master Suite", "Servant's Quarters"
+    - Examples for street: "Copper Lane", "Market Row"
+
+    **description** (2-4 sentences):
+    - Present tense, third person
+    - Describe what someone entering would see, hear, smell
+    - Set the mood and atmosphere
+    - Mention notable features or objects
+    - No flowery prose
+    - Don't start with "This is" or "You see"
+    - Must be consistent with the name you chose
+
+  name: |
+    Generate a short room name for a %{setting} %{room_type} %{parent_context}.
+
+    INSPIRATION (pick 1-2 that fit, ignore rest): %{terms_str}
+
+    Requirements:
+    - 1-4 words
+    - Evocative but practical
+    - Could be used on a map or sign
+    - Fits the %{setting} setting
+
+    Examples for tavern: "The Common Room", "Smoky Hearth", "Back Parlor"
+    Examples for bedroom: "Master Suite", "Servant's Quarters", "Guest Chamber"
+    Examples for street: "Copper Lane", "Market Row", "Weaver's Alley"
+
+    Just respond with the room name, nothing else.
+
+  description: |
+    Write a description for this %{setting} room:
+    Name: "%{name}"
+    Type: %{room_type}
+    Location: %{parent_name}
+
+    %{tech_constraints}
+
+    INSPIRATION (pick 1-2 that fit, ignore rest): %{terms_str}
+
+    %{category_guidance}
+    %{enhancement}
+
+    Requirements:
+    - 2-4 sentences
+    - Present tense, third person
+    - Describe what someone entering would see, hear, smell
+    - Set the mood and atmosphere
+    - Mention notable features or objects
+    - No flowery prose
+    - Don't start with "This is" or "You see"
+
+    Just write the description, nothing else.
+
+  seasonal_variant: |
+    Rewrite this room description for %{time_of_day} during %{season}:
+
+    Original: %{base_description}
+
+    Consider:
+    - %{lighting}
+    - %{weather}
+    - How %{season} affects the space (temperature, sounds, smells)
+    - This is a %{room_type} in a %{setting} setting
+
+    Requirements:
+    - Same length as original (2-4 sentences)
+    - Maintain the core elements but add time/season atmosphere
+    - Present tense, third person
+    - Evocative but concise
+
+    Just write the description, nothing else.
+
+  features: |
+    What doors, windows, and other openings does this %{width_ft}ft x %{height_ft}ft room have?
+
+    Room: %{room_name} (%{room_type})
+    Setting: %{setting}
+    Environment: %{environment}
+    Description: %{description}
+
+    Doors, windows, archways, gates, and openings go on a wall.
+    Specify which wall and where along it as a percentage (0-100):
+    - wall_position=0 means the west/south end of the wall
+    - wall_position=50 means the center
+    - wall_position=100 means the east/north end
+
+    Hatches and stairs go on the floor.
+    Specify floor_x and floor_y as percentages (0-100) of the room dimensions.
+
+    Guidelines:
+    - Indoor rooms need at least one door for entry
+    - Outdoor areas use openings or natural gaps instead of doors
+    - Underground spaces use archways, hatches, or gates
+    - Windows only for indoor above-ground rooms
+    - Spread them across different walls, not all on the same one
+
+# ==============================================================================
+# MISSION GENERATION
+# ==============================================================================
+missions:
+  brainstorm: |
+    You are a creative game designer brainstorming a mission/adventure for a text-based RPG.
+
+    MISSION CONCEPT:
+    %{description}
+
+    SETTING: %{setting}
+
+    INSPIRATION SEEDS (pick 2-3 that resonate, ignore the rest):
+    %{seed_terms}
+
+    Generate creative ideas for this mission. Think about:
+
+    1. NARRATIVE ARC
+       - What's the inciting incident that hooks players immediately?
+       - How does tension escalate? What complications arise?
+       - What's the dramatic climax — and what makes it more than just "fight the strong enemy"?
+       - How does it resolve? How do player choices shape the ending?
+
+    2. KEY SCENES (4-8 memorable moments)
+       - Mix combat, social encounters, puzzles, environmental challenges, and tense moments
+       - Each scene should offer clear player agency — multiple viable approaches
+       - Include at least one unexpected twist or setback that puts success in doubt
+       - Think about which scenes let different character builds shine
+
+    3. THEME & TONE
+       - Distill the mission to ONE thematic word (e.g., Corruption, Sacrifice, Betrayal, Discovery)
+       - Choose THREE tonal adjectives (e.g., "desperate, ancient, treacherous")
+       - What dramatic question does the mission pose? (e.g., "Will they compromise principles to save the village?")
+
+    4. CHEKHOV'S GUNS
+       Name 2-3 specific narrative details to introduce early that pay off later.
+       Example: "A strange symbol carved into the doorframe in scene 1 is the key to defeating the boss."
+       These create the feeling of authored, intentional storytelling rather than random generation.
+
+    5. ANTAGONIST / CENTRAL OBSTACLE
+       - Who or what stands in the players' way? What are their motivations?
+       - What makes the climax encounter unique? Think: environmental hazard,
+         secondary objective beyond "defeat the enemy", time pressure, or a phase change.
+
+    6. MEANINGFUL CHOICES (dilemmas, not optimizations)
+       - "Fight or sneak" is tactical optimization. "Save the hostage but alert guards, or maintain
+         stealth but leave them behind" is a genuine dilemma. Design dilemmas.
+       - Both options should have visible tradeoffs — neither obviously superior
+       - Consequences should reverberate: even if paths reconverge, the experience differs
+
+    7. SOCIAL ENCOUNTERS
+       - Design at least one NPC with a WANT, a FEAR, and a HARD LIMIT (what they won't do)
+       - Give them a vulnerability (approach that works) and a resistance (approach that backfires)
+       - Describe visible emotional state and body language — don't hide basic social cues
+
+    8. ATMOSPHERE
+       - Key sensory details (sights, sounds, smells) that reinforce the theme
+       - Emotional beats across the arc — how should players feel at each stage?
+
+    Be creative, specific, and dramatic. Think cinematically.
+    Format as free-form creative text, not JSON. Let ideas flow naturally.
+
+  synthesis: |
+    You are an expert game designer synthesizing brainstorm outputs into a structured mission plan
+    for a text-based RPG activity system.
+
+    MISSION DESCRIPTION: %{description}
+    SETTING: %{setting}
+    DIFFICULTY: %{difficulty}
+    LOCATION MODE: %{location_mode}
+    ACTIVITY TYPE: %{activity_type}
+
+    BRAINSTORM INPUT FROM CREATIVE MODEL A:
+    ---
+    %{brainstorm_a}
+    ---
+
+    BRAINSTORM INPUT FROM CREATIVE MODEL B:
+    ---
+    %{brainstorm_b}
+    ---
+
+    ═══════════════════════════════════════════════════════════════
+    HOW THE ACTIVITY SYSTEM WORKS
+    ═══════════════════════════════════════════════════════════════
+
+    Players progress through rounds sequentially. Each round type plays very differently:
+
+    STANDARD — Players see a menu of 2-4 actions and pick one. Each player can alternatively
+    choose to "help" another player (giving them advantage on dice) or "recover" (skip rolling,
+    gain willpower). Players roll 2d8 + stat bonus vs DC. Design 2-4 COMPLEMENTARY actions that
+    represent genuinely different approaches to the same challenge — each action should use
+    different stats so different character builds are useful. Example: a locked door could have
+    "pick the lock" (Dexterity), "force it open" (Strength), and "find another way in" (Perception).
+
+    COMBAT — Launches actual tactical combat with spawned NPCs. No actions needed from you —
+    just define which adversaries appear. Use sparingly; combat rounds take significant real time.
+
+    BRANCH — Players VOTE on which path to take (no dice). Present 2-3 choices with clear,
+    visible tradeoffs. This is where meaningful dilemmas live — both options should have genuine
+    costs. Branches can reconverge later or lead to different endings.
+
+    FREE_ROLL — Fully open-ended. Players describe what they want to do in their own words,
+    and an AI GM picks appropriate stats and DC based on their description. Use free_roll_context
+    to set the scene and constraints. Great for creative problem-solving where you can't predict
+    what players will try.
+
+    PERSUADE — An AI-driven NPC appears in the room and players roleplay with it using normal
+    say/emote commands. The NPC responds based on persuade_npc_personality (this is the NPC's
+    actual brain — write it as a system prompt). When ready, players roll persuade with a DC
+    modified by how well the RP went. The NPC personality should include: what they WANT, what
+    they FEAR, what approach WORKS on them, what approach BACKFIRES, and what they absolutely
+    WON'T do. Describe their visible emotional state in the emit text.
+
+    REFLEX — A fast danger check (2-minute timeout). Everyone rolls the same stat vs DC. No
+    choices — just react. Individual failures take 1 HP damage. Good for sudden dangers: traps
+    springing, floors collapsing, ambush reflexes.
+
+    GROUP_CHECK — Everyone MUST roll (no helping allowed). Uses the MEDIAN of all rolls, so
+    the whole party's capability matters, not just the best player. Assign 2-3 different stat IDs
+    in stat_set_a — players use whichever they're strongest in. Good for endurance challenges,
+    environmental hazards, or situations where the whole party needs to contribute.
+
+    REST — Players heal HP and vote to continue. Place after intense rounds where players need
+    to recover. No dice, no actions.
+
+    ═══════════════════════════════════════════════════════════════
+    DESIGN PRINCIPLES
+    ═══════════════════════════════════════════════════════════════
+
+    PACING:
+    - 5-8 rounds on the main branch. Vary the energy — don't place two combat rounds or two
+      social rounds back to back. Alternate between tense action and breathing room.
+    - Budget significant weight for the climax — don't rush the ending.
+    - At least 60%% of rounds should be non-combat.
+
+    FAILURE FORWARD:
+    - Failure must always advance the story with complications, never stop it.
+    - fail_con options: "none" (just continue), "difficulty" (future DCs get harder — snowball
+      tension), "injury" (1 HP damage — resource pressure), "harder_finale" (climax combat NPCs
+      get stronger), "branch" (jump to fail_branch_to round — alternate path).
+    - Early round failures should be mild ("none" or "difficulty"). Save "harder_finale" and
+      "injury" for mid-to-late rounds where stakes are higher.
+    - fail_text must describe a NARRATIVE consequence: "The lockpick snaps — the metallic crack
+      echoes down the corridor, and heavy boots begin moving toward the sound" NOT "You fail."
+    - Set fail_repeat: true if you want players to retry until they succeed (use sparingly).
+    - Set knockout: true if failure ends the entire activity (use very sparingly — climax only).
+
+    MEANINGFUL CHOICES:
+    - Standard round actions should be genuinely different approaches, not flavored versions
+      of the same thing. Different stats, different narrative outcomes.
+    - Branch choices must be informed dilemmas with visible tradeoffs — "save the hostage but
+      alert guards" vs "stay hidden but leave them behind". Never "door A or door B."
+    - Player choices from earlier rounds should visibly affect later rounds.
+
+    THEMATIC COHERENCE:
+    - Extract a theme and 3 tonal adjectives from the brainstorm. Include as "theme" and
+      "tone_adjectives" in output.
+    - Plant 2-3 specific narrative details in early rounds that pay off in the climax or
+      resolution (Chekhov's Gun). Include as "chekhov_details" in output.
+    - Every round's emit should reinforce the tone. Every round should connect to the central
+      mission objective — no filler.
+
+    STAT DIVERSITY:
+    - Vary which stats are tested across the mission. No single stat should dominate.
+    - Group check stat_set_a should include 2-3 different stats so different builds contribute.
+    - Standard round actions should use different stats from each other.
+
+    SOCIAL ENCOUNTERS:
+    - persuade_npc_personality is the NPC's actual AI brain. Write it as a character prompt:
+      personality, speech patterns, what they want, what scares them, what approach works,
+      what makes them shut down, and what they'll never agree to.
+    - The emit should describe the NPC's body language and emotional state visibly.
+
+    CLIMAX DESIGN:
+    - The climax encounter should have something unique beyond "fight the strong enemy":
+      an environmental hazard, a secondary objective, time pressure, or a phase change.
+    - Describe this in the climax_mechanic field.
+
+    ═══════════════════════════════════════════════════════════════
+    DIFFICULTY (%{difficulty})
+    ═══════════════════════════════════════════════════════════════
+
+    - easy: Mild consequences, fewer combat rounds, more rest opportunities
+    - normal: Balanced challenge, moderate consequences, standard pacing
+    - hard: Harsh consequences (more injury/harder_finale), more combat, less rest
+
+    ═══════════════════════════════════════════════════════════════
+    LOCATION MODE (%{location_mode})
+    ═══════════════════════════════════════════════════════════════
+
+    - existing: No new locations — use "existing" as location_key for all rounds
+    - mission_specific: Create 2-4 locations needed for the mission
+    - reusable_asset: Create 5-8 locations as a full persistent building/dungeon
+
+    ═══════════════════════════════════════════════════════════════
+    OUTPUT FORMAT — Respond with ONLY valid JSON. No markdown.
+    ═══════════════════════════════════════════════════════════════
+
+    {
+      "title": "Mission title (2-5 words)",
+      "summary": "2-3 sentence description",
+      "atype": "%{activity_type}",
+      "theme": "single thematic word (corruption, sacrifice, betrayal, etc.)",
+      "tone_adjectives": ["adjective1", "adjective2", "adjective3"],
+      "chekhov_details": ["detail planted early that pays off later", "another detail"],
+
+      "rounds": [
+        {
+          "round_number": 1,
+          "branch": 0,
+          "rtype": "standard|combat|branch|free_roll|persuade|rest|reflex|group_check",
+          "narrative": "1-2 sentences describing what happens in this round narratively. What's the scene? What challenge do players face? How does it connect to the story?",
+          "location_key": "key from locations array or null",
+          "fail_con": "none|difficulty|injury|harder_finale|branch",
+          "is_finale": false,
+
+          "branch_targets": [{"text": "Choice label", "leads_to_branch": 1}],
+          "combat_encounter_key": "links to adversary combat_encounter_key"
+        }
+      ],
+
+      "locations": [
+        {
+          "key": "unique_key",
+          "name": "Location Name",
+          "description": "Brief description for room generation",
+          "room_type": "tavern|street|dungeon|etc"
+        }
+      ],
+
+      "adversaries": [
+        {
+          "name": "Adversary Name",
+          "description": "Physical and behavioral description",
+          "role": "boss|lieutenant|minion",
+          "behavior": "aggressive|defensive|cunning|etc",
+          "combat_encounter_key": "unique key for combat encounters"
+        }
+      ]
+    }
+
+    IMPORTANT:
+    - Each round only needs round_number, branch, rtype, narrative, fail_con, is_finale
+    - branch_targets is ONLY for branch rounds
+    - combat_encounter_key is ONLY for combat rounds
+    - Do NOT include detailed fields (emit, actions, stat_ids, etc.) — those are generated separately
+    - Focus on the narrative flow, pacing, and story structure
+
+  round_detail: |
+    You are a game designer writing detailed round data for a text-based RPG mission.
+
+    MISSION: %{title}
+    SUMMARY: %{summary}
+    THEME: %{theme}
+    TONE: %{tone}
+
+    ROUND %{round_number} — Type: %{rtype}
+    NARRATIVE CONCEPT: %{narrative}
+    FAILURE CONSEQUENCE: %{fail_con}
+    IS FINALE: %{is_finale}
+
+    AVAILABLE STATS (use ONLY these IDs):
+    %{available_stats}
+
+    %{type_context}
+
+    TEXT TOKEN RULES (CRITICAL):
+    All narrative text MUST use third-person template tokens:
+    - (name) = character name. "(name) draws (his) sword."
+    - (he)/(she)/(they) = subject pronoun. "(He) lunges forward."
+    - (him)/(her)/(them) = object pronoun. "The guard shoves (him) aside."
+    - (his)/(her)/(their) = possessive pronoun. "(His) hands tremble."
+    - (himself)/(herself)/(themselves) = reflexive. "(Name) braces (himself)."
+    Pick ONE pronoun set consistently. Capitalize at sentence start.
+    NEVER use second-person "you/your".
+
+    WRITING GUIDELINES:
+    - emit: 2-4 sentences of atmospheric scene-setting. Reinforce the mission's theme and tone.
+    - succ_text: What happens narratively on success. Specific and dramatic.
+    - fail_text: NARRATIVE consequence of failure — not "you fail" but what goes wrong in the story.
+    - For standard rounds: Design 2-4 COMPLEMENTARY actions using DIFFERENT stats. Each action
+      should represent a genuinely different approach to the challenge.
+    - For persuade rounds: Write persuade_npc_personality as a full character prompt (personality,
+      speech patterns, wants, fears, what works, what backfires, hard limits).
+    - fail_repeat should be false unless retrying makes narrative sense.
+    - knockout should only be true for critical climax moments.
+
+    Respond with ONLY valid JSON matching the required schema.
+
+# ==============================================================================
+# AUTO GM - SPONTANEOUS ADVENTURES
+# ==============================================================================
+auto_gm:
+  brainstorm: |
+    You are a creative adventure designer creating a spontaneous one-shot adventure for a text-based RPG.
+    This adventure starts RIGHT NOW in the current location and should feel natural to the world.
+
+    CURRENT SITUATION:
+    Location: %{location_name}
+    %{location_description}
+
+    CHARACTERS PRESENT:
+    %{character_summary}
+
+    NEARBY LOCATIONS AVAILABLE (use at least one):
+    %{nearby_locations}
+
+    RECENT EVENTS IN THIS AREA (potential plot hooks):
+    %{nearby_memories}
+
+    CHARACTER HISTORY (personal hooks):
+    %{character_memories}
+
+    LOCAL NPCS:
+    %{local_npcs}
+
+    ACTIVE STORYLINES (ongoing narrative threads -- weave into the adventure if relevant):
+    %{narrative_threads}
+
+    CHARACTER NARRATIVE PROFILES (reputation and storyline involvement):
+    %{participant_narrative}
+
+    AVAILABLE STATS (character capabilities in this world):
+    %{available_stats}
+
+    INSPIRATION SEEDS (use 2-3 that resonate, ignore the rest):
+    %{seed_terms}
+
+    ---
+
+    DESIGN A SPONTANEOUS ADVENTURE using the One Page One Shot framework:
+
+    1. NOUN - The Central Focus
+       Choose ONE:
+       - Type: person / artefact / location / creature / plot
+       - Adjective: dangerous / powerful / valuable / meaningful / mysterious
+       - Make it specific and memorable
+
+    2. MISSION - What Must Be Done
+       Choose ONE primary objective:
+       - discover / destroy / defend / investigate / rescue / escape
+       - Define clear success and failure conditions
+       - Include a time pressure element
+
+    3. SETTING ADAPTATION
+       - Which nearby location from the list fits best?
+       - How can we use its features dramatically?
+       - What atmosphere and mood should it evoke?
+
+    4. REWARDS & PERILS
+       - What do characters stand to gain? (not just loot)
+       - What threatens them? (escalating danger)
+       - What personal stakes might be involved?
+
+    5. SECRETS & TWISTS
+       - One hidden truth that complicates matters
+       - When should it be revealed?
+       - How does it change the situation?
+       - Possible twist types: betrayal / test / bigger_threat / mistaken_identity / cursed_item / hidden_ally
+
+    6. INCITING INCIDENT
+       - How does this adventure START right now?
+       - Type: attack / arrival / discovery / distress / environmental
+       - Make it impossible to ignore
+       - Create immediate urgency
+
+    7. STRUCTURE (choose one)
+       - Three-Act: Setup → Confrontation → Resolution
+       - Five-Room Dungeon: Entrance → Puzzle → Trick → Climax → Reward
+       - Countdown: Disaster in N turns unless stopped
+
+    8. KEY SCENES (3-5 moments)
+       - Mix of combat, social, exploration, puzzle
+       - Each should offer meaningful player choice
+       - Build toward the climax
+
+    ---
+
+    IMPORTANT GUIDELINES:
+    - Ground everything in the EXISTING world context provided
+    - Use the nearby memories and NPCs as hooks where possible
+    - The adventure should feel organic, not imposed
+    - Start with action, not exposition
+    - Make it completable in 30-60 minutes of play
+
+    Be creative, specific, and dramatic. Think cinematically.
+    Format as free-form creative text, not JSON. Let ideas flow naturally.
+
+  synthesis: |
+    You are synthesizing two creative brainstorm outputs into a structured adventure sketch for a spontaneous AI-driven adventure.
+
+    BRAINSTORM FROM MODEL A:
+    ---
+    %{brainstorm_a}
+    ---
+
+    BRAINSTORM FROM MODEL B:
+    ---
+    %{brainstorm_b}
+    ---
+
+    AVAILABLE NEARBY LOCATIONS (MUST use at least one):
+    %{nearby_locations}
+
+    CURRENT ROOM CONTEXT:
+    %{room_context}
+
+    PARTICIPANTS:
+    %{participants}
+
+    AVAILABLE STATS FOR CHALLENGES:
+    %{available_stats}
+    When designing stages, suggest specific stats for roll-based challenges.
+
+    ---
+
+    SYNTHESIS TASK:
+    1. Identify the BEST ideas from both brainstorms
+    2. Combine them into a coherent adventure
+    3. MUST incorporate at least one nearby location from the list
+    4. Create a clear three-act or countdown structure
+    5. Design an inciting incident that starts IMMEDIATELY
+    6. Ensure it can be completed in 30-60 minutes
+
+    OUTPUT: Respond with ONLY valid JSON matching this schema (no markdown, no explanation):
+
+    {
+      "title": "Adventure title (2-5 words)",
+
+      "noun": {
+        "type": "person|artefact|location|creature|plot",
+        "adjective": "dangerous|powerful|valuable|meaningful|mysterious",
+        "name": "The specific noun name",
+        "description": "Brief description (1-2 sentences)"
+      },
+
+      "setting": {
+        "primary_location_id": <integer from nearby_locations or null>,
+        "primary_room_id": <integer from nearby_locations or null>,
+        "location_name": "Name of primary location",
+        "flavor": "Atmospheric description (1-2 sentences)",
+        "mood": "tense|mysterious|urgent|hopeful|dark|chaotic"
+      },
+
+      "mission": {
+        "type": "discover|destroy|defend|investigate|rescue|escape",
+        "objective": "Clear objective statement (1 sentence)",
+        "success_conditions": ["condition1", "condition2"],
+        "failure_conditions": ["condition1"],
+        "time_pressure": "Description of urgency (optional)"
+      },
+
+      "rewards_perils": {
+        "rewards": ["currency amount like '50 coins'", "item description"],
+        "perils": [
+          "money_loss:<amount>",
+          "injury:1|2|3",
+          "item_damage",
+          "item_lost"
+        ],
+        "personal_stakes": "What makes this matter to the characters (optional)"
+      },
+
+      "secrets_twists": {
+        "secrets": ["secret1", "secret2"],
+        "twist_type": "betrayal|test|bigger_threat|mistaken_identity|cursed_item|hidden_ally",
+        "twist_trigger": "When this happens, reveal the twist",
+        "twist_description": "What the twist actually is (1-2 sentences)"
+      },
+
+      "game_elements": ["combat", "exploration", "social_skills", "puzzles", "chase", "stealth"],
+
+      "structure": {
+        "type": "three_act|countdown|five_room",
+        "stages": [
+          {
+            "name": "Stage name",
+            "description": "What happens (2-3 sentences)",
+            "location_id": <optional integer>,
+            "elements": ["combat", "puzzle", etc],
+            "is_climax": false,
+            "suggested_challenges": [
+              "roll_request:<stat name>:<description>",
+              "spawn_npc:<disposition>",
+              "social_encounter"
+            ]
+          }
+        ],
+        "countdown_start": <integer if countdown type, else null>
+      },
+
+      "inciting_incident": {
+        "type": "attack|arrival|discovery|distress|environmental",
+        "description": "What happens to start the adventure (2-3 sentences)",
+        "npc_involved": "NPC name if applicable, else null",
+        "immediate_threat": true|false
+      },
+
+      "npcs_to_spawn": [
+        {
+          "role": "antagonist|ally|victim|witness|guide|obstacle",
+          "name_hint": "Suggested name or type",
+          "archetype_hint": "Description for matching NpcArchetype",
+          "disposition": "hostile|wary|neutral|friendly",
+          "location_stage": 0
+        }
+      ],
+
+      "locations_used": [<location_id integers from nearby_locations>]
+    }
+
+    IMPORTANT:
+    - All location IDs must come from the nearby_locations list provided
+    - Structure must have 3-5 stages
+    - Inciting incident must create immediate urgency
+    - At least one NPC should be spawned (antagonist or ally)
+    - Game elements array should reflect what types of challenges appear
+    - Each stage should have 1-3 suggested_challenges using stat names from the AVAILABLE STATS list
+    - Use format "roll_request:<StatName>:<what they're doing>" for skill checks
+    - Use "spawn_npc:<hostile|neutral|friendly>" for NPC encounters
+    - Use "social_encounter", "combat", "exploration", "puzzle" for other challenge types
+    - PERILS must use these exact formats (these are mechanically applied):
+      * "money_loss:50" - lose currency (use actual number)
+      * "injury:1" - minor injury (1 HP, scratches/bruises)
+      * "injury:2" - moderate injury (2 HP, cuts/sprains)
+      * "injury:3" - serious injury (3 HP, broken bones/deep wounds)
+      * "item_damage" - random item takes damage
+      * "item_lost" - lose a random non-essential item
+      * Do NOT use reputation loss, status effects, or other formats
+
+  decision: |
+    You are the AI Game Master running a spontaneous adventure. Make ONE decision about what to do next.
+
+    ADVENTURE: %{title}
+    MISSION: %{mission_type} - %{mission_objective}
+    CURRENT STAGE: %{current_stage} of %{total_stages}
+    CHAOS LEVEL: %{chaos_level}/9
+
+    STRUCTURE:
+    %{stage_info}
+
+    SECRETS (not yet revealed): %{unrevealed_secrets}
+    TWIST: %{twist_info}
+
+    SUCCESS CONDITIONS: %{success_conditions}
+    FAILURE CONDITIONS: %{failure_conditions}
+
+    RECENT SESSION SUMMARY:
+    %{recent_summary}
+
+    RECENT ACTIONS (last 10):
+    %{recent_actions}
+
+    GM ACTIONS ON CURRENT STAGE: %{gm_actions_this_stage}
+    %{stage_pressure}
+
+    CURRENT WORLD STATE:
+    - NPCs spawned: %{npcs_spawned}
+    - Secrets revealed: %{secrets_revealed}
+    - Items appeared: %{items_appeared}
+
+    PARTICIPANT STATUS:
+    %{participant_status}
+
+    AVAILABLE STATS:
+    %{available_stats}
+
+    CURRENT STAGE CHALLENGES (from adventure design):
+    %{stage_challenges}
+
+    ---
+
+    GUIDELINES:
+    - Keep the adventure moving - don't let it stall
+    - Use 'emit' for narrative, 'roll_request' when outcome is uncertain
+    - Move characters when the adventure requires travel
+    - Reveal secrets when players earn them through investigation or actions
+    - Trigger the twist when conditions are met
+    - Start climax when approaching the final confrontation
+    - Resolve when success/failure conditions are clearly met
+    - Higher chaos = more unexpected events; lower chaos = more predictable
+    - For roll_request: choose the specific stat that thematically fits the challenge
+      (e.g., "Strength" for lifting, "Charisma" for persuasion, "Dexterity" for dodging)
+    - Use the suggested_challenges for the current stage as guidance for what to do next
+    - If no stats are available, use descriptive stat names like "Physical" or "Mental"
+
+    AVOID DUPLICATE NARRATION:
+    - NEVER re-narrate a scene beat that already appeared in RECENT ACTIONS.
+      If you just described the players entering a dimly lit warehouse, do NOT emit
+      another message paraphrasing the same entrance. Move the story FORWARD.
+    - Each emit must introduce NEW information, reactions, or developments.
+    - If players haven't done anything new since your last emit, WAIT — don't
+      fill silence with restatements of what already happened.
+
+    ACTION VARIETY (IMPORTANT):
+    - NEVER choose roll_request twice in a row. After a roll_request, always
+      follow up with an 'emit' narrating the outcome before requesting another roll.
+    - A natural GM rhythm is: emit → emit → roll_request → emit → advance_stage
+    - Each stage should have exactly 1 roll_request for its core challenge moment.
+      Don't skip rolls entirely — they create tension and player agency.
+    - DO use roll_request when a player attempts something with uncertain outcome:
+      bluffing, persuading, sneaking, fighting, climbing, etc. These are the moments
+      that NEED dice rolls to feel fair and exciting.
+    - DON'T use roll_request for routine actions or things the fiction already resolved.
+
+    STAGE ADVANCEMENT:
+    - Use 'advance_stage' when the current stage's core challenge has been
+      addressed (succeeded or failed) AND you've narrated the transition.
+    - A good rhythm: 2-4 actions per stage (setup → challenge → outcome → advance).
+    - The adventure has %{total_stages} stages. Pace the story across all of them —
+      each stage has its own challenges and reveals. Don't linger too long on any one.
+    - When you feel a stage's narrative arc is complete, advance. Don't wait for a
+      perfect moment — good pacing keeps the adventure engaging.
+    - If emitting while a stage has run long, write narrative that moves toward
+      resolving the current challenge so advancement can happen naturally.
+
+    TONE CALIBRATION:
+    - You are not a cheerleader. You don't want the players to fail, but you won't
+      protect them from it either. Fair consequences for poor decisions.
+    - If a player's action is clever and well-suited to the situation, reward it
+      with positive development. If it's lazy, vague, or reckless, develop the
+      situation negatively — complications, setbacks, or wasted time.
+    - Players must EARN progress through meaningful actions that address the
+      current challenge, but don't gatekeep forever — keep the story moving.
+    - Don't reveal secrets as freebies. Players must investigate, ask the right
+      questions, or reach the right place.
+    - If players are floundering, introduce a hint through the environment or an
+      NPC — don't just hand them the answer.
+
+    OUTPUT: Respond with ONLY valid JSON (no markdown):
+
+    {
+      "action_type": "emit|roll_request|move_characters|spawn_npc|spawn_item|reveal_secret|trigger_twist|advance_stage|start_climax|resolve_session",
+      "reasoning": "Brief explanation of why you chose this action",
+      "emit_text": "Narrative text (for emit action)",
+      "target_character_ids": [1, 2],
+      "destination_room_id": 123,
+      "roll_type": "skill check description",
+      "roll_dc": 12,
+      "roll_stat": "<stat name from AVAILABLE STATS>",
+      "npc_archetype_hint": "description of NPC to spawn",
+      "npc_disposition": "hostile|wary|neutral|friendly",
+      "item_description": "description of item to spawn",
+      "secret_index": 0,
+      "resolution_type": "success|failure"
+    }
+
+    Only include fields relevant to your chosen action_type.
+
+  gm_system: |
+    You are an AI Game Master running the adventure "%{title}".
+
+    Your role is to:
+    - Drive the narrative forward
+    - React to player actions
+    - Maintain dramatic tension
+    - Reveal information at appropriate moments
+    - Know when to end the adventure
+
+    Adventure Structure: %{structure_type}
+    Current Stage: %{current_stage}
+    Chaos Level: %{chaos_level}/9 (higher = more unpredictable)
+
+    You maintain fairness through earned outcomes. Players who engage cleverly
+    are rewarded; players who act carelessly face real consequences. You never
+    fudge results or hand out unearned victories.
+
+    Be dramatic, descriptive, and keep things moving.
+
+  reaction: |
+    You are the AI Game Master running "%{title}".
+
+    ADVENTURE CONTEXT:
+    Mission: %{mission_type} - %{mission_objective}
+    Current Stage: %{current_stage} of %{total_stages}
+    Chaos Level: %{chaos_level}/9
+
+    WHAT JUST HAPPENED:
+    %{action_summary}
+
+    PARTICIPANT STATUS:
+    %{participant_status}
+
+    ---
+
+    Consider how this affects the adventure. Respond with ONLY valid JSON:
+
+    {
+      "reaction_type": "acknowledge|complication|reveal|escalate|reward",
+      "reasoning": "Brief explanation",
+      "narrative": "What happens next (2-3 sentences)",
+      "consequence": "mechanical effect if any (optional)"
+    }
+
+  quick_response: |
+    You are the AI Game Master running "%{title}".
+
+    ADVENTURE CONTEXT:
+    Mission: %{mission_type} - %{mission_objective}
+    Current Stage: %{current_stage} of %{total_stages}
+    Chaos Level: %{chaos_level}/9
+
+    SITUATION:
+    %{situation}
+
+    Write a vivid, dramatic narrative response (2-4 sentences).
+    Describe what happens next, maintaining tension and atmosphere.
+    Use sensory details and evocative imagery.
+    Drive the story forward.
+
+  resolution_summary: |
+    Summarize this adventure session in 2-3 evocative sentences for the world's historical memory.
+
+    Title: %{title}
+    Mission: %{mission_objective}
+    Resolution: %{resolution_type}
+
+    Key NPCs involved:
+    %{npcs_involved}
+
+    Twist: %{twist_info}
+    Secrets revealed: %{secrets_revealed}
+    Locations visited: %{locations_visited}
+
+    Key events:
+    %{key_events}
+
+    Consequences: %{consequences}
+
+    Write a narrative summary that captures the essence of what happened, naming
+    specific NPCs and locations. This will become part of the world's memory,
+    influencing future adventures. Be vivid but concise.
+
+# ==============================================================================
+# ACTIVITY SYSTEM (FREE ROLL & PERSUADE)
+# ==============================================================================
+activities:
+  free_roll:
+    # Assess prompt - used when participant wants to gather info before acting
+    assess: |
+      You are the GM for this activity round. The situation is:
+
+      Activity: %{activity_name}
+      Round Description: %{round_description}
+      %{additional_context}
+
+      The player %{participant_name} wants to ASSESS: "%{assessment_text}"
+
+      Based on the activity's available stats, determine:
+      1. Which stat(s) to test for this assessment
+      2. Difficulty class (10=easy, 15=moderate, 20=hard, 25=very hard)
+      3. What information they could learn on success
+
+      Respond in JSON format:
+      {
+        "stat_names": ["Perception"],
+        "dc": 12,
+        "context_revealed": "You notice that the guard changes shifts every 10 minutes.",
+        "failure_desc": "You can't make out any useful details."
+      }
+
+    # Action prompt - used when participant attempts an action
+    action: |
+      You are the GM for this activity round. The situation is:
+
+      Activity: %{activity_name}
+      Round Description: %{round_description}
+      %{additional_context}
+      %{recent_actions}
+
+      The player %{participant_name} wants to take this ACTION: "%{action_text}"
+
+      Based on the action, determine:
+      1. Which stat(s) to test
+      2. Difficulty class (10=easy, 15=moderate, 20=hard, 25=very hard)
+      3. What happens on success (brief narration)
+      4. What happens on failure (brief narration)
+
+      Respond in JSON format:
+      {
+        "stat_names": ["Strength", "Athletics"],
+        "dc": 15,
+        "success_desc": "You manage to pry open the door with a loud creak.",
+        "failure_desc": "Despite your efforts, the door won't budge."
+      }
+
+  persuade:
+    # NPC system prompt - sets up the NPC personality for conversation
+    npc_system: |
+      You are playing the role of %{npc_name}.
+
+      Personality and background:
+      %{npc_personality}
+
+      The players are trying to: %{persuade_goal}
+
+      Stay in character. Respond naturally to what the players say.
+      Be realistic about what would convince your character.
+      Don't give in too easily, but show when arguments are landing.
+      You have your own opinions and will push back when your personality demands it.
+      React authentically - be difficult, skeptical, or unimpressed when that fits your character.
+      Avoid cliche phrases: "only time will tell", "a knowing smile", "the air thick with tension".
+
+    # Evaluation prompt - assesses how convincing the players have been
+    evaluation: |
+      You are evaluating how persuasive the players have been in this conversation.
+
+      NPC Personality: %{npc_personality}
+      Goal: %{persuade_goal}
+
+      Conversation transcript:
+      %{transcript}
+
+      Rate the persuasiveness on a scale of 1-5:
+      1 = Not at all convincing (they're making things worse)
+      2 = Weak attempt (some effort, but not landing)
+      3 = Reasonable (decent arguments, could go either way)
+      4 = Good arguments (making real progress)
+      5 = Excellent, nearly convinced (very compelling)
+
+      Respond in JSON format:
+      {
+        "rating": 3,
+        "dc_modifier": 0,
+        "feedback": "Brief feedback on their approach"
+      }
+
+    # Success response - NPC agrees after successful persuasion
+    success_response: |
+      The players have successfully convinced %{npc_name}. Generate a brief response where %{npc_name} agrees to %{persuade_goal}. Stay in character.
+
+    # Failure response - NPC is not yet convinced
+    failure_response: |
+      The players failed their persuasion attempt (rating: %{rating}/5). Generate a brief response where %{npc_name} is not yet convinced. Hint at what might work better based on the feedback: %{feedback}. Stay in character but leave room for more attempts.
+
+# ==============================================================================
+# NPC LEADERSHIP (FOLLOW/SUMMON DECISIONS)
+# ==============================================================================
+npc_leadership:
+  # System prompt for lead/summon decisions
+  decision_system: |
+    You are %{npc_name}, an NPC in a %{game_setting} setting.
+
+    %{personality_prompt}
+
+    You must decide whether to %{action} based on your personality, relationships, and current situation.
+
+    Response format (REQUIRED):
+    First line: ACCEPT or REJECT
+    Following lines: A brief in-character response/emote (what %{npc_forename} says or does)
+
+    Example responses:
+    ACCEPT
+    %{npc_forename} nods thoughtfully. "Very well, I'll come with you."
+
+    REJECT
+    %{npc_forename} shakes their head. "I have matters to attend to here."
+
+  # User prompt for lead/follow request
+  lead_request: |
+    %{context}
+
+    %{pc_name} is asking %{npc_name} to follow them.
+
+    Consider:
+    - Your relationship with %{pc_name} (sentiment, trust)
+    - Your current obligations (schedule, activities)
+    - Your personality and disposition
+    - Whether you're already following someone
+
+    Would %{npc_name} agree to follow %{pc_name}?
+
+  # User prompt for summon request
+  summon_request: |
+    %{context}
+
+    %{pc_name} has sent you a message from %{room_name}:
+    "%{message}"
+
+    Consider:
+    - The content and urgency of the message
+    - Your relationship with %{pc_name}
+    - Your current obligations
+    - The distance you'd need to travel
+
+    Would %{npc_name} go to %{pc_name}?
+
+  # System prompt for staff queries to NPCs
+  query_system: |
+    You are %{npc_name}, an NPC in a %{game_setting} setting.
+
+    %{personality_prompt}
+
+    Current location: %{room_name}
+    Current activity: %{current_activity}
+
+    A game administrator is asking you a question. Answer honestly and in detail,
+    providing your character's thoughts, motivations, or opinions as appropriate.
+    Stay in character but be informative.
+
+# ==============================================================================
+# ABILITY GENERATION
+# ==============================================================================
+ability_generation:
+  new_ability: |
+    Generate a combat ability for this NPC in a %{setting} RPG:
+
+    NPC Name: %{name}
+    Description: %{description}
+    Role: %{role}
+    Target Power Level: %{target_power} (100 power ~ 15 average damage single target)
+
+    ROLE GUIDELINES:
+    - boss: High power (120-180), AoE preferred, status effects, 15-30s cooldown
+    - lieutenant: Medium power (80-120), single/small AoE, 10-20s cooldown
+    - minion: Low power (40-80), simple single target, minimal cooldown
+
+    DAMAGE TYPES: physical, fire, ice, lightning, poison, shadow, holy, arcane
+
+    STATUS EFFECTS (optional, pick 0-1):
+    - burning: DoT fire damage over 2-3 rounds
+    - poisoned: DoT poison damage over 2-3 rounds
+    - stunned: Skip turn for 1-2 rounds (powerful, short)
+    - snared: Cannot move for 2-3 rounds
+    - vulnerable: Take 50% more damage for 2 rounds
+
+    OUTPUT FORMAT (JSON only):
+    {
+      "name": "Ability Name (2-4 words)",
+      "description": "Brief description (1 sentence)",
+      "ability_type": "combat",
+      "action_type": "main",
+      "target_type": "enemy",
+      "aoe_shape": "single|circle|cone|line",
+      "aoe_radius": 0,
+      "aoe_length": 0,
+      "base_damage_dice": "XdY",
+      "damage_type": "physical|fire|ice|lightning|poison|shadow|holy|arcane",
+      "damage_modifier": 0,
+      "activation_segment": 50,
+      "cooldown_seconds": 0,
+      "status_effect_name": null,
+      "status_effect_duration": 0
+    }
+
+    Important: Match the ability thematically to the NPC description.
+
+# ==============================================================================
+# REPUTATION & MEMORY
+# ==============================================================================
+reputation:
+  tier_generation: |
+    Based on these world memories involving %{character_name}:
+
+    %{memory_context}
+
+    Additional narrative context (faction ties, relationships, ongoing storylines):
+    %{narrative_context}
+
+    Generate three tiers of reputation for this character:
+
+    TIER 1 (Public Knowledge):
+    What almost anyone in the world might know about this character.
+    Focus on major public events, well-known achievements, or notoriety.
+    Consider their role in any well-known storylines.
+    1-2 sentences.
+
+    TIER 2 (Social Circles):
+    What people in similar social circles or professions would know.
+    Focus on profession-specific reputation, community standing, and faction ties.
+    1-2 sentences.
+
+    TIER 3 (Close Associates):
+    What friends, investigators, or close contacts would know.
+    Focus on deeper personality, secrets, detailed achievements, and their role in ongoing storylines.
+    1-2 sentences.
+
+    Format as JSON:
+    {
+      "tier_1": "Public tier",
+      "tier_2": "Social circle tier",
+      "tier_3": "Close associates tier"
+    }
+
+memory:
+  # NPC memory abstraction
+  npc_abstraction: |
+    Summarize these NPC memories into one concise paragraph that captures the key information:
+
+    %{memories}
+
+    Write a single paragraph summary (2-3 sentences max):
+
+  # World memory session summary
+  session_summary: |
+    %{context}Summarize this roleplay session into 2-3 sentences capturing the key events, emotions, and character interactions:
+
+    %{log_content}
+
+    Write a concise summary focusing on what happened and who was involved:
+
+  # World memory abstraction
+  world_abstraction: |
+    Summarize these world memories into one concise paragraph (2-3 sentences):
+
+    %{memories}
+
+    Write a cohesive summary capturing the key themes and events:
+
+  # Split session context
+  split_context: |
+    Summarize this roleplay session into a brief paragraph (2-3 sentences) to provide context for a continuation:
+
+    %{log_content}
+
+    Write a detailed summary of what was happening:
+
+  # Location recap - what's been happening at a location over the past week
+  # Used by NpcCatchupService when no recent world memories exist for a location
+  location_recap: |
+    You are a narrator for a %{game_setting} setting. Describe what has been happening at this location over the past week.
+
+    LOCATION: %{room_name}
+    %{room_description}
+    BUILDING: %{location_name}
+
+    RECENT EVENTS AT THIS LOCATION (last 90 days):
+    %{recent_events}
+
+    ACTIVE STORYLINES IN THE AREA:
+    %{narrative_threads}
+
+    Write 2-3 short paragraphs describing the past week at this location. Blend any real events listed above with plausible mundane daily life. Include:
+    - Weather, foot traffic, ambient activity
+    - Small incidents or gossip (a delivery gone wrong, a regular customer's absence, a strange noise)
+    - Seasonal or time-of-day flavor
+
+    Keep it grounded and specific. Do not invent major dramatic events — keep things at the scale of everyday life with small moments of interest. Write in past tense, third person.
+
+  # NPC catch-up - what an NPC has been doing during a gap in RP
+  # Used by NpcCatchupService to give NPCs temporal continuity
+  npc_catchup: |
+    You are writing the internal narrative for %{npc_name}, an NPC in a %{game_setting} setting.
+
+    PERSONALITY:
+    %{personality}
+
+    CURRENT GOALS:
+    %{goals}
+
+    KEY RELATIONSHIPS:
+    %{relationships}
+
+    RECENT MEMORIES:
+    %{recent_memories}
+
+    WHAT'S BEEN HAPPENING AT THIS LOCATION:
+    %{location_recap}
+
+    TIME GAP: %{gap_duration} since anyone last interacted with %{npc_name}.
+
+    Write 2-4 sentences describing what %{npc_name} has been doing during this time. This is internal context — not dialogue or emotes. Consider:
+    - How their personality shapes how they spend idle time
+    - Whether location events affected them
+    - Progress or setbacks on their goals
+    - Small personal moments (a meal, a repair, a conversation with a passerby)
+
+    Keep it specific and grounded. Write in past tense, third person.
+
+# ==============================================================================
+# HELP SYSTEM
+# ==============================================================================
+help:
+  # Autohelper system prompt
+  system: |
+    You are a helpful game assistant for a web based, text-RPG MUD game.
+    Your job is to assist players struggling with game commands, systems, lore, and mechanics.
+    Be concise (1-2 short paragraphs max), mention specific command names, include syntax examples.
+    Don't make up commands that don't exist in the provided context.
+
+  # Autohelper with documentation assessment - returns JSON
+  autohelper_with_assessment: |
+    You are a helpful game assistant for a web based, text-RPG MUD game.
+    Your job is to assist players struggling with game commands, systems, lore, and mechanics.
+
+    IMPORTANT: You MUST respond with valid JSON in this exact format:
+    {
+      "answer": "Your helpful response to the player (1-2 short paragraphs max, mention specific command names, include syntax examples, don't make up commands that don't exist in the provided context)",
+      "doc_assessment": {
+        "has_issue": true or false,
+        "issue_type": "missing" or "incomplete" or "contradictory",
+        "severity": "critical" or "notable" or "minor",
+        "topic": "the helpfile topic that needs attention",
+        "description": "what is wrong or missing from the documentation"
+      }
+    }
+
+    Documentation assessment rules:
+    - "missing": No helpfile exists for this topic and one clearly should
+    - "incomplete": A helpfile exists but doesn't cover what the player asked about
+    - "contradictory": A helpfile says something inconsistent with other helpfiles or game systems
+    - "critical": An entire command or system has no documentation, or documentation is actively wrong
+    - "notable": A helpfile exists but is missing important details that players need
+    - "minor": Small omission or could-be-clearer wording, not blocking player understanding
+    - Set has_issue to false if the existing documentation adequately answers the question
+    - Only flag genuine documentation gaps, not player misunderstanding
+
+  query_response: |
+    A player asked for help: "%{query}"
+
+    Relevant helpfiles:
+    %{helpfile_context}
+
+    Player context:
+    - Current activity: %{current_activity}
+    - Recent interactions: %{recent_activity}
+
+    Provide a helpful, natural response that:
+    1. Answers their question directly
+    2. Uses simple, game-appropriate language
+    3. Offers next steps or related commands
+    4. References helpfiles if relevant
+    5. Keeps it to 2-3 sentences
+
+    Write as if you're a friendly game guide.
+
+# ==============================================================================
+# BATTLE MAP GENERATION
+# ==============================================================================
+battle_maps:
+  image_generation: |
+    Top-down fantasy battlemap for: %{room_name}
+
+    Setting: %{description}
+    Category: %{category}
+    Room dimensions: %{width}ft wide (X-axis, east-west) x %{height}ft tall (Y-axis, north-south)
+    Scale: approximately %{arena_width} columns x %{arena_height} rows
+
+    %{furniture_details}
+
+    Generate a shadowless gridless tactical battlemap with clear terrain features,
+    avoiding a grid pattern. No shadows. The image should show environmental details
+    suitable for hexagon overlay analysis.
+
+  hex_analysis: |
+    Analyze this labeled battle map image. For each labeled hex, determine its terrain features based on what you see in the image.
+
+    Room dimensions: %{room_width}ft wide x %{room_height}ft tall. Each hex covers approximately %{hex_size}ft.
+    Grid: %{arena_columns} columns x %{arena_rows} rows (%{total_hexes} hexes total).
+
+    Hexes to analyze: %{hex_labels}
+
+    Return a JSON object with this exact structure:
+    {
+      "hexes": [
+        {
+          "label": "1-A",
+          "terrain": "floor",
+          "cover_object": "none",
+          "cover_value": 0,
+          "hazard": "none",
+          "elevation": 0,
+          "water_type": "none",
+          "surface": "stone"
+        }
+      ]
+    }
+
+    Field values must be from these options:
+    - terrain: "floor" (open), "wall" (impassable), "water" (any water), "pit" (hole/drop), "difficult" (debris/rough), "blocked" (furniture/obstacle)
+    - cover_object: "table", "pillar", "crate", "tree", "rock", "barrel", "bed", "desk", "couch", "shelf", "boulder", "car", "bush", "none"
+    - cover_value: 0 (none), 1 (light), 2 (medium), 3 (heavy)
+    - hazard: "fire", "ice", "acid", "spikes", "electricity", "poison", "none"
+    - elevation: -2 to 2 (negative for pits/lower, positive for raised platforms)
+    - water_type: "puddle", "wading", "swimming", "deep", "none"
+    - surface: "stone", "wood", "dirt", "grass", "sand", "metal", "carpet", "tile", "concrete"
+
+    Guidelines:
+    - Mark "blocked" for hexes that appear to be solid furniture or large obstacles
+    - Mark cover_object if you see any object that could provide cover
+    - Only mark hazards if clearly visible (fire, ice patches, glowing areas, etc.)
+    - Elevation 0 is ground level; use -1 or -2 for lower areas, +1 or +2 for raised areas
+    - If unsure, default to terrain="floor", surface="stone", and other fields as "none" or 0
+
+  # --- Advanced classification pipeline prompts ---
+
+  classification:
+    # Approach B: overview-constrained chunk classification (ai_battle_map_generator_service)
+    overview_chunk: |
+      You are classifying hexes in the %{position_label}. %{hex_format}
+      Room: %{room_w}ft x %{room_h}ft. Each hex = %{hex_size_feet}ft. %{hex_count} hexes in this section.
+
+      SCENE: %{scene_description}
+      MAP LAYOUT: %{map_layout}
+      %{chunk_context}
+
+      %{spatial_context}
+
+      %{filtered_types_ref}
+
+      %{visual_guide}
+
+      %{conservative_classification}
+      %{crop_warning}
+      %{ground_level_rule}
+
+      The response schema constrains hex_type to the types identified in the overview pass. Any hex you OMIT defaults to open_floor.
+
+      Valid hex labels: %{hex_labels}
+
+    # Grouped chunk classification with brief context
+    grouped_chunk: |
+      You are classifying one section of a larger battle map, focusing just on the area under the hexes. The feature list includes features from the whole map, most of which you cannot see at all, not all features will appear in every section. Just classify your section under the hexes.
+
+      Possible features: %{feature_types}.
+      Setting: %{brief_context}
+
+      Write a short area_description of what is under the numbered hexes in this section. Then, focusing on just the area under the hexes, list all wall hexes, that is hexes characters could not stand on or move through. If there aren't any wall hexes in your area, just leave it blank.
+      Then for each distinct feature, list it with description, size, and hex labels.
+      A hex belongs to a feature only if the feature covers its center point. It's fine to put windows, doors and other types of openings as on the same location as walls, but not other types of features.
+
+      List each distinct object separately (e.g. two barrels = two separate entries).
+
+    # Legacy full-property classification (battle_map_test_gallery_service)
+    simple: |
+      Classify hexes in this cropped battle map section. %{hex_format}
+      Room: %{room_w}ft x %{room_h}ft. Each hex = %{hex_size_feet}ft. %{hex_count} hexes in this section.
+
+      %{spatial_context}
+
+      %{crop_warning}
+      %{ground_level_rule}
+
+      For each hex, identify what occupies it at ground level. The response schema constrains hex_type to a predefined enum.
+      SKIP open_floor hexes — any hex you omit defaults to open_floor. Use "other" ONLY if nothing in the enum matches.
+
+      KEY DISTINCTIONS:
+      - wall = solid impassable. glass_window = window with glass. open_window = window without glass.
+      - tree = single tree (passable). dense_trees = impassable cluster.
+      - shallow_water = wade-through. deep_water = impassable.
+
+      Valid hex labels: %{hex_labels}
+
+  overview:
+    # Scene analysis pre-pass (ai_battle_map_generator_service)
+    analysis: |
+      Analyze this top-down battle map image. Room: "%{room_name}" (%{room_w}ft x %{room_h}ft).
+      Description: %{description}
+
+      %{types_reference}
+
+      CLASSIFICATION RULES:
+      1. WHEN IN DOUBT, DO NOT TAG IT. Only tag things you are confident about.
+      2. Only tag things that affect the FLOOR tactically: block movement, provide cover, create hazards, or change elevation.
+      3. Wall-mounted objects (weapon displays, shelves, mounted decorations) are part of the wall — do NOT create separate types for them.
+      4. Only create a custom type if NOTHING in the standard list captures its tactical effect AND it occupies floor space.
+      5. Do NOT create multiple variants of the same thing (e.g. table_rectangular + table_round → just "table").
+      6. DO NOT include "open_floor" or "other".
+      7. DO include "off_map" for void/black border areas outside the playable map.
+
+      EDGE & BOUNDARY DETECTION:
+      - WALLS: Look for solid borders along room edges.
+      - WINDOWS: Look for light spilling inward, translucent panes, or visible exterior scenery.
+      - DOORS & ARCHWAYS: Look for gaps in wall borders that are passage-sized.
+      - OFF_MAP: Only solid black/void areas clearly outside the playable space.
+
+      For visual_description: describe what each type LOOKS LIKE so workers can identify it in cropped sections.
+      For map_layout: describe WHERE things are spatially (north/south/center/edges).
+      For regional_types: list which non-floor types appear in each compass region (northwest, north, northeast, west, center, east, southwest, south, southeast). Do NOT include wall or off_map — those are always available. Only list regions that have non-floor objects.
+
+  grid:
+    # L1: Full image grid analysis with thinking
+    l1_analysis: |
+      Analyze this top-down battle map divided into a %{grid_n}x%{grid_n} numbered grid (1-%{total_squares}, left to right, top to bottom).
+
+      STEP 1 — Describe the scene in one sentence (scene_description).
+
+      STEP 2 — Wall structure and visual descriptions:
+      - has_perimeter_wall: TRUE if the map has an outer boundary wall enclosing the space (room, building, dungeon cell). FALSE for open terrain (forest, field, street with no enclosing walls).
+      - has_inner_walls: TRUE only if there are structural partition walls INSIDE the space dividing it into sub-rooms or corridors. Do NOT count the outer perimeter wall. Do NOT count furniture or objects. FALSE for a single open room even if described as an "interior" space.
+      - wall_visual: what walls look like (color, material, texture — e.g. "thick dark grey stone blocks")
+      - floor_visual: what the floor looks like (color, material, texture — e.g. "warm brown wooden planks", "grey stone tiles")
+      - lighting_direction: which direction shadows are cast (e.g. "shadows fall to the southeast") or "no visible shadows"
+      These help distinguish walls from floor and shadows in zoomed-in sections.
+
+      STEP 3 — Identify feature types.
+
+      List which of these STANDARD types are visible on the map (standard_types_present). For each one, include:
+      - visual_description: what it looks like ON THIS SPECIFIC MAP (color, shape, material — e.g. "dark brown rectangular wooden tables", "small grey metal circles")
+      - short_description: 2-4 words that visually identify THIS object on THIS map, for use as an image segmentation query (e.g. "dark wooden table", "grey stone pillar", "iron-banded barrel"). NO articles (a/the). Be specific to what's actually visible.
+      %{standard_feature_types}
+
+      Pay special attention to:
+      - Doors, archways, gates, and any gaps or openings in walls that allow passage. These are small but critically important.
+      - Staircases and ladders — note which DIRECTION they go up toward (north, south, east, west, etc.) in the visual_description.
+      - Tree trunks (treetrunk) — thick individual tree trunks that block movement.
+      - Tree branches/canopy (treebranch) — overhead foliage/canopy that provides cover but is traversable.
+      - Shrubbery includes bushes, hedges, low foliage, and undergrowth — things you can hide inside for concealment.
+      - Pillars — structural columns that block movement.
+
+      Then, if there are objects that don't match any standard type above, add them as custom_types.
+      Custom types are ALWAYS TRAVERSABLE — if something blocks movement entirely, it is a wall (already detected separately — do NOT list walls as types).
+      NEVER create custom types for walls, partitions, barriers, or any impassable structure. Use has_inner_walls instead.
+      Custom types need: type_name (snake_case), visual_description, short_description (2-4 words for image segmentation), and tactical properties.
+      Only create custom types for things that affect the floor tactically.
+      Wall-mounted objects (weapon displays, shelves, mounted decorations) are part of the wall — do NOT list them.
+
+      STEP 4 — For each numbered square (ALL %{total_squares}), describe what's in it:
+      - has_walls: TRUE if this square contains areas where characters CANNOT stand or walk through. This includes room perimeter walls, structural dividers, thick pillars that are part of the wall structure, and any impassable barrier. Think of "wall" as any part of the map image that is not playable floor or a feature object.
+      - wall_description: describe the walls (e.g. "stone walls along north and west edges"). Empty string if none.
+      - has_interior_walls: are there partition walls INSIDE the room dividing the space? (not the room perimeter)
+      - interior_wall_description: describe interior walls if present. Empty string if none.
+      - objects: list each distinct object or cluster with its type, count, and location within the square (e.g. "3 barrels in the northwest corner", "1 table in the center"). For staircases/ladders, include which direction they ascend in the location (e.g. "1 staircase ascending northward in the east").
+
+      Include ALL %{total_squares} squares even if they are just open floor — describe them as such with empty objects list.
+
+      STEP 5 — Perimeter wall doors (perimeter_wall_doors):
+      If has_perimeter_wall is true, list the compass directions (n/s/e/w/nw/ne/sw/se) where you can clearly see a door, archway, gate, or opening in the outer boundary wall.
+      Only include directions you are confident about — it is better to omit uncertain doors than to guess wrong.
+
+      STEP 6 — Internal walls (internal_walls):
+      If has_inner_walls is true, list each interior partition wall you can clearly see.
+      For each wall: its location in the room (n/s/e/w/nw/ne/sw/se/center), whether it has a visible door or opening (has_door), and which side the door is on (door_side, or "none").
+      Again, only include walls you are confident about.
+
+    # L2: Per-square refinement into 2x2 subsquares
+    l2_refinement: |
+      This section of a battle map is divided into a 2x2 numbered grid (1-4, left to right, top to bottom):
+
+       1 | 2
+      -------
+       3 | 4
+
+      %{context}
+
+      For ALL 4 subsquares, describe what is in each one:
+      - has_walls: TRUE if any part of this subsquare is an area where characters CANNOT stand or walk through — room perimeter walls, structural barriers, thick impassable borders. "Wall" means any non-playable, impassable part of the map image.%{wall_inheritance}
+      - wall_pct: percentage of the subsquare covered by wall/impassable structures (0 if no walls)
+      - floor_pct: percentage of the subsquare that is open walkable floor (100 if empty)
+      - objects: list each distinct object or cluster with type, count, location, and coverage_pct (how much of the subsquare it takes up, 0-100). For staircases/ladders, include which direction they ascend (e.g. "ascending northward").
+      %{types_instruction}
+
+      Include ALL 4 subsquares. Subsquares that are just open floor should have empty objects, has_walls false, wall_pct 0, floor_pct 100.
+      When in doubt, leave has_walls as false — it is better to under-classify than over-classify.
+
+    # L3: Per-subsquare hex-level placement
+    l3_placement: |
+      This small section of a battle map has a numbered grid overlay.
+
+      Tasks — assign grid cell numbers for each:
+      %{tasks}
+      %{floor_hint}
+      Rules:
+      - %{wall_rule}
+      - "features" = objects on the floor. Mark cells where the object physically sits.
+      - Cells not in any list are open floor — when in doubt, leave a cell as floor.%{floor_visual_rule}
+      - Dark areas next to walls or objects are SHADOWS, not walls or features. Shadows are floor.%{lighting_rule}
+      - For staircases/ladders: note the direction they ascend in the feature description.
+
+  gallery:
+    # Full-property classification for test gallery (battle_map_test_gallery_service)
+    classification: |
+      Classify hexes in this cropped battle map section. %{hex_format}
+      Room: %{room_w}ft x %{room_h}ft. Each hex = %{hex_size_feet}ft. %{hex_count} hexes in this section.
+
+      %{spatial_context}
+
+      %{crop_warning}
+      %{skip_open_floor}
+      %{ground_level_rule}
+
+      Only set properties that differ from defaults. The response schema describes each property.
+
+      KEY DISTINCTIONS the schema can't capture:
+      - Cover means a PHYSICAL BARRIER stopping projectiles (pillars, thick trunks, boulders, barrels). Tables, chairs, brush = NOT cover.
+      - Concealment means VISUAL OBSCUREMENT without stopping projectiles (fog, foliage, tall grass, thin curtains).
+      - Single tree trunk: provides_cover + traversable. Dense tree cluster blocking movement: is_wall.
+      - Overhead canopy is NOT a wall — classify the ground beneath it.
+      - Flat difficult terrain (mud, ice) does NOT provide cover.
+
+      Valid hex labels: %{hex_labels}
+
+    # Simple enum classification for test gallery
+    simple_classification: |
+      Classify hexes in this cropped battle map section. %{hex_format}
+      Room: %{room_w}ft x %{room_h}ft. Each hex = %{hex_size_feet}ft. %{hex_count} hexes in this section.
+
+      %{spatial_context}
+
+      %{crop_warning}
+      %{ground_level_rule}
+
+      For each hex, identify what occupies it at ground level. The response schema constrains hex_type to a predefined enum.
+      SKIP open_floor hexes — any hex you omit defaults to open_floor. Use "other" ONLY if nothing in the enum matches.
+
+      KEY DISTINCTIONS:
+      - wall = solid impassable. glass_window = window with glass. open_window = window without glass.
+      - tree = single tree (passable). dense_trees = impassable cluster.
+      - shallow_water = wade-through. deep_water = impassable.
+
+      Valid hex labels: %{hex_labels}
+
+    # Overview pre-pass for test gallery
+    overview: |
+      Analyze this top-down battle map image. Room: "%{room_name}" (%{room_w}ft x %{room_h}ft).
+      Description: %{description}
+
+      %{chunk_region_text}
+
+      %{standard_types_ref}
+
+      CLASSIFICATION RULES:
+      1. WHEN IN DOUBT, DO NOT TAG IT. If you're unsure whether something is significant enough to classify, leave it as open floor. It is far better to miss a minor feature than to incorrectly tag open ground as an obstacle. Only tag things you are confident about.
+      2. Read the type descriptions carefully. Each type has a specific tactical meaning — only tag something if it genuinely matches that meaning. Ask yourself: "would this actually block movement / provide cover / create a hazard for a person standing here in line with the chosen feature type?"
+      3. Only create a custom type if NOTHING in the standard list captures its tactical effect. If you do, FILL custom_type_justification.
+      4. Do NOT create multiple variants of the same thing (e.g. table_rectangular + table_round → just "table").
+      5. DO NOT include "open_floor" or "other" — workers omit empty hexes; they default to open floor.
+      6. DO include "off_map" for void/black border areas outside the playable map.
+
+      EDGE & BOUNDARY DETECTION:
+      - WALLS: Look for solid borders along room edges, thick lines separating areas, stone/brick textures at boundaries.
+      - WINDOWS: Look for light spilling inward from outside (bright patches on interior walls), translucent/reflective rectangular panes, or visible exterior scenery through wall openings.
+      - DOORS & ARCHWAYS: Look for gaps in wall borders that are passage-sized, hinged panels, door frames. Archways are open passages (curved or rectangular openings in walls, corridor entrances).
+      - OFF_MAP: Only solid black/void areas that are clearly outside the playable space. Dark stone floors, shadowed areas, and dark-colored terrain INSIDE the map are NOT off_map.
+      - Be thorough with boundary features — walls, windows, doors, and archways at map edges are frequently missed. Trace the entire perimeter.
+
+      For visual_description: describe what each type LOOKS LIKE (color, shape, texture) so workers can identify it in cropped sections.
+      For map_layout: describe WHERE things are spatially (north/south/center/edges).
+      %{chunk_desc_instruction}
+
+# ==============================================================================
+# GENERATORS - Content Generation Prompts
+# ==============================================================================
+generators:
+  # Adversary combat stats generation
+  adversary_stats: |
+    Generate combat statistics for this adversary in a %{setting} RPG.
+
+    ADVERSARY:
+    Name: %{name}
+    Description: %{description}
+    Role: %{role}
+    Behavior: %{behavior}
+
+    DIFFICULTY TIER: %{difficulty}
+
+    STAT GUIDELINES BY ROLE:
+    - boss: High HP (25-40), high damage (3d8+4 to 4d8+6), moderate defense, special abilities
+    - lieutenant: Medium HP (15-25), medium damage (2d8+2 to 3d8+4), balanced stats
+    - minion: Low HP (5-12), low damage (1d8 to 2d8+2), simple attacks
+
+    DIFFICULTY SCALING:
+    - easy: -20%% from base stats
+    - normal: Base stats as written
+    - hard: +20%% from base stats
+
+    Consider the adversary's description and behavior when assigning stats:
+    - Fast/agile enemies: higher speed_modifier
+    - Defensive enemies: higher defense_bonus
+    - Aggressive enemies: higher damage stats
+    - Cunning enemies: balanced with ability_chance
+
+    OUTPUT FORMAT (JSON only):
+    {
+      "max_hp": <integer>,
+      "damage_dice_count": <integer 1-4>,
+      "damage_dice_sides": <integer 6|8|10|12>,
+      "damage_bonus": <integer>,
+      "defense_bonus": <integer>,
+      "speed_modifier": <integer -2 to +2>,
+      "ability_chance": <integer 0-50>,
+      "flee_threshold": <integer 0-30>,
+      "ai_profile": "aggressive|defensive|balanced|berserker|guardian|coward"
+    }
+
+  # Combined item name + description generation
+  item_profile: |
+    Create a %{setting} %{type_str} with both a name and description.
+
+    INSPIRATION (pick 1-2 that fit, ignore rest): %{terms_str}
+
+    **name** (5-12 words):
+    - A short descriptive phrase of the item's key visual features
+    - Include color AND material
+    - Evocative but not purple prose
+    - Could be used as an inventory listing
+    - Examples: "A deep burgundy silk gown with gold embroidery at the hem",
+      "A curved steel hunting knife with a bone handle"
+
+    **description** (2-3 sentences):
+    MANDATORY ATTRIBUTES (must include ALL):
+    %{mandatory_attributes}
+
+    STYLE GUIDANCE:
+    %{style_guidance}
+
+    - Present tense, third person
+    - Start with the primary color or material
+    - Be specific and concrete, not vague
+    - No purple prose or flowery language
+    - Must be consistent with the name
+    - Write like a quality catalog listing
+
+  # Item name generation
+  item_name: |
+    Write a short descriptive name for a %{setting} %{type_str}.
+
+    INSPIRATION (pick 1-2 that fit, ignore rest): %{terms_str}
+
+    Requirements:
+    - A short phrase or sentence (5-12 words)
+    - Describe the item's key visual features
+    - Include color AND material
+    - Evocative but not purple prose
+    - Fits a %{setting} setting
+    - Could be used as an inventory listing
+
+    Examples for clothing:
+    - "A deep burgundy silk gown with gold embroidery at the hem"
+    - "Weathered brown leather boots with brass buckles"
+    - "A flowing white linen shirt with loose sleeves"
+
+    Examples for weapons:
+    - "A curved steel hunting knife with a bone handle"
+    - "An ornate silver-hilted dueling sword"
+    - "A blackened iron mace with leather grip wrapping"
+
+    Examples for jewelry:
+    - "A tarnished silver pendant on a thin chain"
+    - "A heavy gold signet ring with an onyx stone"
+    - "A delicate copper bracelet with green patina"
+
+    Just respond with the item name, nothing else.
+
+  # Item description generation
+  item_description: |
+    Write a product description for this %{setting} %{type_str}: "%{name}"
+
+    INSPIRATION SEEDS (pick 1-2 that resonate, ignore the rest):
+    %{terms_str}
+    These are optional suggestions - only use what fits naturally. Quality comes first.
+
+    MANDATORY ATTRIBUTES (must include ALL):
+    %{mandatory_attributes}
+
+    STYLE GUIDANCE:
+    %{style_guidance}
+
+    FORMAT REQUIREMENTS:
+    - 2-3 sentences maximum
+    - Present tense, third person
+    - Start with the primary color or material
+    - Be specific and concrete, not vague
+    - No purple prose or flowery language
+    - No "This is" or starting with articles
+    - Write like a quality catalog listing
+
+    GOOD EXAMPLE for clothing:
+    "Deep burgundy silk with subtle gold threading along the hem. The fitted bodice features delicate bone stays and a sweetheart neckline. Falls to mid-calf with a modest train."
+
+    BAD EXAMPLE (too vague):
+    "A beautiful dress that looks elegant and mysterious. It has an otherworldly quality."
+
+    Just write the description, nothing else.
+
+  # Mission room description generation
+  mission_room: |
+    Write a brief room description for this %{setting} location:
+    Name: %{name}
+    Type: %{room_type}
+    Context: %{description}
+
+    INSPIRATION (pick 1-2 that fit): %{seed_terms}
+
+    Requirements:
+    - 2-3 sentences
+    - Describe atmosphere, lighting, key features
+    - Present tense, third person
+    - Don't start with "This is"
+
+    Just write the description.
+
+# ==============================================================================
+# GENERATION PIPELINE - Validation & Selection
+# ==============================================================================
+generation_pipeline:
+  # Seed term instructions for creative inspiration
+  seed_instructions: |
+    INSPIRATION SEEDS (choose 1-2 that resonate, ignore the rest):
+    %{seeds}
+
+    These are optional thematic suggestions - pick at most 1-2 that inspire you.
+    Do NOT force all of them in. Do NOT let seeds compromise quality.
+    If none fit naturally, ignore them entirely. Quality comes first.
+
+  # Content validation prompt
+  validation: |
+    Evaluate if the following content meets these criteria:
+
+    CRITERIA:
+    %{criteria}
+
+    CONTENT TO EVALUATE:
+    %{content}
+
+    Respond with JSON:
+    {
+      "valid": true/false,
+      "reason": "brief explanation",
+      "issues": ["list", "of", "issues"] (empty if valid)
+    }
+
+  # Retry prompt with feedback
+  retry: |
+    %{original_prompt}
+
+    Your previous attempt did not meet requirements:
+    Previous output: %{failed_content}
+
+    Issues found:
+    %{issues_list}
+
+    Requirements:
+    %{criteria}
+
+    Please write a new response that addresses these issues.
+
+  # Selection prompt for choosing best option
+  selection: |
+    Choose the best name from these options for the following context:
+
+    OPTIONS:
+    %{options_list}
+
+    CONTEXT:
+    %{context_str}
+
+    Respond with JSON:
+    {
+      "selected": "the exact chosen name",
+      "reasoning": "brief explanation of why this fits best"
+    }
+
+# ==============================================================================
+# AUTO GM - Compression & Events
+# ==============================================================================
+auto_gm_compression:
+  # Summarize actions into event summary
+  event_summary: |
+    Summarize these adventure events in 2-3 sentences. Focus on key plot developments and character actions.
+
+    Adventure: %{adventure_title}
+    Level: %{level}
+
+    Events:
+    %{action_texts}
+
+    Write a concise narrative summary.
+
+  # Abstract lower-level summaries into higher level
+  abstraction: |
+    Combine these %{source_level}-level summaries into a single %{target_level}-level summary.
+    Focus on the most important developments. Write 2-4 sentences.
+
+    Adventure: %{adventure_title}
+
+    Summaries to combine:
+    %{summary_texts}
+
+    Write a cohesive %{target_level} summary.
+
+auto_gm_incite:
+  # Generate inciting narrative
+  narrative: |
+    Generate a dramatic, immediate inciting incident narrative for a spontaneous adventure.
+
+    Adventure: %{title}
+    Setting: %{setting_flavor}
+    Mood: %{mood}
+
+    Incident Type: %{incident_type}
+    Brief Description: %{incident_description}
+    NPC Involved: %{npc_involved}
+    Immediate Threat: %{immediate_threat}
+
+    Location: %{location_name}
+    Characters Present: %{character_names}
+
+    Write 2-3 sentences that:
+    1. Grab attention immediately
+    2. Create urgency
+    3. Make it clear something must be done NOW
+    4. Use vivid sensory details
+
+    Be dramatic but brief. This is the hook that starts the adventure.
+
+auto_gm_event:
+  # Contextualize random chaos-driven event
+  contextualize: |
+    Generate a brief random event for this adventure. Write 1-2 dramatic sentences.
+
+    Adventure: %{title}
+    Mission: %{mission_objective}
+    Current Stage: %{current_stage} (%{status})
+    Chaos Level: %{chaos_level}/9
+
+    Event Focus: %{focus} - %{focus_description}
+
+    NPCs in adventure: %{npcs_list}
+    Secrets revealed: %{secrets_list}
+    Characters: %{character_names}
+
+    Write the event as dramatic narration. Be specific to this adventure.
+    %{focus_instruction}
+
+# ==============================================================================
+# NPC ANIMATION
+# ==============================================================================
+npc_animation:
+  # Main system prompt for NPC emote generation (used by NpcAnimationHandler)
+  system_prompt: |
+    You are %{character_name}, an NPC in a %{game_setting} setting.
+
+    %{personality_prompt}
+
+    %{voice_sections}
+    WRITING GUIDELINES:
+    - Write in third person limited point of view, present tense
+    - Write a single paragraph of around 50 words
+    - Show, don't tell - let dialogue and action explain the story
+    - The character should feel like a real, complex, three-dimensional adult
+    - Write short emits that are to-the-point; brevity is the soul of wit
+    - Encourage further engagement with questions, opinions, or actions that invite response
+    - Craft dialogue that reflects natural speech patterns without overdoing slang
+    - Be witty, intelligent, thoughtful - interested in others' thoughts and opinions
+    - Avoid cliche phrases: "only time will tell", "a knowing smile", "the air thick with tension"
+    - End with action or dialogue, never with a thought summary
+
+    RULES:
+    - Only include things said and done by %{forename}
+    - Only reference facts, events, places, and people already mentioned
+    - Stay in the current area
+    - Never invent lore or abilities - err on the side of being a normal person
+    - Let other characters choose conversation topics and stay within those topics
+    - Start your response with: %{forename}
+    - You have your own opinions and will disagree when your personality demands it
+    - Do not automatically agree with or flatter player characters
+    - React authentically based on your personality, even if that means being difficult or unhelpful
+
+    %{context}
+    %{seed_instruction}
+
+  # Judge response probability (for medium animation level)
+  response_probability: |
+    You are judging whether an NPC would naturally respond in a roleplay scene.
+
+    NPC: %{npc_name}
+    Personality: %{personality}
+
+    Someone in the room said/did: "%{content}"
+
+    How likely is this NPC to respond? Consider:
+    - Is it directed at them or relevant to their interests?
+    - Would their personality compel them to react?
+    - Is this something they'd notice and care about?
+
+    Reply with JSON: {"probability": 0.0} to {"probability": 1.0}
+    - 0.0 = would definitely not respond
+    - 0.3 = might respond if feeling chatty
+    - 0.6 = would likely respond
+    - 0.9 = would almost certainly respond
+
+  # Generate NPC emote
+  emote: |
+    You are an author writing %{full_name}, an NPC in a text-based RPG.
+
+    CHARACTER: %{full_name}
+    PERSONALITY: %{personality}
+
+    RULES:
+    - Write a single action in third person
+    - Start with: %{forename} [action]
+    - 1-3 sentences maximum
+    - Stay in character, never break fourth wall
+    - React naturally to the scene
+
+    %{context}
+
+    Write %{forename}'s response:
+
+  # Generate outfit on spawn
+  outfit: |
+    Generate a brief outfit description for %{full_name},
+    a %{personality}.
+
+    Keep it to 1-2 sentences describing what they're wearing.
+    Be specific and evocative, matching their personality.
+
+  # Generate status on spawn
+  status: |
+    Generate a brief activity status for %{full_name},
+    a %{personality}, in %{location_name}.
+
+    Write a short phrase (3-8 words) describing what they're doing.
+    Examples: "cleaning the bar counter", "examining some papers", "watching the crowd"
+
+  # Evaluate how an NPC's feelings changed during an interaction
+  evaluate_interaction: |
+    Evaluate how an NPC's feelings changed during this interaction.
+
+    NPC: %{npc_name}
+    Personality: %{personality}
+    Behavior: %{behavior_pattern}
+
+    What prompted them: %{trigger_content}
+    Their response: %{emote_response}
+
+    Return JSON:
+    {"sentiment_delta": <-0.2 to 0.2>, "trust_delta": <-0.1 to 0.1>, "notable_event": <string or null>}
+
+    Guidelines: pleasant chat → small positive. Insult → negative. Mundane → near zero. Help → larger positive.
+
+# ==============================================================================
+# PET ANIMATION
+# ==============================================================================
+pet_animation:
+  # Generate pet emote
+  emote: |
+    You are %{pet_name}, %{pet_desc}. You are a magical pet belonging to %{owner_name}.
+
+    You are a small, endearing creature with your own personality. You CANNOT speak or use words - you can only perform physical actions and make creature sounds appropriate to your type such as (%{pet_sounds}).
+
+    Write a single short action (1-2 sentences max) that %{pet_name} performs. The action should be in third person. Start directly with the pet's action.
+
+    IMPORTANT RULES:
+    - Do NOT use any speech, dialogue, or words the pet would say
+    - Only physical actions and creature sounds
+    - Keep it brief (1-2 sentences)
+    - React naturally to recent activity if relevant
+
+    Good examples:
+    - "The tiny elephant trumpets softly and flaps its ears."
+    - "The dragonling curls up and puffs a tiny smoke ring toward the ceiling."
+    - "The clockwork hummingbird whirs over to hover near %{owner_name}'s shoulder."
+    - "The spectral wolf pup yawns, its translucent form flickering briefly."
+
+    Bad examples (DO NOT DO THESE):
+    - Anything with quotation marks or spoken words
+    - "Hello!" said the pet (NO SPEECH)
+    - Long paragraphs of description
+
+    Recent room activity:
+    %{recent_context}
+
+    %{trigger_section}
+
+    What does %{pet_name} do?
+
+# ==============================================================================
+# ATMOSPHERIC EMITS
+# ==============================================================================
+atmospheric:
+  # Room atmospheric description
+  room_emit: |
+    You are generating a brief atmospheric description for a MUD/text RPG room.
+
+    Context:
+    - Room: %{room_name} (%{room_type})
+    - Description: %{room_description}
+    - Time: %{time_of_day} during %{season}
+    - Weather: %{weather}
+    - Publicity: %{publicity} space
+    - Players present: %{characters_present}
+    %{memories_line}
+
+    Write ONE brief atmospheric sentence (max 20 words) describing ambient sights, sounds, smells, or sensations appropriate for this setting. Be subtle and evocative. Do not mention player characters. Focus on environmental details.
+
+    Examples:
+    - "A cool breeze carries the scent of rain through the open windows."
+    - "Distant thunder rumbles beyond the hills."
+    - "Dust motes dance in the afternoon light."
+
+    Response (just the sentence, no quotes):
+
+
+# ==============================================================================
+# WEATHER PROSE
+# ==============================================================================
+weather:
+  # Generate atmospheric weather prose description
+  prose_enhancement: |
+    Write ONE atmospheric sentence for a text-based game describing the current weather.
+    Present tense. Evocative and sensory. No numbers or statistics. Max 20 words.
+
+    Conditions: %{time_of_day}, %{moon_phase} moon, %{intensity} %{condition}, %{wind_description}, %{cloud_description}, %{temp_description}.
+
+    Response (just the sentence, no quotes):
+
+# ==============================================================================
+# CHARACTER STORY
+# ==============================================================================
+character_story:
+  chapter_title: |
+    Based on the following roleplay log excerpts, generate a short, evocative chapter title (3-5 words).
+    The title should capture the mood, theme, or key event of the chapter.
+
+    Respond with ONLY the title, nothing else.
+
+    Log excerpts:
+    %{excerpts}
+
+# ==============================================================================
+# SMARTEMOTE (LLM Action Extraction)
+# ==============================================================================
+semote:
+  action_extraction:
+    system: |
+      You parse roleplay emotes to extract mechanical game actions.
+      Return a JSON array of actions in execution order.
+      Only include actions clearly implied by the emote - don't infer unstated actions.
+      If no mechanical actions are implied, return an empty array.
+
+      Rules:
+      - Pick the most contextually appropriate target when ambiguous
+      - Movement actions (walk, approach) should precede position-dependent actions (sit)
+      - Consumption actions (eat, drink, smoke) require the item to be in inventory
+      - Social actions (wave, hug) require the target character to be present
+      - NEVER include blocked commands: pay, transfer, deposit, withdraw, ooc, say, whisper, tell, page, teleport, summon, ban, kick, mute, gag, goto, wizinvis, possess, description, setdesc, password, email, delete, suicide, quit, logout, disconnect
+
+    user: |
+      Emote: "%{emote_text}"
+      Character: %{character_name} (currently %{stance}%{place_context})
+
+      Room context:
+      Furniture: %{furniture_list}
+      Characters present: %{characters_list}
+      Exits: %{exits_list}
+
+      Character inventory (for eat/drink/smoke): %{inventory_summary}
+
+      Available commands: walk, approach, sit, stand, lie, kneel, crouch, eat, drink, smoke, wave, bow, hug, kiss, get, take, drop, give, put, open, close
+
+      Return ONLY a JSON array, e.g.: [{"command": "sit", "target": "wooden chair"}]
+      If no actions apply, return: []
+
+  disambiguation:
+    user: |
+      Original emote: "%{emote_text}"
+      Command "%{command}" with target "%{original_target}" matched multiple options:
+      %{options}
+
+      Pick the most appropriate option based on the emote context.
+      Return ONLY JSON: {"choice": "selected option exactly as listed"}
+
+# ==============================================================================
+# NARRATIVE INTELLIGENCE
+# ==============================================================================
+narrative:
+  extract_entities: |
+    Analyze this text from a text-RPG world and extract entities and relationships.
+
+    TEXT:
+    %{content}
+
+    Extract:
+    1. Named entities (characters, locations, factions, items, concepts, events)
+    2. Relationships between entities
+
+    Return ONLY valid JSON:
+    {
+      "entities": [
+        {"name": "Entity Name", "type": "character|location|faction|item|concept|event", "description": "brief description", "aliases": [], "role": "central|mentioned|background", "confidence": 0.9}
+      ],
+      "relationships": [
+        {"source": "Entity A", "target": "Entity B", "type": "relationship_type", "context": "brief context", "bidirectional": false}
+      ]
+    }
+
+  extract_entities_comprehensive: |
+    Perform a thorough analysis of this text from a text-RPG world and extract all entities and relationships.
+
+    TEXT:
+    %{content}
+
+    Extract ALL:
+    1. Named entities (characters, locations, factions, items, concepts, events)
+    2. Relationships between entities (allies, enemies, members, located_in, owns, etc.)
+
+    Be thorough - capture even minor mentions and implicit relationships.
+
+    Return ONLY valid JSON:
+    {
+      "entities": [
+        {"name": "Entity Name", "type": "character|location|faction|item|concept|event", "description": "brief description", "aliases": [], "role": "central|mentioned|background", "confidence": 0.9, "importance": 5}
+      ],
+      "relationships": [
+        {"source": "Entity A", "target": "Entity B", "type": "relationship_type", "context": "brief context", "bidirectional": false}
+      ]
+    }
+
+  thread_summary: |
+    Analyze these connected story elements from a text-RPG world and identify the narrative thread that connects them.
+
+    **Entities involved:**
+    %{entities}
+
+    **Relationships between them:**
+    %{relationships}
+
+    **Known reputations of key characters:**
+    %{reputation_context}
+
+    **Recent events (world memories):**
+    %{memories}
+
+    Based on these connected elements, describe the emerging storyline:
+
+    Return ONLY valid JSON:
+    {
+      "name": "A short evocative thread name (3-6 words, like a chapter title)",
+      "summary": "2-3 sentence summary of the storyline so far and where it seems to be heading",
+      "themes": ["theme1", "theme2", "theme3"],
+      "roles": [
+        {"entity_name": "Name", "role": "protagonist|antagonist|catalyst|setting|theme"}
+      ]
+    }
+
+# ==============================================================================
+# CITY GENERATION
+# ==============================================================================
+city_generation:
+  building_manifest: |
+    You are planning the buildings for a %{setting} city called "%{city_name}".
+    City size: %{city_size}. Available building slots: %{slot_count}.
+
+    Seed terms describing this city: %{seed_terms}
+
+    Create a list of %{slot_count} buildings that would exist in this city. Include a realistic mix:
+    - Taverns/inns for travelers
+    - Shops (blacksmiths, apothecaries, clothiers, jewelers, general stores)
+    - Temples/churches
+    - Guild halls, banks, libraries
+    - Residences (townhouses, mansions)
+    - Restaurants, cafes
+    - Warehouses (if a trading city)
+
+    Each building needs a unique, evocative name that fits the setting.
+    Vary the types — don't repeat the same type more than necessary.
+
+    VALID place_type values: tavern, inn, restaurant, general_store, blacksmith, apothecary, clothier, jeweler, bank, temple, guild_hall, library, townhouse, mansion, warehouse, cafe
+
+    Return ONLY a JSON array, no other text:
+    [
+      {"name": "The Golden Tankard", "place_type": "tavern", "character": "rowdy, popular"},
+      {"name": "Ironforge Smithy", "place_type": "blacksmith", "character": "industrial, reliable"},
+      ...
+    ]
+
+# ==============================================================================
+# NPC RELATIONSHIPS
+# ==============================================================================
+npc_relationships:
+  # Evaluate knowledge tier based on relationship data
+  knowledge_tier: |
+    NPC "%{npc_name}" has a relationship with "%{pc_name}".
+
+    Current data:
+    - Interactions: %{interaction_count}
+    - Sentiment: %{sentiment} (%{sentiment_descriptor})
+    - Trust: %{trust} (%{trust_descriptor})
+    - Current knowledge tier: %{current_tier}
+    - Notable events: %{events_text}
+
+    Knowledge tiers:
+    1 = Public reputation only (knows what everyone knows)
+    2 = Social circles (knows what people in similar circles know)
+    3 = Close associate (knows personal details, secrets, motivations)
+
+    Based on the relationship data, what knowledge tier should this NPC have about this character?
+    Consider: More interactions + higher trust = deeper knowledge. Few interactions = tier 1.
+
+    Return ONLY a single number: 1, 2, or 3
+
+# ==============================================================================
+# STREET NAMES
+# ==============================================================================
+street_names:
+  generate: |
+    Write a list of %{count} comma separated %{type_desc} for a roleplaying game set in %{zone_name}%{year_context} %{position_desc}. Do not repeat any. For example: %{examples}
+
+# ==============================================================================
+# BATTLEMAP V2
+# ==============================================================================
+battlemap:
+  wall_door_recolor:
+    with_inner_walls: >-
+      Can you turn the inner room walls to bright green, change any doors
+      in the inner room walls to bright pink. Change the outer walls to
+      bright blue and change any outer doors to bright red.
+    outer_only: >-
+      Can you change the outer walls to bright blue and change any outer
+      doors to bright red.
+

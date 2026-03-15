@@ -1,0 +1,330 @@
+<div class="card bg-base-200 mb-4">
+  <div class="p-4 border-b border-base-content/10 flex justify-between items-center">
+    <span class="flex items-center gap-2"><i class="bi bi-magic"></i>Combat Abilities</span>
+    <button type="button" class="btn btn-outline btn-success btn-sm" onclick="document.getElementById('createAbilityModal').showModal()">
+      <i class="bi bi-plus-lg mr-1"></i>Create New
+    </button>
+  </div>
+  <div class="card-body">
+    <p class="text-base-content/70 text-sm mb-4">
+      <i class="bi bi-info-circle mr-1"></i>
+      Assign abilities this NPC can use in combat. Set individual use chances (defaults to global ability chance above).
+    </p>
+
+    <!-- Add existing ability dropdown -->
+    <div class="form-control mb-4">
+      <label class="label">
+        <span class="label-text">Add Existing Ability</span>
+      </label>
+      <div class="join w-full">
+        <select class="select select-bordered join-item flex-1" id="ability-selector">
+          <option value="">-- Select ability to add --</option>
+          <% (@npc_abilities || []).each do |a| %>
+            <option value="<%= a.id %>" data-name="<%= h(a.name) %>" data-power="<%= a.power rescue 0 %>">
+              <%= h(a.name) %> (Power: <%= a.power rescue '?' %>)
+            </option>
+          <% end %>
+        </select>
+        <button type="button" class="btn btn-outline btn-primary join-item" onclick="addAbilityFromSelector()">
+          <i class="bi bi-plus-lg mr-1"></i>Add
+        </button>
+      </div>
+    </div>
+
+    <!-- Assigned abilities list -->
+    <div id="assigned-abilities-container">
+      <% abilities_with_chances = @archetype.combat_abilities_with_chances rescue [] %>
+      <% if abilities_with_chances.empty? %>
+        <div class="text-base-content/70 text-center py-8" id="no-abilities-message">
+          <i class="bi bi-lightning-charge text-4xl block mb-2"></i>
+          No abilities assigned. Use the dropdown above or create a new ability.
+        </div>
+      <% else %>
+        <% abilities_with_chances.each do |ac| %>
+          <div class="ability-row grid grid-cols-12 gap-2 mb-2 items-center" data-id="<%= ac[:ability].id %>">
+            <input type="hidden" name="combat_ability_ids[]" value="<%= ac[:ability].id %>">
+            <div class="col-span-5">
+              <span class="badge badge-secondary mr-2">Power: <%= ac[:ability].power rescue '?' %></span>
+              <%= h(ac[:ability].name) %>
+            </div>
+            <div class="col-span-3">
+              <div class="join w-full">
+                <input type="number" class="input input-bordered input-sm join-item w-full" name="combat_ability_chances[<%= ac[:ability].id %>]"
+                       value="<%= ac[:chance] %>" min="0" max="100" placeholder="<%= @archetype.combat_ability_chance || 30 %>">
+                <span class="join-item bg-base-300 px-2 flex items-center text-sm">%</span>
+              </div>
+            </div>
+            <div class="col-span-2">
+              <button type="button" class="btn btn-outline btn-error btn-sm" onclick="removeAbility(<%= ac[:ability].id %>)">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+            <div class="col-span-2">
+              <a href="/admin/abilities/<%= ac[:ability].id %>" target="_blank" class="btn btn-outline btn-secondary btn-sm">
+                <i class="bi bi-pencil"></i> Edit
+              </a>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- Create Ability Modal -->
+<%= partial 'admin/modal', locals: {
+  id: 'createAbilityModal',
+  title: '<i class="bi bi-magic"></i> Create NPC Ability',
+  size: '2xl',
+  content: '
+    <form id="quick-ability-form">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="form-control md:col-span-1">
+          <label class="label">
+            <span class="label-text">Name <span class="text-error">*</span></span>
+          </label>
+          <input type="text" class="input input-bordered w-full" name="ability_name" required maxlength="100"
+                 placeholder="e.g., Fire Breath, Venomous Bite">
+        </div>
+        <div class="grid grid-cols-2 gap-2 md:col-span-1">
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Ability Type</span>
+            </label>
+            <select class="select select-bordered w-full" name="ability_type">
+              <option value="combat" selected>Combat</option>
+              <option value="utility">Utility</option>
+            </select>
+          </div>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Action Type</span>
+            </label>
+            <select class="select select-bordered w-full" name="action_type">
+              <option value="main" selected>Main</option>
+              <option value="tactical">Tactical</option>
+              <option value="reaction">Reaction</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Damage Dice</span>
+          </label>
+          <input type="text" class="input input-bordered w-full" name="base_damage_dice" placeholder="e.g., 3d6, 2d8+2">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Damage Type</span>
+            </label>
+            <select class="select select-bordered w-full" name="damage_type">
+              <option value="physical" selected>Physical</option>
+              <option value="fire">Fire</option>
+              <option value="ice">Ice</option>
+              <option value="lightning">Lightning</option>
+              <option value="poison">Poison</option>
+              <option value="shadow">Shadow</option>
+              <option value="holy">Holy</option>
+              <option value="arcane">Arcane</option>
+            </select>
+          </div>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Target Type</span>
+            </label>
+            <select class="select select-bordered w-full" name="target_type">
+              <option value="enemy" selected>Enemy</option>
+              <option value="ally">Ally</option>
+              <option value="self">Self</option>
+              <option value="any">Any</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">AoE Shape</span>
+          </label>
+          <select class="select select-bordered w-full" name="aoe_shape" id="modal-aoe-shape">
+            <option value="single" selected>Single Target</option>
+            <option value="circle">Circle</option>
+            <option value="cone">Cone</option>
+            <option value="line">Line</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div class="form-control" id="modal-aoe-radius-group" style="display: none;">
+            <label class="label">
+              <span class="label-text">AoE Radius</span>
+            </label>
+            <input type="number" class="input input-bordered w-full" name="aoe_radius" value="2" min="1" max="5">
+          </div>
+          <div class="form-control" id="modal-aoe-length-group" style="display: none;">
+            <label class="label">
+              <span class="label-text">AoE Length</span>
+            </label>
+            <input type="number" class="input input-bordered w-full" name="aoe_length" value="3" min="1" max="10">
+          </div>
+        </div>
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Cooldown (seconds)</span>
+          </label>
+          <input type="number" class="input input-bordered w-full" name="cooldown_seconds" value="0" min="0" max="300">
+          <label class="label">
+            <span class="label-text-alt text-base-content/70">0 = no cooldown</span>
+          </label>
+        </div>
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Activation Segment</span>
+          </label>
+          <input type="number" class="input input-bordered w-full" name="activation_segment" value="50" min="1" max="100">
+          <label class="label">
+            <span class="label-text-alt text-base-content/70">When in round (1-100)</span>
+          </label>
+        </div>
+        <div class="form-control md:col-span-2">
+          <label class="label">
+            <span class="label-text">Description</span>
+          </label>
+          <textarea class="textarea textarea-bordered w-full" name="description" rows="2"
+                    placeholder="Brief description of the ability"></textarea>
+        </div>
+      </div>
+    </form>',
+  close_label: 'Cancel',
+  actions: '<button type="button" class="btn btn-primary" onclick="createAbilityAndAssign()"><i class="bi bi-check-lg mr-1"></i>Create &amp; Assign</button>'
+} %>
+
+<script>
+// Track assigned abilities
+let assignedAbilities = <%= (@archetype.combat_abilities_with_chances rescue []).map { |ac| { id: ac[:ability].id, name: ac[:ability].name, chance: ac[:chance], power: (ac[:ability].power rescue 0) } }.to_json %>;
+const defaultChance = <%= @archetype.combat_ability_chance || 30 %>;
+
+function renderAssignedAbilities() {
+  const container = document.getElementById('assigned-abilities-container');
+  if (assignedAbilities.length === 0) {
+    container.innerHTML = `
+      <div class="text-base-content/70 text-center py-8" id="no-abilities-message">
+        <i class="bi bi-lightning-charge text-4xl block mb-2"></i>
+        No abilities assigned. Use the dropdown above or create a new ability.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = assignedAbilities.map(a => `
+    <div class="ability-row grid grid-cols-12 gap-2 mb-2 items-center" data-id="${a.id}">
+      <input type="hidden" name="combat_ability_ids[]" value="${a.id}">
+      <div class="col-span-5">
+        <span class="badge badge-secondary mr-2">Power: ${a.power}</span>
+        ${escapeHtml(a.name)}
+      </div>
+      <div class="col-span-3">
+        <div class="join w-full">
+          <input type="number" class="input input-bordered input-sm join-item w-full" name="combat_ability_chances[${a.id}]"
+                 value="${a.chance}" min="0" max="100" placeholder="${defaultChance}">
+          <span class="join-item bg-base-300 px-2 flex items-center text-sm">%</span>
+        </div>
+      </div>
+      <div class="col-span-2">
+        <button type="button" class="btn btn-outline btn-error btn-sm" onclick="removeAbility(${a.id})">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+      <div class="col-span-2">
+        <a href="/admin/abilities/${a.id}" target="_blank" class="btn btn-outline btn-secondary btn-sm">
+          <i class="bi bi-pencil"></i> Edit
+        </a>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addAbilityFromSelector() {
+  const selector = document.getElementById('ability-selector');
+  const id = parseInt(selector.value);
+  if (!id) return;
+
+  if (assignedAbilities.some(a => a.id === id)) {
+    alert('Ability already assigned');
+    return;
+  }
+
+  const option = selector.options[selector.selectedIndex];
+  assignedAbilities.push({
+    id: id,
+    name: option.dataset.name,
+    chance: defaultChance,
+    power: parseInt(option.dataset.power) || 0
+  });
+  renderAssignedAbilities();
+  selector.value = '';
+}
+
+function removeAbility(id) {
+  assignedAbilities = assignedAbilities.filter(a => a.id !== id);
+  renderAssignedAbilities();
+}
+
+async function createAbilityAndAssign() {
+  const form = document.getElementById('quick-ability-form');
+  const formData = new FormData(form);
+
+  // Get CSRF token
+  const csrfInput = document.querySelector('[name="_csrf"]');
+  if (csrfInput) {
+    formData.append('_csrf', csrfInput.value);
+  }
+
+  try {
+    const response = await fetch('/admin/npcs/abilities/create_quick', {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Add to assigned abilities
+      assignedAbilities.push({
+        id: data.ability.id,
+        name: data.ability.name,
+        chance: defaultChance,
+        power: data.ability.power || 0
+      });
+      renderAssignedAbilities();
+
+      // Add to dropdown for future use
+      const selector = document.getElementById('ability-selector');
+      const option = document.createElement('option');
+      option.value = data.ability.id;
+      option.dataset.name = data.ability.name;
+      option.dataset.power = data.ability.power || 0;
+      option.textContent = `${data.ability.name} (Power: ${data.ability.power || '?'})`;
+      selector.appendChild(option);
+
+      // Close modal and reset form
+      document.getElementById('createAbilityModal').close();
+      form.reset();
+
+      // Show success toast if available
+      if (typeof showToast === 'function') {
+        showToast('Ability created and assigned!', 'success');
+      }
+    } else {
+      alert('Error: ' + (data.error || 'Unknown error'));
+    }
+  } catch (err) {
+    alert('Network error: ' + err.message);
+  }
+}
+
+// AoE shape toggle for modal
+document.getElementById('modal-aoe-shape')?.addEventListener('change', function() {
+  const shape = this.value;
+  document.getElementById('modal-aoe-radius-group').style.display = shape === 'circle' ? '' : 'none';
+  document.getElementById('modal-aoe-length-group').style.display = ['line', 'cone'].includes(shape) ? '' : 'none';
+});
+</script>

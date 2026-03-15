@@ -1,0 +1,383 @@
+<style>
+  .room-builder-container {
+    display: flex;
+    height: calc(100vh - 120px);
+    gap: 0;
+  }
+  .room-builder-sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: #1a1d21;
+    border-right: 1px solid #3a3f44;
+    overflow-y: auto;
+  }
+  .room-builder-canvas {
+    flex: 1;
+    background: #0d1117;
+    position: relative;
+    overflow: hidden;
+  }
+  .room-builder-properties {
+    width: 320px;
+    flex-shrink: 0;
+    background: #1a1d21;
+    border-left: 1px solid #3a3f44;
+    overflow-y: auto;
+  }
+  .tool-btn {
+    width: 100%;
+    text-align: left;
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    color: #adb5bd;
+    border-radius: 4px;
+    margin-bottom: 2px;
+    transition: all 0.15s;
+  }
+  .tool-btn:hover {
+    background: #2d3136;
+    color: #fff;
+  }
+  .tool-btn.active {
+    background: #0d6efd;
+    color: #fff;
+  }
+  .tool-btn i {
+    width: 20px;
+    text-align: center;
+  }
+  .sidebar-section {
+    padding: 12px;
+    border-bottom: 1px solid #3a3f44;
+  }
+  .sidebar-section h6 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #6c757d;
+    margin-bottom: 10px;
+  }
+  #roomCanvas {
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+  }
+  #roomCanvas .room-bg {
+    fill: #1e2228;
+    stroke: #3a3f44;
+    stroke-width: 2;
+  }
+  #roomCanvas .furniture {
+    fill: #4a5568;
+    stroke: #718096;
+    stroke-width: 1;
+    cursor: pointer;
+  }
+  #roomCanvas .furniture:hover {
+    fill: #5a6578;
+  }
+  #roomCanvas .furniture.selected {
+    stroke: #0d6efd;
+    stroke-width: 2;
+  }
+  #roomCanvas .subroom {
+    fill: rgba(45, 55, 72, 0.5);
+    stroke: #4a5568;
+    stroke-width: 1;
+    stroke-dasharray: 4;
+  }
+  #roomCanvas .feature {
+    stroke: #f59e0b;
+    stroke-width: 3;
+  }
+  #roomCanvas .feature.door {
+    stroke: #8b5cf6;
+  }
+  #roomCanvas .feature.window {
+    stroke: #06b6d4;
+  }
+  #roomCanvas .exit-arrow {
+    fill: #ef4444;
+  }
+  #roomCanvas .grid-line {
+    stroke: #2d3748;
+    stroke-width: 0.5;
+  }
+  #roomCanvas text {
+    fill: #9ca3af;
+    font-size: 10px;
+    pointer-events: none;
+  }
+  .property-field {
+    margin-bottom: 12px;
+  }
+  .property-field label {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-bottom: 4px;
+    display: block;
+  }
+  .property-field input,
+  .property-field select,
+  .property-field textarea {
+    font-size: 13px;
+  }
+  .canvas-status {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(0,0,0,0.7);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #9ca3af;
+  }
+  .zoom-controls {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.7);
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    gap: 4px;
+  }
+  .zoom-controls button {
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: #2d3136;
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .zoom-controls button:hover {
+    background: #3d4146;
+  }
+</style>
+
+<div class="flex justify-between items-center mb-3">
+  <div class="flex items-center">
+    <a href="/dashboard" class="btn btn-sm btn-outline mr-3">
+      <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+    <h1 class="text-xl font-semibold">
+      <i class="bi bi-house-gear mr-2"></i>Decorate: <%= h(@room.name) %>
+    </h1>
+    <span class="badge badge-success ml-2">Owner Mode</span>
+  </div>
+  <div>
+    <button id="saveBtn" class="btn btn-sm btn-success">
+      <i class="bi bi-check-lg"></i> Save Changes
+    </button>
+  </div>
+</div>
+
+<div class="room-builder-container">
+  <!-- Left Sidebar: Tools (Limited for players) -->
+  <div class="room-builder-sidebar">
+    <div class="sidebar-section">
+      <h6>Room Info</h6>
+      <div class="mb-2">
+        <small class="text-base-content/70">Location:</small>
+        <div><%= @room.location ? h(@room.location.name) : 'None' %></div>
+      </div>
+      <div class="mb-2">
+        <small class="text-base-content/70">Dimensions:</small>
+        <div id="roomDimensions">Loading...</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h6>Tools</h6>
+      <button class="tool-btn active" data-tool="select" title="Select and move items">
+        <i class="bi bi-cursor mr-2"></i>Select
+      </button>
+      <button class="tool-btn" data-tool="furniture" title="Place furniture">
+        <i class="bi bi-couch mr-2"></i>Furniture
+      </button>
+      <button class="tool-btn" data-tool="decoration" title="Add decorations">
+        <i class="bi bi-brush mr-2"></i>Decoration
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <h6>View</h6>
+      <div class="form-control">
+        <label class="label cursor-pointer justify-start gap-2">
+          <input type="checkbox" id="showGrid" class="toggle toggle-sm" checked>
+          <span class="label-text">Show Grid</span>
+        </label>
+      </div>
+      <div class="form-control">
+        <label class="label cursor-pointer justify-start gap-2">
+          <input type="checkbox" id="snapToGrid" class="toggle toggle-sm" checked>
+          <span class="label-text">Snap to Grid</span>
+        </label>
+      </div>
+      <div class="form-control">
+        <label class="label cursor-pointer justify-start gap-2">
+          <input type="checkbox" id="showLabels" class="toggle toggle-sm" checked>
+          <span class="label-text">Show Labels</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h6>Room Elements</h6>
+      <div id="elementsList">
+        <div class="text-base-content/70 text-sm">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Center: Canvas -->
+  <div class="room-builder-canvas">
+    <svg id="roomCanvas">
+      <defs>
+        <pattern id="gridPattern" width="20" height="20" patternUnits="userSpaceOnUse">
+          <path d="M 20 0 L 0 0 0 20" fill="none" class="grid-line"/>
+        </pattern>
+      </defs>
+      <g id="gridLayer"></g>
+      <g id="roomLayer"></g>
+      <g id="subroomLayer"></g>
+      <g id="furnitureLayer"></g>
+      <g id="featureLayer"></g>
+      <g id="exitLayer"></g>
+      <g id="decorationLayer"></g>
+      <g id="selectionLayer"></g>
+    </svg>
+    <div class="canvas-status">
+      <span id="cursorPosition">X: 0, Y: 0</span>
+      <span class="ml-3" id="zoomLevel">Zoom: 100%</span>
+    </div>
+    <div class="zoom-controls">
+      <button id="zoomOut" title="Zoom Out"><i class="bi bi-dash"></i></button>
+      <button id="zoomReset" title="Reset Zoom">1:1</button>
+      <button id="zoomIn" title="Zoom In"><i class="bi bi-plus"></i></button>
+    </div>
+  </div>
+
+  <!-- Right Sidebar: Properties -->
+  <div class="room-builder-properties">
+    <div class="sidebar-section">
+      <h6>Properties</h6>
+      <div id="propertiesPanel">
+        <div class="text-base-content/70 text-sm">Select an item to edit its properties</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section" id="roomPropertiesSection">
+      <h6>Room Properties</h6>
+      <div class="property-field">
+        <label>Name</label>
+        <input type="text" id="roomName" class="input input-bordered input-sm w-full bg-base-300" value="<%= h(@room.name) %>">
+      </div>
+      <div class="property-field">
+        <label>Short Description</label>
+        <textarea id="roomShortDesc" class="textarea textarea-bordered textarea-sm w-full bg-base-300" rows="2"><%= h(@room.short_description || '') %></textarea>
+      </div>
+      <div class="property-field">
+        <label>Long Description</label>
+        <textarea id="roomLongDesc" class="textarea textarea-bordered textarea-sm w-full bg-base-300" rows="4"><%= h(@room.long_description || '') %></textarea>
+      </div>
+      <% if @room.respond_to?(:background_picture_url) %>
+      <div class="property-field">
+        <label>Background Image URL</label>
+        <input type="text" id="roomBackground" class="input input-bordered input-sm w-full bg-base-300" value="<%= h(@room.background_picture_url || '') %>" placeholder="https://...">
+      </div>
+      <% end %>
+      <div class="form-control mt-2">
+        <label class="label cursor-pointer justify-start gap-2">
+          <input type="checkbox" id="roomPrivate" class="toggle toggle-sm" <%= @room.respond_to?(:private_mode) && @room.private_mode ? 'checked' : '' %>>
+          <span class="label-text">Private Mode</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h6>Actions</h6>
+      <button class="btn btn-sm btn-outline btn-error w-full" id="deleteSelectedBtn" disabled>
+        <i class="bi bi-trash"></i> Delete Selected
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Furniture Catalog Modal -->
+<dialog class="modal" id="furnitureCatalogModal">
+  <div class="modal-box max-w-4xl bg-base-200">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-bold text-lg"><i class="bi bi-couch mr-2"></i>Furniture Catalog</h3>
+      <form method="dialog">
+        <button class="btn btn-sm btn-circle btn-ghost">✕</button>
+      </form>
+    </div>
+    <div role="tablist" class="tabs tabs-bordered mb-3" id="catalogTabs">
+      <!-- Tabs will be populated by JS -->
+    </div>
+    <div id="catalogContent">
+      <!-- Content will be populated by JS -->
+    </div>
+    <div class="divider"></div>
+    <h6 class="font-semibold mb-2">Create Custom Furniture</h6>
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-2">
+      <div class="md:col-span-3">
+        <input type="text" id="customFurnitureName" class="input input-bordered input-sm w-full" placeholder="Name">
+      </div>
+      <div class="md:col-span-1">
+        <input type="number" id="customFurnitureCapacity" class="input input-bordered input-sm w-full" placeholder="Capacity" value="1" min="0">
+      </div>
+      <div class="md:col-span-2">
+        <button class="btn btn-sm btn-primary w-full" id="addCustomFurniture">Add Custom</button>
+      </div>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<!-- Room Selector Modal (hidden for players but needed by JS) -->
+<dialog class="modal" id="roomSelectorModal">
+  <div class="modal-box bg-base-200">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-bold text-lg"><i class="bi bi-door-open mr-2"></i>Select Destination Room</h3>
+      <form method="dialog">
+        <button class="btn btn-sm btn-circle btn-ghost">✕</button>
+      </form>
+    </div>
+    <p class="text-base-content/70">Exit creation is only available to administrators.</p>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<script>
+  window.ROOM_ID = <%= @room.id %>;
+  window.ROOM_DATA = null;
+  window.IS_PLAYER_MODE = true;
+
+  // Override API base URL for player mode
+  class PlayerRoomBuilderAPI extends RoomBuilderAPI {
+    constructor(roomId) {
+      super(roomId);
+      this.baseUrl = `/room_builder/${roomId}/api`;
+    }
+  }
+</script>
+<script src="/js/room-builder/api-client.js"></script>
+<script>
+  // Override the global API instance for player mode
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.ROOM_ID) {
+      window.roomAPI = new PlayerRoomBuilderAPI(window.ROOM_ID);
+    }
+  });
+</script>
+<script src="/js/room-builder/room-editor.js"></script>
+<script src="/js/room-builder/property-panel.js"></script>
+<script src="/js/room-builder/furniture-catalog.js"></script>

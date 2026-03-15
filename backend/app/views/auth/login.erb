@@ -1,0 +1,98 @@
+<!-- Page Banner -->
+<section class="page-banner" style="background-image: url('/images/library.jpg');">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <nav aria-label="breadcrumb">
+        <div class="breadcrumbs text-sm">
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li>Login</li>
+          </ul>
+        </div>
+      </nav>
+      <h1>Sign In</h1>
+    </div>
+  </div>
+</section>
+
+<section class="py-12">
+  <div class="container mx-auto px-4">
+    <div class="flex justify-center">
+      <div class="w-full max-w-md">
+        <div class="card bg-base-200">
+          <div class="card-body">
+            <div class="text-center mb-4">
+              <h2 class="text-xl font-bold mb-2">Welcome Back</h2>
+              <p class="text-base-content/70">Continue your adventure</p>
+            </div>
+
+            <form action="/login" method="post">
+              <%= csrf_tag %>
+
+              <div class="form-control mb-4">
+                <label class="label" for="username_or_email">
+                  <span class="label-text">Username or Email</span>
+                </label>
+                <label class="input input-bordered flex items-center gap-2">
+                  <i class="bi bi-person text-base-content/50"></i>
+                  <input type="text" class="grow" id="username_or_email" name="username_or_email" required autofocus placeholder="Enter your username or email" autocomplete="username">
+                </label>
+              </div>
+
+              <div class="form-control mb-4">
+                <label class="label" for="password">
+                  <span class="label-text">Password</span>
+                </label>
+                <label class="input input-bordered flex items-center gap-2">
+                  <i class="bi bi-lock text-base-content/50"></i>
+                  <input type="password" class="grow" id="password" name="password" required placeholder="Enter your password" autocomplete="current-password">
+                </label>
+              </div>
+
+              <div class="flex justify-between items-center mb-6">
+                <label class="label cursor-pointer gap-2">
+                  <input type="checkbox" class="checkbox checkbox-sm" id="remember_me" name="remember_me" value="1">
+                  <span class="label-text">Remember me for 30 days</span>
+                </label>
+                <a href="/forgot-password" class="text-base-content/70 text-sm hover:text-primary">Forgot password?</a>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block">
+                <i class="bi bi-box-arrow-in-right mr-2"></i>Sign In
+              </button>
+            </form>
+
+            <div class="text-center mt-6">
+              <p class="text-base-content/70 mb-2">Don't have an account yet?</p>
+              <a href="/register" class="btn btn-outline btn-primary">
+                <i class="bi bi-person-plus mr-2"></i>Create New Account
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Login (test account) -->
+        <% if GameSetting.get_boolean('test_account_enabled') %>
+          <div class="card bg-base-200 mt-4">
+            <div class="card-body">
+              <h3 class="text-sm text-base-content/70 mb-3">Quick Login</h3>
+              <p class="text-sm text-base-content/70 mb-3">Test account credentials:</p>
+              <div class="bg-base-300 p-3 rounded-lg mb-3 font-mono text-sm">
+                <span class="text-primary">Username:</span> Firefly_Test<br>
+                <span class="text-primary">Password:</span> firefly_test_2024
+              </div>
+              <form action="/login" method="post">
+                <%= csrf_tag %>
+                <input type="hidden" name="username_or_email" value="Firefly_Test">
+                <input type="hidden" name="password" value="firefly_test_2024">
+                <button type="submit" class="btn btn-outline btn-secondary btn-sm btn-block">
+                  <i class="bi bi-lightning mr-1"></i>Login as Test Account
+                </button>
+              </form>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,329 @@
+<%
+  is_new = @vehicle_type.new?
+  form_action = is_new ? '/admin/vehicle_types/create' : "/admin/vehicle_types/#{@vehicle_type.id}/update"
+%>
+
+<form action="<%= form_action %>" method="post" id="vehicleTypeForm">
+  <%= csrf_tag %>
+
+  <!-- Basic Info -->
+  <div class="card bg-base-200 mb-6">
+    <div class="p-4 border-b border-base-content/10">
+      <h5 class="font-semibold"><i class="bi bi-info-circle mr-2"></i>Basic Information</h5>
+    </div>
+    <div class="card-body">
+      <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <div class="form-control md:col-span-3">
+          <label class="label" for="name">
+            <span class="label-text">Name <span class="text-error">*</span></span>
+          </label>
+          <input type="text" class="input input-bordered w-full" id="name" name="vehicle_type[name]" value="<%= h @vehicle_type.name %>" required maxlength="100" placeholder="e.g., Sports Car, Horse, Hover Taxi">
+        </div>
+        <div class="form-control md:col-span-1">
+          <label class="label" for="category">
+            <span class="label-text">Category <span class="text-error">*</span></span>
+          </label>
+          <select class="select select-bordered w-full" id="category" name="vehicle_type[category]" required>
+            <% VehicleType::CATEGORIES.each do |cat| %>
+              <option value="<%= cat %>" <%= @vehicle_type.category == cat ? 'selected' : '' %>><%= cat.capitalize %></option>
+            <% end %>
+          </select>
+        </div>
+        <div class="form-control md:col-span-2">
+          <label class="label" for="universe_id">
+            <span class="label-text">Universe</span>
+          </label>
+          <select class="select select-bordered w-full" id="universe_id" name="vehicle_type[universe_id]">
+            <option value="">All Universes</option>
+            <% @universes.each do |universe| %>
+              <option value="<%= universe.id %>" <%= @vehicle_type.universe_id == universe.id ? 'selected' : '' %>><%= h universe.name %></option>
+            <% end %>
+          </select>
+        </div>
+      </div>
+      <div class="form-control mt-4">
+        <label class="label" for="description">
+          <span class="label-text">Description</span>
+        </label>
+        <textarea class="textarea textarea-bordered w-full" id="description" name="vehicle_type[description]" rows="3" placeholder="A brief description of this vehicle type..."><%= h @vehicle_type.description %></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Appearance -->
+  <div class="card bg-base-200 mb-6">
+    <div class="p-4 border-b border-base-content/10">
+      <h5 class="font-semibold"><i class="bi bi-image mr-2"></i>Appearance</h5>
+    </div>
+    <div class="card-body">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="form-control">
+          <label class="label" for="vehicle_icon">
+            <span class="label-text">Vehicle Icon/Image</span>
+          </label>
+          <input type="file" class="file-input file-input-bordered w-full" id="vehicle_icon" name="vehicle_type[icon]" accept="image/*">
+          <label class="label">
+            <span class="label-text-alt text-base-content/70">Upload an image for this vehicle type (max 5MB)</span>
+          </label>
+          <% if @vehicle_type.properties&.dig('icon_url') %>
+            <div id="iconPreview" class="mt-2 flex items-center gap-2">
+              <img src="<%= h @vehicle_type.properties['icon_url'] %>" alt="Current icon" class="rounded border border-base-content/20" style="max-height: 100px;">
+              <button type="button" class="btn btn-outline btn-error btn-sm" id="removeIconBtn">
+                <i class="bi bi-trash"></i> Remove
+              </button>
+              <input type="hidden" name="vehicle_type[remove_icon]" id="removeIconField" value="">
+            </div>
+          <% else %>
+            <div id="iconPreview" class="mt-2 flex items-center gap-2" style="display: none;">
+              <img src="" alt="Preview" class="rounded border border-base-content/20" style="max-height: 100px;">
+              <button type="button" class="btn btn-outline btn-error btn-sm" id="removeIconBtn">
+                <i class="bi bi-trash"></i> Remove
+              </button>
+            </div>
+          <% end %>
+        </div>
+        <div class="form-control">
+          <label class="label" for="icon_url">
+            <span class="label-text">Or Enter Image URL</span>
+          </label>
+          <input type="url" class="input input-bordered w-full" id="icon_url" name="vehicle_type[icon_url]" value="<%= h @vehicle_type.properties&.dig('icon_url') %>" placeholder="https://example.com/vehicle-image.png">
+          <label class="label">
+            <span class="label-text-alt text-base-content/70">Direct URL to an image (alternative to upload)</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Capacity & Performance -->
+  <div class="card bg-base-200 mb-6">
+    <div class="p-4 border-b border-base-content/10">
+      <h5 class="font-semibold"><i class="bi bi-speedometer mr-2"></i>Capacity & Performance</h5>
+    </div>
+    <div class="card-body">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="form-control">
+          <label class="label" for="max_passengers">
+            <span class="label-text">Max Passengers</span>
+          </label>
+          <input type="number" class="input input-bordered w-full" id="max_passengers" name="vehicle_type[max_passengers]" value="<%= @vehicle_type.max_passengers || 4 %>" min="1" max="100">
+          <label class="label">
+            <span class="label-text-alt text-base-content/70">How many can ride</span>
+          </label>
+        </div>
+        <div class="form-control">
+          <label class="label" for="cargo_capacity">
+            <span class="label-text">Cargo Capacity</span>
+          </label>
+          <input type="number" class="input input-bordered w-full" id="cargo_capacity" name="vehicle_type[cargo_capacity]" value="<%= @vehicle_type.cargo_capacity || 100 %>" min="0">
+          <label class="label">
+            <span class="label-text-alt text-base-content/70">Storage units</span>
+          </label>
+        </div>
+        <div class="form-control">
+          <label class="label" for="base_speed">
+            <span class="label-text">Speed Modifier</span>
+          </label>
+          <input type="number" class="input input-bordered w-full" id="base_speed" name="vehicle_type[base_speed]" value="<%= @vehicle_type.base_speed || 1.0 %>" step="0.1" min="0.1" max="10">
+          <label class="label">
+            <span class="label-text-alt text-base-content/70">1.0 = normal, 2.0 = twice as fast</span>
+          </label>
+        </div>
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">&nbsp;</span>
+          </label>
+          <label class="label cursor-pointer justify-start gap-3">
+            <input class="checkbox" type="checkbox" id="requires_fuel" name="vehicle_type[requires_fuel]" value="true" <%= @vehicle_type.requires_fuel ? 'checked' : '' %>>
+            <span class="label-text">
+              <i class="bi bi-fuel-pump mr-1"></i>Requires Fuel
+            </span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Description Templates -->
+  <div class="card bg-base-200 mb-6">
+    <div class="p-4 border-b border-base-content/10">
+      <h5 class="font-semibold"><i class="bi bi-card-text mr-2"></i>Description Templates</h5>
+    </div>
+    <div class="card-body">
+      <p class="text-base-content/70 mb-4">These templates are used when spawning new vehicles of this type.</p>
+      <div class="form-control mb-4">
+        <label class="label" for="short_desc_template">
+          <span class="label-text">Short Description</span>
+        </label>
+        <div class="join w-full">
+          <input type="text" class="input input-bordered join-item flex-1" id="short_desc_template" name="vehicle_type[short_desc_template]" value="<%= h @vehicle_type.properties&.dig('short_desc_template') %>" placeholder="e.g., A sleek sports car">
+          <button type="button" class="btn btn-outline join-item gradient-picker-btn" data-target="short_desc_template" title="Apply Gradient">
+            <i class="bi bi-palette"></i>
+          </button>
+        </div>
+        <label class="label">
+          <span class="label-text-alt text-base-content/70">Shown in room listings</span>
+        </label>
+      </div>
+      <div class="form-control mb-4">
+        <label class="label" for="in_desc_template">
+          <span class="label-text">Interior Description</span>
+        </label>
+        <div class="join w-full">
+          <textarea class="textarea textarea-bordered join-item flex-1" id="in_desc_template" name="vehicle_type[in_desc_template]" rows="2" placeholder="Description when looking inside the vehicle..."><%= h @vehicle_type.properties&.dig('in_desc_template') %></textarea>
+          <button type="button" class="btn btn-outline join-item gradient-picker-btn" data-target="in_desc_template" title="Apply Gradient">
+            <i class="bi bi-palette"></i>
+          </button>
+        </div>
+      </div>
+      <div class="form-control">
+        <label class="label" for="out_desc_template">
+          <span class="label-text">Exterior Description</span>
+        </label>
+        <div class="join w-full">
+          <textarea class="textarea textarea-bordered join-item flex-1" id="out_desc_template" name="vehicle_type[out_desc_template]" rows="2" placeholder="Description when looking at the vehicle from outside..."><%= h @vehicle_type.properties&.dig('out_desc_template') %></textarea>
+          <button type="button" class="btn btn-outline join-item gradient-picker-btn" data-target="out_desc_template" title="Apply Gradient">
+            <i class="bi bi-palette"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Additional Properties -->
+  <div class="card bg-base-200 mb-6">
+    <div class="p-4 border-b border-base-content/10">
+      <h5 class="font-semibold"><i class="bi bi-sliders mr-2"></i>Additional Properties</h5>
+    </div>
+    <div class="card-body">
+      <div class="form-control mb-4">
+        <label class="label cursor-pointer justify-start gap-3">
+          <input class="checkbox" type="checkbox" id="convertible" name="vehicle_type[convertible]" value="true" <%= @vehicle_type.properties&.dig('convertible') ? 'checked' : '' %>>
+          <span class="label-text">Convertible (roof can open/close)</span>
+        </label>
+      </div>
+
+      <div class="form-control">
+        <label class="label" for="properties_json">
+          <span class="label-text">Custom Properties (JSON)</span>
+        </label>
+        <textarea class="textarea textarea-bordered w-full font-mono" id="properties_json" name="vehicle_type[properties]" rows="4" placeholder='{"top_speed": 180, "color_options": ["red", "blue", "black"]}'><%= @vehicle_type.properties ? JSON.pretty_generate(@vehicle_type.properties.reject { |k,_| %w[convertible short_desc_template in_desc_template out_desc_template].include?(k) }) : '' %></textarea>
+        <label class="label">
+          <span class="label-text-alt text-base-content/70">Additional properties as JSON (advanced)</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Submit -->
+  <div class="flex justify-between">
+    <a href="/admin/vehicle_types" class="btn btn-secondary">
+      <i class="bi bi-x-lg mr-2"></i>Cancel
+    </a>
+    <div class="flex gap-2">
+      <% unless is_new %>
+        <button type="button" class="btn btn-error" onclick="deleteModal.showModal()">
+          <i class="bi bi-trash mr-2"></i>Delete
+        </button>
+      <% end %>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-lg mr-2"></i><%= is_new ? 'Create Vehicle Type' : 'Save Changes' %>
+      </button>
+    </div>
+  </div>
+</form>
+
+<% unless is_new %>
+<%
+  vehicle_count = @vehicle_type.vehicles_dataset.count
+  _delete_modal_content =
+    '<p class="py-4">Are you sure you want to delete &quot;' + h(@vehicle_type.name) + '&quot;?</p>' +
+    (vehicle_count > 0 ?
+      '<div class="alert alert-error"><i class="bi bi-exclamation-triangle mr-2"></i>This type has <strong>' + vehicle_count.to_s + '</strong> vehicle(s) using it. You must delete or reassign them first.</div>' :
+      '<p class="text-error font-semibold">This action cannot be undone.</p>') +
+    '<div class="modal-action">' +
+      '<form method="dialog"><button class="btn btn-ghost">Cancel</button></form>' +
+      (vehicle_count == 0 ?
+        '<form action="/admin/vehicle_types/' + @vehicle_type.id.to_s + '/delete" method="post" class="inline">' + csrf_tag + '<button type="submit" class="btn btn-error">Delete Vehicle Type</button></form>' :
+        '<button type="button" class="btn btn-error" disabled>Cannot Delete</button>') +
+    '</div>'
+%>
+<%= partial 'admin/modal', locals: {
+  id: 'deleteModal',
+  title: 'Delete Vehicle Type',
+  content: _delete_modal_content,
+  auto_actions: false
+} %>
+<% end %>
+
+<script src="/js/gradient-ciede2000.js"></script>
+<script src="/js/gradient-creator.js?v=3"></script>
+<script src="/js/gradient-picker.js?v=4"></script>
+<link rel="stylesheet" href="/css/gradient-components.css">
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // ========== IMAGE UPLOAD HANDLING ==========
+  const iconInput = document.getElementById('vehicle_icon');
+  const iconUrlInput = document.getElementById('icon_url');
+  const iconPreview = document.getElementById('iconPreview');
+  const removeIconBtn = document.getElementById('removeIconBtn');
+  const removeIconField = document.getElementById('removeIconField');
+
+  if (iconInput) {
+    iconInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        if (file.size > 5 * 1024 * 1024) {
+          alert('File too large. Maximum size is 5MB.');
+          this.value = '';
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          iconPreview.style.display = 'flex';
+          iconPreview.querySelector('img').src = event.target.result;
+          // Clear URL field since we're using upload
+          if (iconUrlInput) iconUrlInput.value = '';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  if (removeIconBtn) {
+    removeIconBtn.addEventListener('click', function() {
+      iconPreview.style.display = 'none';
+      if (iconInput) iconInput.value = '';
+      if (iconUrlInput) iconUrlInput.value = '';
+      if (removeIconField) removeIconField.value = 'true';
+    });
+  }
+
+  // ========== GRADIENT PICKER HANDLING ==========
+  document.querySelectorAll('.gradient-picker-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      const targetId = this.dataset.target;
+      const targetField = document.getElementById(targetId);
+
+      if (typeof GradientCreator !== 'undefined') {
+        const creator = new GradientCreator({
+          onSave: function(gradient) {
+            // Store gradient data in a hidden field or apply to text
+            if (targetField) {
+              // For now, just add a note that gradient is applied
+              console.log('Gradient applied:', gradient);
+              // In a full implementation, store gradient colors in a hidden field
+              // and render the gradient in game output
+            }
+          }
+        });
+        creator.show();
+      } else {
+        alert('Gradient creator not loaded. Please reload the page.');
+      }
+    });
+  });
+});
+</script>

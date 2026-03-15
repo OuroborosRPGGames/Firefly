@@ -1,0 +1,30 @@
+<div class="prose max-w-none">
+  <h1>Edit <%= h @character.full_name %></h1>
+</div>
+
+<div class="card bg-base-200 shadow-xl mt-8 max-w-2xl">
+  <div class="card-body">
+    <form action="/characters/<%= @character.id %>/update" method="post">
+      <%= csrf_tag %>
+
+      <div class="form-control mb-4">
+        <label class="label" for="name">
+          <span class="label-text">Name</span>
+        </label>
+        <input type="text" id="name" name="name" value="<%= h @character.name %>" class="input input-bordered w-full" required>
+      </div>
+
+      <div class="form-control mb-4">
+        <label class="label cursor-pointer justify-start gap-4">
+          <input type="checkbox" name="active" value="true" class="checkbox" <%= 'checked' if @character.active %>>
+          <span class="label-text">Active</span>
+        </label>
+      </div>
+
+      <div class="modal-action">
+        <a href="/characters/<%= @character.id %>" class="btn">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>

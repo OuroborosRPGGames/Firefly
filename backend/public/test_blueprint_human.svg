@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="674" viewBox="0 0 800 674">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  
+  <rect x="50.0" y="50.0" width="700.0" height="544.4444444444445" fill="#f0f0f0" stroke="none"/>
+<line x1="50.0" y1="50.0" x2="133.88888888888889" y2="50.0" stroke="#000000" stroke-width="3"/>
+<line x1="183.88888888888889" y1="50.0" x2="750.0" y2="50.0" stroke="#000000" stroke-width="3"/>
+<line x1="50.0" y1="594.4444444444445" x2="165.0" y2="594.4444444444445" stroke="#000000" stroke-width="3"/>
+<line x1="215.0" y1="594.4444444444445" x2="382.77777777777777" y2="594.4444444444445" stroke="#000000" stroke-width="3"/>
+<line x1="432.77777777777777" y1="594.4444444444445" x2="585.0" y2="594.4444444444445" stroke="#000000" stroke-width="3"/>
+<line x1="635.0" y1="594.4444444444445" x2="750.0" y2="594.4444444444445" stroke="#000000" stroke-width="3"/>
+<line x1="50.0" y1="50.0" x2="50.0" y2="305.0" stroke="#000000" stroke-width="3"/>
+<line x1="50.0" y1="355.0" x2="50.0" y2="594.4444444444445" stroke="#000000" stroke-width="3"/>
+<line x1="750.0" y1="50.0" x2="750.0" y2="305.0" stroke="#000000" stroke-width="3"/>
+<line x1="750.0" y1="355.0" x2="750.0" y2="594.4444444444445" stroke="#000000" stroke-width="3"/>
+<text x="400.0" y="38.0" font-size="16" fill="#333333" text-anchor="middle" font-family="sans-serif" font-weight="bold">45ft</text>
+<text x="36.0" y="322.22222222222223" font-size="16" fill="#333333" text-anchor="middle" font-family="sans-serif" font-weight="bold" transform="rotate(-90, 36.0, 322.22222222222223)">35ft</text>
+<rect x="197.77777777777777" y="213.33333333333331" width="77.77777777777777" height="46.666666666666664" fill="#cccccc" stroke="#333333" stroke-width="1.5" rx="2"/>
+<text x="236.66666666666666" y="274.0" font-size="14" fill="#333333" text-anchor="middle" font-family="sans-serif">long wooden ta</text>
+<rect x="477.7777777777778" y="213.33333333333331" width="77.77777777777777" height="46.666666666666664" fill="#cccccc" stroke="#333333" stroke-width="1.5" rx="2"/>
+<text x="516.6666666666667" y="274.0" font-size="14" fill="#333333" text-anchor="middle" font-family="sans-serif">round corner t</text>
+<rect x="205.55555555555557" y="427.2222222222222" width="93.33333333333333" height="23.333333333333332" fill="#cccccc" stroke="#333333" stroke-width="1.5" rx="4"/>
+<text x="252.22222222222223" y="464.55555555555554" font-size="14" fill="#333333" text-anchor="middle" font-family="sans-serif">worn bench</text>
+<rect x="532.2222222222223" y="392.22222222222223" width="31.11111111111111" height="31.11111111111111" fill="#cccccc" stroke="#333333" stroke-width="1.5" rx="1"/>
+<line x1="532.2222222222223" y1="392.22222222222223" x2="563.3333333333334" y2="392.22222222222223" stroke="#333333" stroke-width="3.0"/>
+<text x="547.7777777777778" y="437.3333333333333" font-size="14" fill="#333333" text-anchor="middle" font-family="sans-serif">high-backed ch</text>
+<line x1="382.77777777777777" y1="590.4444444444445" x2="382.77777777777777" y2="598.4444444444445" stroke="#000000" stroke-width="1.5"/>
+<line x1="432.77777777777777" y1="590.4444444444445" x2="432.77777777777777" y2="598.4444444444445" stroke="#000000" stroke-width="1.5"/>
+<text x="407.77777777777777" y="607.3444444444444" font-size="14" fill="#333333" text-anchor="middle" font-family="sans-serif" font-weight="bold">D1</text>
+<line x1="585.0" y1="591.4444444444445" x2="635.0" y2="591.4444444444445" stroke="#0066cc" stroke-width="2"/>
+<line x1="585.0" y1="597.4444444444445" x2="635.0" y2="597.4444444444445" stroke="#0066cc" stroke-width="2"/>
+<text x="639.0" y="599.3444444444444" font-size="14" fill="#0066cc" text-anchor="start" font-family="sans-serif" font-weight="bold">W2</text>
+<line x1="165.0" y1="591.4444444444445" x2="215.0" y2="591.4444444444445" stroke="#0066cc" stroke-width="2"/>
+<line x1="165.0" y1="597.4444444444445" x2="215.0" y2="597.4444444444445" stroke="#0066cc" stroke-width="2"/>
+<text x="219.0" y="599.3444444444444" font-size="14" fill="#0066cc" text-anchor="start" font-family="sans-serif" font-weight="bold">W3</text>
+<line x1="133.88888888888889" y1="46.0" x2="133.88888888888889" y2="54.0" stroke="#000000" stroke-width="1.5"/>
+<line x1="183.88888888888889" y1="46.0" x2="183.88888888888889" y2="54.0" stroke="#000000" stroke-width="1.5"/>
+<text x="158.88888888888889" y="62.9" font-size="14" fill="#333333" text-anchor="middle" font-family="sans-serif" font-weight="bold">D4</text>
+<line x1="747.0" y1="305.0" x2="747.0" y2="355.0" stroke="#0066cc" stroke-width="2"/>
+<line x1="753.0" y1="305.0" x2="753.0" y2="355.0" stroke="#0066cc" stroke-width="2"/>
+<text x="779.0" y="334.9" font-size="14" fill="#0066cc" text-anchor="start" font-family="sans-serif" font-weight="bold">W5</text>
+<line x1="47.0" y1="305.0" x2="47.0" y2="355.0" stroke="#0066cc" stroke-width="2"/>
+<line x1="53.0" y1="305.0" x2="53.0" y2="355.0" stroke="#0066cc" stroke-width="2"/>
+<text x="79.0" y="334.9" font-size="14" fill="#0066cc" text-anchor="start" font-family="sans-serif" font-weight="bold">W6</text>
+<rect x="107.77777777777777" y="496.66666666666674" width="40" height="40" fill="none" stroke="#000000" stroke-width="1.5"/>
+<text x="127.77777777777777" y="521.5666666666667" font-size="14" fill="#000000" text-anchor="middle" font-family="sans-serif" font-weight="bold">H7</text>
+<text x="400" y="614" font-size="16" fill="#000000" text-anchor="middle" font-family="sans-serif" font-weight="bold">Bear Pub - Common Room</text>
+</svg>

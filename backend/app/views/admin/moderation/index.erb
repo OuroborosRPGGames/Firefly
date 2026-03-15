@@ -1,0 +1,208 @@
+<% @page_title = 'Moderation' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Moderation', path: '/admin/moderation' }] %>
+
+<%= admin_content_start %>
+      <h2 class="text-2xl font-bold mb-4"><i class="bi bi-shield-exclamation mr-2"></i>Moderation Dashboard</h2>
+
+      <!-- Quick Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <div class="card <%= @abuse_monitoring_enabled ? 'bg-success text-success-content' : 'bg-base-300' %>">
+          <div class="card-body p-4">
+            <div class="flex justify-between items-center">
+              <div>
+                <h6 class="text-sm font-medium opacity-80">AI Monitoring</h6>
+                <h2 class="text-2xl font-bold"><%= @abuse_monitoring_enabled ? 'ON' : 'OFF' %></h2>
+              </div>
+              <i class="bi bi-robot text-4xl opacity-50"></i>
+            </div>
+            <a href="/admin/moderation/abuse-monitoring" class="btn btn-outline btn-sm mt-2 <%= @abuse_monitoring_enabled ? 'btn-success-content' : '' %>">Configure</a>
+          </div>
+        </div>
+
+        <div class="card <%= @flagged_abuse_checks > 0 ? 'bg-warning text-warning-content' : 'bg-base-300' %>">
+          <div class="card-body p-4">
+            <div class="flex justify-between items-center">
+              <div>
+                <h6 class="text-sm font-medium opacity-80">Flagged Content</h6>
+                <h2 class="text-2xl font-bold"><%= @flagged_abuse_checks %></h2>
+              </div>
+              <i class="bi bi-exclamation-triangle text-4xl opacity-50"></i>
+            </div>
+            <a href="/admin/moderation/abuse-checks?status=flagged" class="btn btn-outline btn-sm mt-2 <%= @flagged_abuse_checks > 0 ? 'btn-warning-content' : '' %>">Review</a>
+          </div>
+        </div>
+
+        <div class="card bg-error text-error-content">
+          <div class="card-body p-4">
+            <div class="flex justify-between items-center">
+              <div>
+                <h6 class="text-sm font-medium opacity-80">Active IP Bans</h6>
+                <h2 class="text-2xl font-bold"><%= @active_bans.count %></h2>
+              </div>
+              <i class="bi bi-ban text-4xl opacity-50"></i>
+            </div>
+            <a href="/admin/moderation/ip-bans" class="btn btn-outline btn-sm mt-2">Manage Bans</a>
+          </div>
+        </div>
+
+        <div class="card bg-info text-info-content">
+          <div class="card-body p-4">
+            <div class="flex justify-between items-center">
+              <div>
+                <h6 class="text-sm font-medium opacity-80">Recent Connections</h6>
+                <h2 class="text-2xl font-bold"><%= @recent_connections.count %></h2>
+              </div>
+              <i class="bi bi-plug text-4xl opacity-50"></i>
+            </div>
+            <a href="/admin/moderation/connections" class="btn btn-outline btn-sm mt-2">View Logs</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Connection Activity -->
+      <div class="card bg-base-200 mb-4">
+        <div class="p-4 border-b border-base-content/10 flex justify-between items-center">
+          <h5 class="font-semibold"><i class="bi bi-activity mr-2"></i>Recent Connection Activity</h5>
+          <a href="/admin/moderation/connections" class="btn btn-sm btn-outline btn-primary">View All</a>
+        </div>
+        <div class="card-body">
+          <% if @recent_connections.empty? %>
+            <p class="text-base-content/70">No recent connection activity.</p>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra table-sm">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>IP Address</th>
+                    <th>User</th>
+                    <th>Type</th>
+                    <th>Outcome</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @recent_connections.each do |log| %>
+                  <tr>
+                    <td><%= log.created_at&.strftime('%Y-%m-%d %H:%M') %></td>
+                    <td>
+                      <a href="/admin/moderation/connections/ip/<%= CGI.escape(log.ip_address) %>" class="link link-info">
+                        <%= log.ip_address %>
+                      </a>
+                    </td>
+                    <td>
+                      <% if log.user %>
+                        <a href="/admin/moderation/connections/user/<%= log.user_id %>" class="link link-hover">
+                          <%= h log.user.username %>
+                        </a>
+                      <% else %>
+                        <span class="text-base-content/70">-</span>
+                      <% end %>
+                    </td>
+                    <td><span class="badge badge-neutral"><%= log.connection_type %></span></td>
+                    <td>
+                      <% case log.outcome
+                         when 'success' %>
+                        <span class="badge badge-success">Success</span>
+                      <% when 'banned_ip' %>
+                        <span class="badge badge-error">IP Banned</span>
+                      <% when 'suspended' %>
+                        <span class="badge badge-warning">Suspended</span>
+                      <% when 'invalid_credentials' %>
+                        <span class="badge badge-error">Invalid Credentials</span>
+                      <% else %>
+                        <span class="badge badge-neutral"><%= log.outcome %></span>
+                      <% end %>
+                    </td>
+                  </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Active Bans -->
+      <% if @active_bans.any? %>
+      <div class="card bg-base-200 mb-4">
+        <div class="p-4 border-b border-base-content/10 flex justify-between items-center">
+          <h5 class="font-semibold"><i class="bi bi-ban mr-2"></i>Active IP Bans</h5>
+          <a href="/admin/moderation/ip-bans" class="btn btn-sm btn-outline btn-primary">Manage</a>
+        </div>
+        <div class="card-body">
+          <div class="overflow-x-auto">
+            <table class="table table-zebra table-sm">
+              <thead>
+                <tr>
+                  <th>IP Pattern</th>
+                  <th>Reason</th>
+                  <th>Expires</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @active_bans.first(5).each do |ban| %>
+                <tr>
+                  <td><code class="bg-base-300 px-1 rounded"><%= ban.ip_pattern %></code></td>
+                  <td><%= h(ban.reason || '-') %></td>
+                  <td>
+                    <% if ban.permanent? %>
+                      <span class="badge badge-error">Permanent</span>
+                    <% else %>
+                      <%= ban.expires_at&.strftime('%Y-%m-%d %H:%M') %>
+                    <% end %>
+                  </td>
+                </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <% end %>
+
+      <!-- Suspended Users -->
+      <% if @suspended_users.any? %>
+      <div class="card bg-base-200">
+        <div class="p-4 border-b border-base-content/10 flex justify-between items-center">
+          <h5 class="font-semibold"><i class="bi bi-person-x mr-2"></i>Suspended Users</h5>
+          <a href="/admin/moderation/suspensions" class="btn btn-sm btn-outline btn-primary">View All</a>
+        </div>
+        <div class="card-body">
+          <div class="overflow-x-auto">
+            <table class="table table-zebra table-sm">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Reason</th>
+                  <th>Until</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @suspended_users.first(5).each do |user| %>
+                <tr>
+                  <td><%= h user.username %></td>
+                  <td><%= h(user.suspension_reason || '-') %></td>
+                  <td>
+                    <% if user.suspension_permanent? %>
+                      <span class="badge badge-error">Permanent</span>
+                    <% else %>
+                      <%= user.suspended_until&.strftime('%Y-%m-%d %H:%M') %>
+                    <% end %>
+                  </td>
+                  <td>
+                    <form action="/admin/moderation/users/<%= user.id %>/unsuspend" method="post" class="inline">
+                      <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Unsuspend this user?')">
+                        <i class="bi bi-check-circle"></i> Unsuspend
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <% end %>
+<%= admin_content_end %>

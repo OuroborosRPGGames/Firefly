@@ -1,0 +1,366 @@
+<% @page_title = 'World Generator - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'World Generator', path: '/admin/world_generator' }] %>
+
+<%= admin_content_start %>
+      <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-2xl font-bold"><i class="bi bi-magic mr-2"></i>World Generator</h1>
+      <p class="text-base-content/70">LLM-powered content generation for world building</p>
+    </div>
+    <div>
+      <% if @ai_available %>
+        <span class="badge badge-success"><i class="bi bi-check-circle mr-1"></i>AI Available</span>
+      <% else %>
+        <span class="badge badge-error"><i class="bi bi-x-circle mr-1"></i>AI Unavailable</span>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Generation Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+    <!-- Description Generator -->
+    <div class="card bg-base-200 h-full">
+      <div class="p-4 border-b border-base-content/10 bg-primary text-primary-content rounded-t-2xl">
+        <i class="bi bi-card-text mr-2"></i>Description Generator
+      </div>
+      <div class="card-body">
+        <p class="text-base-content/70 mb-4">Generate descriptions for rooms, items, or NPCs using LLM.</p>
+        <form action="/admin/world_generator/description" method="post">
+          <div class="form-control mb-3">
+            <label class="label"><span class="label-text">Target Type</span></label>
+            <select name="target_type" class="select select-bordered w-full">
+              <option value="room">Room</option>
+              <option value="item">Item</option>
+              <option value="npc">NPC</option>
+            </select>
+          </div>
+          <div class="form-control mb-3">
+            <label class="label"><span class="label-text">Target ID</span></label>
+            <input type="number" name="target_id" class="input input-bordered w-full" placeholder="Enter ID">
+          </div>
+          <div class="form-control mb-3">
+            <label class="label"><span class="label-text">Setting</span></label>
+            <select name="setting" class="select select-bordered w-full">
+              <option value="fantasy">Fantasy</option>
+              <option value="modern">Modern</option>
+              <option value="scifi">Sci-Fi</option>
+              <option value="steampunk">Steampunk</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary w-full" <%= @ai_available ? '' : 'disabled' %>>
+            <i class="bi bi-magic mr-1"></i>Generate Description
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Item Generator -->
+    <div class="card bg-base-200 h-full">
+      <div class="p-4 border-b border-base-content/10 bg-success text-success-content rounded-t-2xl">
+        <i class="bi bi-gem mr-2"></i>Item Generator
+      </div>
+      <div class="card-body">
+        <p class="text-base-content/70 mb-4">Generate new items with names, descriptions, and optional images.</p>
+        <form action="/admin/world_generator/item" method="post">
+          <div class="form-control mb-3">
+            <label class="label"><span class="label-text">Category</span></label>
+            <select name="category" class="select select-bordered w-full">
+              <option value="clothing">Clothing</option>
+              <option value="jewelry">Jewelry</option>
+              <option value="weapon">Weapon</option>
+              <option value="consumable">Consumable</option>
+              <option value="furniture">Furniture</option>
+              <option value="misc">Miscellaneous</option>
+            </select>
+          </div>
+          <div class="form-control mb-3">
+            <label class="label"><span class="label-text">Subcategory (optional)</span></label>
+            <input type="text" name="subcategory" class="input input-bordered w-full" placeholder="e.g., dress, dagger, ring">
+          </div>
+          <div class="form-control mb-3">
+            <label class="label cursor-pointer justify-start gap-2">
+              <input type="checkbox" name="generate_image" class="checkbox checkbox-sm" id="item_gen_image">
+              <span class="label-text">Generate Image</span>
+            </label>
+          </div>
+          <button type="submit" class="btn btn-success w-full" <%= @ai_available ? '' : 'disabled' %>>
+            <i class="bi bi-magic mr-1"></i>Generate Item
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- NPC Generator -->
+    <div class="card bg-base-200 h-full">
+      <div class="p-4 border-b border-base-content/10 bg-info text-info-content rounded-t-2xl">
+        <i class="bi bi-person-badge mr-2"></i>NPC Generator
+      </div>
+      <div class="card-body">
+        <p class="text-base-content/70 mb-4">Generate NPCs with names, appearance, personality, and schedules.</p>
+        <form action="/admin/world_generator/npc" method="post">
+          <div class="form-control mb-3">
+            <label class="label"><span class="label-text">Location ID</span></label>
+            <input type="number" name="location_id" class="input input-bordered w-full" placeholder="Enter Location ID" required>
+          </div>
+          <div class="form-control mb-3">
+            <label class="label"><span class="label-text">Role (optional)</span></label>
+            <input type="text" name="role" class="input input-bordered w-full" placeholder="e.g., shopkeeper, guard, priest">
+          </div>
+          <div class="grid grid-cols-2 gap-2 mb-3">
+            <div class="form-control">
+              <label class="label"><span class="label-text">Gender</span></label>
+              <select name="gender" class="select select-bordered w-full">
+                <option value="any">Any</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="neutral">Non-binary</option>
+              </select>
+            </div>
+            <div class="form-control">
+              <label class="label"><span class="label-text">Culture</span></label>
+              <select name="culture" class="select select-bordered w-full">
+                <option value="western">Western</option>
+                <option value="eastern">Eastern</option>
+                <option value="nordic">Nordic</option>
+                <option value="arabic">Arabic</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-control mb-3">
+            <div class="flex gap-4">
+              <label class="label cursor-pointer justify-start gap-2">
+                <input type="checkbox" name="generate_portrait" class="checkbox checkbox-sm" id="npc_portrait">
+                <span class="label-text">Portrait</span>
+              </label>
+              <label class="label cursor-pointer justify-start gap-2">
+                <input type="checkbox" name="generate_schedule" class="checkbox checkbox-sm" id="npc_schedule" checked>
+                <span class="label-text">Schedule</span>
+              </label>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-info w-full" <%= @ai_available ? '' : 'disabled' %>>
+            <i class="bi bi-magic mr-1"></i>Generate NPC
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Place Generator -->
+    <div class="card bg-base-200 h-full">
+      <div class="p-4 border-b border-base-content/10 bg-warning text-warning-content rounded-t-2xl">
+        <i class="bi bi-shop mr-2"></i>Place Generator
+      </div>
+      <div class="card-body">
+        <p class="text-base-content/70 mb-4">Generate complete places with rooms, NPCs, and inventory.</p>
+        <form action="/admin/world_generator/place" method="post">
+          <div class="form-control mb-3">
+            <label class="label"><span class="label-text">Coordinates</span></label>
+            <div class="grid grid-cols-2 gap-2">
+              <input type="number" name="longitude" class="input input-bordered w-full" placeholder="Longitude" step="0.0001" required>
+              <input type="number" name="latitude" class="input input-bordered w-full" placeholder="Latitude" step="0.0001" required>
+            </div>
+            <label class="label"><span class="label-text-alt text-base-content/50">e.g., -74.0060, 40.7128 for New York</span></label>
+          </div>
+          <div class="form-control mb-3">
+            <label class="label"><span class="label-text">Place Type</span></label>
+            <select name="place_type" class="select select-bordered w-full">
+              <optgroup label="Service">
+                <option value="tavern">Tavern</option>
+                <option value="inn">Inn</option>
+                <option value="restaurant">Restaurant</option>
+              </optgroup>
+              <optgroup label="Shops">
+                <option value="blacksmith">Blacksmith</option>
+                <option value="apothecary">Apothecary</option>
+                <option value="clothier">Clothier</option>
+                <option value="jeweler">Jeweler</option>
+                <option value="general_store">General Store</option>
+              </optgroup>
+              <optgroup label="Civic">
+                <option value="guild_hall">Guild Hall</option>
+                <option value="temple">Temple</option>
+                <option value="bank">Bank</option>
+                <option value="library">Library</option>
+              </optgroup>
+              <optgroup label="Residential">
+                <option value="townhouse">Townhouse</option>
+                <option value="mansion">Mansion</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="form-control mb-3">
+            <div class="flex gap-4">
+              <label class="label cursor-pointer justify-start gap-2">
+                <input type="checkbox" name="generate_rooms" class="checkbox checkbox-sm" id="place_rooms" checked>
+                <span class="label-text">Room Descriptions</span>
+              </label>
+              <label class="label cursor-pointer justify-start gap-2">
+                <input type="checkbox" name="generate_npcs" class="checkbox checkbox-sm" id="place_npcs">
+                <span class="label-text">NPCs</span>
+              </label>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-warning w-full" <%= @ai_available ? '' : 'disabled' %>>
+            <i class="bi bi-magic mr-1"></i>Generate Place
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- City Generator -->
+    <div class="card bg-base-200 h-full">
+      <div class="p-4 border-b border-base-content/10 bg-error text-error-content rounded-t-2xl">
+        <i class="bi bi-building mr-2"></i>City Generator
+      </div>
+      <div class="card-body">
+        <p class="text-base-content/70 mb-4">Generate complete cities with streets, places, and NPCs. <strong>Long operation!</strong></p>
+        <form action="/admin/world_generator/city" method="post">
+          <div class="form-control mb-3">
+            <label class="label"><span class="label-text">Coordinates</span></label>
+            <div class="grid grid-cols-2 gap-2">
+              <input type="number" name="longitude" class="input input-bordered w-full" placeholder="Longitude" step="0.0001" required>
+              <input type="number" name="latitude" class="input input-bordered w-full" placeholder="Latitude" step="0.0001" required>
+            </div>
+            <label class="label"><span class="label-text-alt text-base-content/50">e.g., 0.0, 0.0 for a new fantasy world</span></label>
+          </div>
+          <div class="form-control mb-3">
+            <label class="label"><span class="label-text">City Size</span></label>
+            <select name="size" class="select select-bordered w-full">
+              <option value="village">Village (3x3)</option>
+              <option value="town">Town (5x5)</option>
+              <option value="small_city">Small City (7x7)</option>
+              <option value="medium" selected>Medium City (10x10)</option>
+              <option value="large_city">Large City (15x15)</option>
+              <option value="metropolis">Metropolis (20x20)</option>
+            </select>
+          </div>
+          <div class="form-control mb-3">
+            <label class="label cursor-pointer justify-start gap-2">
+              <input type="checkbox" name="generate_places" class="checkbox checkbox-sm" id="city_places" checked>
+              <span class="label-text">Generate Places</span>
+            </label>
+            <label class="label cursor-pointer justify-start gap-2">
+              <input type="checkbox" name="generate_place_rooms" class="checkbox checkbox-sm" id="city_rooms">
+              <span class="label-text">Generate Room Descriptions</span>
+            </label>
+            <div class="form-control mt-2">
+              <label class="label py-1">
+                <span class="label-text text-sm">Green Space</span>
+                <span class="label-text-alt" id="wg-green-space-label">50%</span>
+              </label>
+              <input type="range" name="green_space_ratio" min="0" max="100" value="50" step="10" class="range range-xs range-success" oninput="document.getElementById('wg-green-space-label').textContent = this.value + '%'">
+            </div>
+            <label class="label cursor-pointer justify-start gap-2">
+              <input type="checkbox" name="generate_inventory" class="checkbox checkbox-sm" checked>
+              <span class="label-text">Generate Shop Inventories</span>
+            </label>
+            <label class="label cursor-pointer justify-start gap-2">
+              <input type="checkbox" name="generate_npcs" class="checkbox checkbox-sm" id="city_npcs">
+              <span class="label-text">Generate NPCs</span>
+            </label>
+          </div>
+          <button type="submit" class="btn btn-error w-full" <%= @ai_available ? '' : 'disabled' %>>
+            <i class="bi bi-magic mr-1"></i>Generate City
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Image Generator -->
+    <div class="card bg-base-200 h-full">
+      <div class="p-4 border-b border-base-content/10 bg-neutral text-neutral-content rounded-t-2xl">
+        <i class="bi bi-image mr-2"></i>Image Generator
+      </div>
+      <div class="card-body">
+        <p class="text-base-content/70 mb-4">Generate images for existing rooms, items, or NPCs.</p>
+        <form action="/admin/world_generator/image" method="post">
+          <div class="form-control mb-3">
+            <label class="label"><span class="label-text">Target Type</span></label>
+            <select name="target_type" class="select select-bordered w-full">
+              <option value="room">Room Background</option>
+              <option value="npc">NPC Portrait</option>
+              <option value="item">Item Photo</option>
+            </select>
+          </div>
+          <div class="form-control mb-3">
+            <label class="label"><span class="label-text">Target ID</span></label>
+            <input type="number" name="target_id" class="input input-bordered w-full" placeholder="Enter ID" required>
+          </div>
+          <button type="submit" class="btn btn-neutral w-full" <%= @ai_available ? '' : 'disabled' %>>
+            <i class="bi bi-magic mr-1"></i>Generate Image
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Jobs -->
+  <div class="card bg-base-200">
+    <div class="p-4 border-b border-base-content/10 flex justify-between items-center">
+      <span><i class="bi bi-list-task mr-2"></i>Generation Jobs</span>
+      <a href="/admin/world_generator/jobs" class="btn btn-sm btn-ghost">View All</a>
+    </div>
+    <div class="card-body">
+      <% if @active_jobs && @active_jobs.any? %>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Progress</th>
+                <th>Started</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @active_jobs.each do |job| %>
+                <tr>
+                  <td>#<%= job[:id] %></td>
+                  <td><%= job[:type] %></td>
+                  <td>
+                    <% if job[:status] == 'pending' %>
+                      <span class="badge badge-neutral">Pending</span>
+                    <% elsif job[:status] == 'running' %>
+                      <span class="badge badge-primary">Running</span>
+                    <% elsif job[:status] == 'completed' %>
+                      <span class="badge badge-success">Completed</span>
+                    <% elsif job[:status] == 'failed' %>
+                      <span class="badge badge-error">Failed</span>
+                    <% elsif job[:status] == 'cancelled' %>
+                      <span class="badge badge-warning">Cancelled</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if job[:status] == 'running' %>
+                      <progress class="progress progress-primary w-24" value="<%= job[:percent] || 0 %>" max="100"></progress>
+                      <span class="ml-2 text-sm"><%= (job[:percent] || 0).round(0) %>%</span>
+                    <% else %>
+                      <%= h(job[:message] || '-') %>
+                    <% end %>
+                  </td>
+                  <td><%= job[:started_at] ? Time.parse(job[:started_at]).strftime('%H:%M:%S') : '-' %></td>
+                  <td>
+                    <a href="/admin/world_generator/jobs/<%= job[:id] %>" class="btn btn-sm btn-ghost">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                    <% if %w[pending running].include?(job[:status]) %>
+                      <form action="/admin/world_generator/jobs/<%= job[:id] %>/cancel" method="post" class="inline">
+                        <button type="submit" class="btn btn-sm btn-ghost text-error" onclick="return confirm('Cancel this job?')">
+                          <i class="bi bi-x"></i>
+                        </button>
+                      </form>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <p class="text-base-content/70">No active generation jobs. Start one above!</p>
+      <% end %>
+    </div>
+  </div>
+<%= admin_content_end %>

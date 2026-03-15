@@ -1,0 +1,631 @@
+<%
+  is_new = @pattern.new?
+  form_action = is_new ? '/admin/patterns/create' : "/admin/patterns/#{@pattern.id}"
+
+  # Build body positions JSON for JS
+  body_positions_json = (@body_positions || []).map { |bp| { label: bp.label, region: bp.respond_to?(:region) ? bp.region : nil } }.to_json
+%>
+
+<form action="<%= form_action %>" method="post" id="patternForm" enctype="multipart/form-data">
+  <%= csrf_tag %>
+
+  <!-- ===== PATTERN TYPE SECTION ===== -->
+  <div class="card bg-base-200 mb-6">
+    <div class="p-4 border-b border-base-content/10">
+      <h5 class="font-semibold flex items-center gap-2">
+        <i class="bi bi-tag"></i>Pattern Type
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Item Category -->
+        <div>
+          <label class="label"><span class="label-text">Item Category</span></label>
+          <select class="select select-bordered w-full" id="patternCategory" name="pattern_category" <%= is_new ? '' : 'disabled' %>>
+            <option value="">Select Category...</option>
+            <option value="clothing"    <%= @pattern.clothing?    ? 'selected' : '' %>>Clothing</option>
+            <option value="jewelry"     <%= @pattern.jewelry?     ? 'selected' : '' %>>Jewelry</option>
+            <option value="weapons"     <%= @pattern.weapon?      ? 'selected' : '' %>>Weapons</option>
+            <option value="consumables" <%= @pattern.consumable? ? 'selected' : '' %>>Consumables</option>
+            <option value="other"       <%= @pattern.other?       ? 'selected' : '' %>>Other</option>
+          </select>
+          <% unless is_new %>
+            <label class="label"><span class="label-text-alt text-base-content/70">Category cannot be changed</span></label>
+          <% end %>
+        </div>
+
+        <!-- Type Category (cascading) -->
+        <div>
+          <label class="label"><span class="label-text">Type Category</span></label>
+          <select class="select select-bordered w-full" id="typeCategory" name="type_category">
+            <option value="">Select type category first...</option>
+          </select>
+        </div>
+
+        <!-- Subcategory (cascading) -->
+        <div>
+          <label class="label"><span class="label-text">Subcategory</span></label>
+          <select class="select select-bordered w-full" id="typeSubcategory" name="type_subcategory">
+            <option value="">All</option>
+          </select>
+        </div>
+
+        <!-- Specific Type -->
+        <div>
+          <label class="label"><span class="label-text">Specific Type <span class="text-error">*</span></span></label>
+          <select class="select select-bordered w-full" id="unifiedObjectTypeId" name="pattern[unified_object_type_id]" required>
+            <option value="">Select type...</option>
+            <% (@types || []).each do |type| %>
+              <%
+                type_group = if type.clothing? then 'clothing'
+                             elsif type.jewelry? then 'jewelry'
+                             elsif type.weapon? then 'weapons'
+                             elsif type.other? then 'other'
+                             else 'consumables'
+                             end
+                covered = type.covered_positions.join(', ')
+              %>
+              <option value="<%= type.id %>"
+                      data-type-group="<%= type_group %>"
+                      data-category="<%= h type.category %>"
+                      data-subcategory="<%= h type.subcategory %>"
+                      data-covered="<%= h covered %>"
+                      <%= @pattern.unified_object_type_id == type.id ? 'selected' : '' %>>
+                <%= h type.name %>
+              </option>
+            <% end %>
+          </select>
+        </div>
+      </div>
+
+      <!-- Consumable Type row (shown only for consumables) -->
+      <div class="mt-4 hidden" id="consumeTypeRow">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label class="label"><span class="label-text">Consumable Type</span></label>
+            <select id="consumeType" class="select select-bordered w-full" name="pattern[consume_type]">
+              <option value="">Not specified</option>
+              <option value="food"  <%= @pattern.consume_type == 'food'  ? 'selected' : '' %>>Food</option>
+              <option value="drink" <%= @pattern.consume_type == 'drink' ? 'selected' : '' %>>Drink</option>
+              <option value="smoke" <%= @pattern.consume_type == 'smoke' ? 'selected' : '' %>>Smokeable</option>
+            </select>
+          </div>
+          <div>
+            <label class="label"><span class="label-text">Consume Time (seconds)</span></label>
+            <input type="number" class="input input-bordered w-full" name="pattern[consume_time]" min="0" value="<%= @pattern.consume_time %>">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DESCRIPTION SECTION ===== -->
+  <div class="card bg-base-200 mb-6">
+    <div class="p-4 border-b border-base-content/10">
+      <h5 class="font-semibold flex items-center gap-2">
+        <i class="bi bi-card-text"></i>Description
+      </h5>
+    </div>
+    <div class="card-body">
+      <!-- Main Description (230-char inventory line) -->
+      <div class="mb-4">
+        <label class="label">
+          <span class="label-text">Main Description <span class="text-error">*</span></span>
+          <span class="label-text-alt">Shown in inventory and when worn</span>
+        </label>
+        <div class="flex gap-2 w-full">
+          <div id="mainDescEditor"
+               class="flex-1 border border-base-300 rounded min-h-[80px] bg-base-100 p-2"
+               data-initial="<%= h @pattern.description %>">
+          </div>
+          <input type="hidden" id="descriptionValue" name="pattern[description]" value="<%= h @pattern.description %>">
+          <button type="button" class="btn btn-outline self-start" id="gradientPickerBtn" title="Apply Gradient">
+            <i class="bi bi-palette"></i>
+          </button>
+        </div>
+        <label class="label">
+          <span class="label-text-alt">Max 230 characters (visible text)</span>
+          <span class="label-text-alt" id="descCharCount">0/230</span>
+        </label>
+      </div>
+
+      <!-- Image Upload (always visible) -->
+      <div class="mb-4">
+        <label class="label"><span class="label-text">Item Image</span></label>
+        <input type="file" id="descPictureFile" class="file-input file-input-bordered w-full" accept="image/*">
+        <input type="hidden" id="imageUrlValue" name="pattern[image_url]" value="<%= h @pattern.image_url %>">
+        <div id="picturePreview" class="mt-2 <%= @pattern.image_url.to_s.empty? ? 'hidden' : '' %> flex items-center gap-2">
+          <img src="<%= h @pattern.image_url %>" alt="Preview" class="max-h-36 rounded">
+          <button type="button" class="btn btn-sm btn-outline btn-error" id="removePictureBtn">
+            <i class="bi bi-trash"></i> Remove
+          </button>
+        </div>
+        <label class="label"><span class="label-text-alt">Optional image (max 5MB)</span></label>
+      </div>
+
+      <!-- Item Description rich text (desc_desc) -->
+      <div>
+        <label class="label"><span class="label-text">Item Description</span></label>
+        <div id="itemDescEditor"
+             class="border border-base-300 rounded min-h-[120px] bg-base-100"
+             data-initial="<%= h @pattern.desc_desc %>">
+        </div>
+        <input type="hidden" id="descDescValue" name="pattern[desc_desc]" value="<%= h @pattern.desc_desc %>">
+        <label class="label"><span class="label-text-alt">Full description shown when examining the item. Supports rich text and color markup.</span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PRICE SECTION ===== -->
+  <div class="card bg-base-200 mb-6">
+    <div class="p-4 border-b border-base-content/10">
+      <h5 class="font-semibold flex items-center gap-2">
+        <i class="bi bi-currency-dollar"></i>Price
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="label"><span class="label-text">Price</span></label>
+          <label class="input input-bordered flex items-center gap-2">
+            <span>$</span>
+            <input type="number" class="grow" name="pattern[price]" step="0.01" min="0" value="<%= @pattern.price %>">
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CLOTHING PROPERTIES ===== -->
+  <div class="card bg-base-200 mb-6 hidden" id="clothingFields">
+    <div class="p-4 border-b border-base-content/10">
+      <h5 class="font-semibold flex items-center gap-2">
+        <i class="bi bi-bag"></i>Clothing Properties
+      </h5>
+    </div>
+    <div class="card-body">
+      <!-- Covered positions display -->
+      <div class="mb-4">
+        <label class="label"><span class="label-text">Covered by this type</span></label>
+        <div id="coveredPositionsDisplay" class="text-sm text-base-content/70 italic">
+          Select a type to see covered positions
+        </div>
+      </div>
+
+      <!-- Flags -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div class="form-control">
+          <label class="label cursor-pointer justify-start gap-3">
+            <input type="checkbox" class="checkbox" name="pattern[sheer]" value="true" <%= @pattern.sheer ? 'checked' : '' %>>
+            <span class="label-text">Sheer (reveals what's underneath)</span>
+          </label>
+        </div>
+        <div class="form-control">
+          <label class="label cursor-pointer justify-start gap-3">
+            <input type="checkbox" class="checkbox" name="pattern[container]" value="true" <%= @pattern.container ? 'checked' : '' %>>
+            <span class="label-text">Container (can hold items)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Additional covered locations -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="label"><span class="label-text">Also covers (additional location 1)</span></label>
+          <select class="select select-bordered w-full" name="pattern[extra_covered_1]" id="extraCovered1">
+            <option value="">None</option>
+          </select>
+        </div>
+        <div>
+          <label class="label"><span class="label-text">Also covers (additional location 2)</span></label>
+          <select class="select select-bordered w-full" name="pattern[extra_covered_2]" id="extraCovered2">
+            <option value="">None</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Excluded locations -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="label"><span class="label-text">Does NOT cover (location 1)</span></label>
+          <select class="select select-bordered w-full" name="pattern[extra_uncovered_1]" id="extraUncovered1">
+            <option value="">None</option>
+          </select>
+        </div>
+        <div>
+          <label class="label"><span class="label-text">Does NOT cover (location 2)</span></label>
+          <select class="select select-bordered w-full" name="pattern[extra_uncovered_2]" id="extraUncovered2">
+            <option value="">None</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== JEWELRY PROPERTIES ===== -->
+  <div class="card bg-base-200 mb-6 hidden" id="jewelryFields">
+    <div class="p-4 border-b border-base-content/10">
+      <h5 class="font-semibold flex items-center gap-2">
+        <i class="bi bi-gem"></i>Jewelry Properties
+      </h5>
+    </div>
+    <div class="card-body">
+      <!-- Body location display -->
+      <div class="mb-4">
+        <label class="label"><span class="label-text">Worn at</span></label>
+        <div id="jewelryLocationDisplay" class="text-sm text-base-content/70 italic">
+          Select a type to see body location
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="label"><span class="label-text">Metal</span></label>
+          <select class="select select-bordered w-full" name="pattern[metal]">
+            <option value="">None</option>
+            <% %w[Gold Silver Platinum Rose\ Gold White\ Gold Titanium Copper Bronze].each do |m| %>
+              <option value="<%= m %>" <%= @pattern.metal == m ? 'selected' : '' %>><%= m %></option>
+            <% end %>
+          </select>
+        </div>
+        <div>
+          <label class="label"><span class="label-text">Stone</span></label>
+          <select class="select select-bordered w-full" name="pattern[stone]">
+            <option value="">None</option>
+            <% %w[Diamond Ruby Sapphire Emerald Amethyst Opal Pearl Topaz].each do |s| %>
+              <option value="<%= s %>" <%= @pattern.stone == s ? 'selected' : '' %>><%= s %></option>
+            <% end %>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== WEAPON PROPERTIES ===== -->
+  <div class="card bg-base-200 mb-6 hidden" id="weaponFields">
+    <div class="p-4 border-b border-base-content/10">
+      <h5 class="font-semibold flex items-center gap-2">
+        <i class="bi bi-lightning"></i>Weapon Properties
+      </h5>
+    </div>
+    <div class="card-body">
+      <div>
+        <label class="label"><span class="label-text">Weapon Type</span></label>
+        <input type="text" id="weapon_type" class="input input-bordered w-full" name="pattern[weapon_type]"
+               value="<%= h(@pattern.respond_to?(:weapon_type) ? @pattern.weapon_type.to_s : '') %>"
+               placeholder="e.g., longsword, hunting knife, revolver, shotgun">
+        <label class="label"><span class="label-text-alt">The specific kind of weapon this pattern creates</span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CONSUMABLE PROPERTIES ===== -->
+  <div class="card bg-base-200 mb-6 hidden" id="consumableFields">
+    <div class="p-4 border-b border-base-content/10">
+      <h5 class="font-semibold flex items-center gap-2">
+        <i class="bi bi-cup-hot"></i>Consumable Properties
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="mb-4">
+        <label class="label"><span class="label-text">Taste Description</span></label>
+        <div id="tasteEditor"
+             class="border border-base-300 rounded min-h-[80px] bg-base-100"
+             data-initial="<%= h @pattern.taste %>">
+        </div>
+        <input type="hidden" id="tasteValue" name="pattern[taste]" value="<%= h @pattern.taste %>">
+      </div>
+      <div>
+        <label class="label"><span class="label-text">Effect Description</span></label>
+        <div id="effectEditor"
+             class="border border-base-300 rounded min-h-[100px] bg-base-100"
+             data-initial="<%= h @pattern.effect %>">
+        </div>
+        <input type="hidden" id="effectValue" name="pattern[effect]" value="<%= h @pattern.effect %>">
+        <label class="label"><span class="label-text-alt">What happens when consumed</span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== OTHER / DIMENSIONS ===== -->
+  <div class="card bg-base-200 mb-6 hidden" id="otherFields">
+    <div class="p-4 border-b border-base-content/10">
+      <h5 class="font-semibold flex items-center gap-2">
+        <i class="bi bi-rulers"></i>Dimensions
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div>
+          <label class="label"><span class="label-text">Length (in)</span></label>
+          <input type="number" class="input input-bordered w-full" name="pattern[dim_length]"
+                 step="0.1" min="0"
+                 value="<%= @pattern.respond_to?(:dim_length) ? @pattern.dim_length : '' %>">
+        </div>
+        <div>
+          <label class="label"><span class="label-text">Width (in)</span></label>
+          <input type="number" class="input input-bordered w-full" name="pattern[dim_width]"
+                 step="0.1" min="0"
+                 value="<%= @pattern.respond_to?(:dim_width) ? @pattern.dim_width : '' %>">
+        </div>
+        <div>
+          <label class="label"><span class="label-text">Height (in)</span></label>
+          <input type="number" class="input input-bordered w-full" name="pattern[dim_height]"
+                 step="0.1" min="0"
+                 value="<%= @pattern.respond_to?(:dim_height) ? @pattern.dim_height : '' %>">
+        </div>
+        <div>
+          <label class="label"><span class="label-text">Weight (lbs)</span></label>
+          <input type="number" class="input input-bordered w-full" name="pattern[dim_weight]"
+                 step="0.01" min="0"
+                 value="<%= @pattern.respond_to?(:dim_weight) ? @pattern.dim_weight : '' %>">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SUBMIT ===== -->
+  <div class="flex justify-between">
+    <a href="/admin/patterns" class="btn btn-neutral">
+      <i class="bi bi-x-lg"></i>Cancel
+    </a>
+    <div class="flex gap-2">
+      <% unless is_new %>
+        <button type="button" class="btn btn-error" onclick="document.getElementById('deleteModal').showModal()">
+          <i class="bi bi-trash"></i>Delete
+        </button>
+      <% end %>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-lg"></i><%= is_new ? 'Create Pattern' : 'Save Changes' %>
+      </button>
+    </div>
+  </div>
+</form>
+
+<% unless is_new %>
+<%= partial 'admin/modal', locals: {
+  id: 'deleteModal',
+  title: 'Delete Pattern',
+  content: '<p class="py-4">Are you sure you want to delete this pattern?</p>' \
+           '<p class="text-error font-semibold">This action cannot be undone.</p>',
+  actions: '<form action="/admin/patterns/' + @pattern.id.to_s + '/delete" method="post">' +
+            csrf_tag +
+            '<button type="submit" class="btn btn-error">Delete Pattern</button>' +
+            '</form>',
+  close_label: 'Cancel'
+} %>
+<% end %>
+
+<script src="/js/gradient-ciede2000.js"></script>
+<script src="/js/gradient-creator.js?v=3"></script>
+<script src="/js/gradient-picker.js?v=4"></script>
+<script src="/js/description-editor.js"></script>
+<link rel="stylesheet" href="/css/gradient-components.css">
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // ===== DATA =====
+  const bodyPositions = <%= @body_positions.map { |bp| { id: bp.id, label: bp.label, region: bp.region } }.to_json %>;
+  const currentExtraCovered1   = '<%= h(@pattern.respond_to?(:extra_covered_1)   ? @pattern.extra_covered_1.to_s   : "") %>';
+  const currentExtraCovered2   = '<%= h(@pattern.respond_to?(:extra_covered_2)   ? @pattern.extra_covered_2.to_s   : "") %>';
+  const currentExtraUncovered1 = '<%= h(@pattern.respond_to?(:extra_uncovered_1) ? @pattern.extra_uncovered_1.to_s : "") %>';
+  const currentExtraUncovered2 = '<%= h(@pattern.respond_to?(:extra_uncovered_2) ? @pattern.extra_uncovered_2.to_s : "") %>';
+
+  // ===== ELEMENTS =====
+  const patternCategory  = document.getElementById('patternCategory');
+  const typeCategory     = document.getElementById('typeCategory');
+  const typeSubcategory  = document.getElementById('typeSubcategory');
+  const typeSelect       = document.getElementById('unifiedObjectTypeId');
+  const clothingFields   = document.getElementById('clothingFields');
+  const jewelryFields    = document.getElementById('jewelryFields');
+  const weaponFields     = document.getElementById('weaponFields');
+  const consumableFields = document.getElementById('consumableFields');
+  const otherFields      = document.getElementById('otherFields');
+  const consumeTypeRow   = document.getElementById('consumeTypeRow');
+  const coveredDisplay   = document.getElementById('coveredPositionsDisplay');
+  const jewelryDisplay   = document.getElementById('jewelryLocationDisplay');
+  const extraCovered1    = document.getElementById('extraCovered1');
+  const extraCovered2    = document.getElementById('extraCovered2');
+  const extraUncovered1  = document.getElementById('extraUncovered1');
+  const extraUncovered2  = document.getElementById('extraUncovered2');
+
+  // ===== RICH TEXT EDITORS =====
+  function initEditor(containerId, hiddenInputId, maxLength) {
+    const container = document.getElementById(containerId);
+    const hidden    = document.getElementById(hiddenInputId);
+    if (!container || typeof DescriptionEditor === 'undefined') return null;
+
+    const initial = container.dataset.initial || '';
+    const editor = new DescriptionEditor('#' + containerId, {
+      placeholder: 'Enter description...',
+      maxLength:   maxLength || 5000,
+      onChange: function(html) {
+        if (hidden) hidden.value = html;
+        if (containerId === 'mainDescEditor') updateCharCount();
+      }
+    });
+    if (initial && editor.setContent) editor.setContent(initial);
+    if (hidden && !hidden.value && initial) hidden.value = initial;
+    return editor;
+  }
+
+  const mainDescEditor = initEditor('mainDescEditor', 'descriptionValue', 230);
+  initEditor('itemDescEditor',  'descDescValue', 10000);
+  initEditor('tasteEditor',     'tasteValue',    2000);
+  initEditor('effectEditor',    'effectValue',   2000);
+
+  // Char counter for main description
+  function updateCharCount() {
+    const el = document.getElementById('descCharCount');
+    if (!el) return;
+    const editorEl = mainDescEditor && mainDescEditor.editorEl;
+    const len = editorEl ? (editorEl.innerText || '').length : 0;
+    el.textContent = len + '/230';
+    el.className = len > 200 ? 'label-text-alt text-warning' : 'label-text-alt';
+  }
+  updateCharCount();
+
+  // ===== IMAGE UPLOAD =====
+  const pictureFileInput = document.getElementById('descPictureFile');
+  const picturePreview   = document.getElementById('picturePreview');
+  const imageUrlInput    = document.getElementById('imageUrlValue');
+  const removePictureBtn = document.getElementById('removePictureBtn');
+
+  if (pictureFileInput) {
+    pictureFileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File too large. Maximum size is 5MB.');
+        this.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        picturePreview.classList.remove('hidden');
+        picturePreview.querySelector('img').src = event.target.result;
+        // Note: preview only — saving image requires server-side upload handling
+        // imageUrlInput.value is not changed here; user can also enter URL directly
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  if (removePictureBtn) {
+    removePictureBtn.addEventListener('click', function() {
+      picturePreview.classList.add('hidden');
+      picturePreview.querySelector('img').src = '';
+      pictureFileInput.value = '';
+      imageUrlInput.value = '';
+    });
+  }
+
+  // ===== BODY POSITIONS DROPDOWN POPULATION =====
+  function populateBodyPositionDropdowns() {
+    const selects   = [extraCovered1, extraCovered2, extraUncovered1, extraUncovered2];
+    const currVals  = [currentExtraCovered1, currentExtraCovered2, currentExtraUncovered1, currentExtraUncovered2];
+    selects.forEach((sel, idx) => {
+      if (!sel) return;
+      sel.innerHTML = '<option value="">None</option>';
+      bodyPositions.forEach(function(bp) {
+        const opt = document.createElement('option');
+        opt.value = bp.label;
+        opt.textContent = bp.region ? bp.label + ' (' + bp.region + ')' : bp.label;
+        if (bp.label === currVals[idx]) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    });
+  }
+  populateBodyPositionDropdowns();
+
+  // ===== FIELD VISIBILITY =====
+  function updateFieldVisibility() {
+    const cat = patternCategory.value;
+    clothingFields.classList.toggle('hidden',   cat !== 'clothing');
+    jewelryFields.classList.toggle('hidden',    cat !== 'jewelry');
+    weaponFields.classList.toggle('hidden',     cat !== 'weapons');
+    consumableFields.classList.toggle('hidden', cat !== 'consumables');
+    otherFields.classList.toggle('hidden',      cat !== 'other');
+    consumeTypeRow.classList.toggle('hidden',   cat !== 'consumables');
+  }
+
+  // ===== COVERED POSITIONS DISPLAY =====
+  function updateCoveredDisplay() {
+    const opt = typeSelect.options[typeSelect.selectedIndex];
+    if (!opt || !opt.value) {
+      if (coveredDisplay) coveredDisplay.textContent = 'Select a type to see covered positions';
+      if (jewelryDisplay) jewelryDisplay.textContent = 'Select a type to see body location';
+      return;
+    }
+    const covered = opt.dataset.covered;
+    if (coveredDisplay) {
+      coveredDisplay.textContent = covered ? 'Covers: ' + covered : 'No positions defined for this type';
+    }
+    if (jewelryDisplay) {
+      jewelryDisplay.textContent = covered ? 'Located at: ' + covered : 'No location defined for this type';
+    }
+  }
+
+  // ===== CASCADING DROPDOWNS =====
+  function updateTypeCategories() {
+    const typeGroup = patternCategory.value;
+    if (!typeGroup) {
+      typeCategory.innerHTML = '<option value="">Select pattern category first...</option>';
+      return;
+    }
+    const opts = Array.from(typeSelect.options);
+    const cats = [...new Set(
+      opts.filter(function(o) { return o.dataset.typeGroup === typeGroup && o.value; })
+          .map(function(o) { return o.dataset.category; })
+          .filter(Boolean)
+    )].sort();
+    typeCategory.innerHTML = '<option value="">All Categories</option>';
+    cats.forEach(function(cat) {
+      const o = document.createElement('option');
+      o.value = cat; o.textContent = cat;
+      typeCategory.appendChild(o);
+    });
+    filterTypes();
+  }
+
+  function updateSubcategories() {
+    const typeGroup   = patternCategory.value;
+    const selectedCat = typeCategory.value;
+    const opts = Array.from(typeSelect.options);
+    const subs = [...new Set(
+      opts.filter(function(o) { return o.dataset.typeGroup === typeGroup && o.value; })
+          .filter(function(o) { return !selectedCat || o.dataset.category === selectedCat; })
+          .map(function(o) { return o.dataset.subcategory; })
+          .filter(Boolean)
+    )].sort();
+    typeSubcategory.innerHTML = '<option value="">All</option>';
+    subs.forEach(function(sub) {
+      const o = document.createElement('option');
+      o.value = sub; o.textContent = sub;
+      typeSubcategory.appendChild(o);
+    });
+    filterTypes();
+  }
+
+  function filterTypes() {
+    const typeGroup   = patternCategory.value;
+    const selectedCat = typeCategory.value;
+    const selectedSub = typeSubcategory.value;
+    Array.from(typeSelect.options).forEach(function(o) {
+      if (!o.value) return;
+      const matchGroup = !typeGroup   || o.dataset.typeGroup   === typeGroup;
+      const matchCat   = !selectedCat || o.dataset.category    === selectedCat;
+      const matchSub   = !selectedSub || o.dataset.subcategory === selectedSub;
+      o.style.display = (matchGroup && matchCat && matchSub) ? '' : 'none';
+    });
+  }
+
+  // ===== EVENT LISTENERS =====
+  patternCategory.addEventListener('change', function() {
+    updateFieldVisibility();
+    updateTypeCategories();
+  });
+  typeCategory.addEventListener('change', updateSubcategories);
+  typeSubcategory.addEventListener('change', filterTypes);
+  typeSelect.addEventListener('change', updateCoveredDisplay);
+
+  // ===== GRADIENT PICKER =====
+  const gradientPickerBtn = document.getElementById('gradientPickerBtn');
+  if (gradientPickerBtn && typeof GradientCreator !== 'undefined') {
+    gradientPickerBtn.addEventListener('click', function() {
+      new GradientCreator({ onSave: function() {} }).show();
+    });
+  }
+
+  // ===== INITIALIZE ON LOAD =====
+  const selectedType = typeSelect.options[typeSelect.selectedIndex];
+  if (selectedType && selectedType.value && selectedType.dataset.typeGroup) {
+    if (!patternCategory.value) patternCategory.value = selectedType.dataset.typeGroup;
+  }
+  if (patternCategory.value) {
+    updateFieldVisibility();
+    updateTypeCategories();
+    updateCoveredDisplay();
+  }
+});
+</script>

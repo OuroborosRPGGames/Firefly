@@ -1,0 +1,101 @@
+<div class="card bg-base-200 mb-4">
+  <div class="card-body">
+    <div class="p-4 border-b border-base-content/10 -mx-4 -mt-4 mb-4">
+      <h3 class="font-semibold"><i class="bi bi-info-circle mr-2"></i>Basic Information</h3>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+      <div class="md:col-span-6">
+        <label class="label"><span class="label-text">Name <span class="text-error">*</span></span></label>
+        <input type="text" class="input input-bordered w-full" name="name" value="<%= h(@ability.name || '') %>" required maxlength="100">
+      </div>
+
+      <div class="md:col-span-3">
+        <label class="label"><span class="label-text">Ability Type <span class="text-error">*</span></span></label>
+        <select class="select select-bordered w-full" name="ability_type" required>
+          <% Ability::ABILITY_TYPES.each do |t| %>
+            <option value="<%= t %>" <%= @ability.ability_type == t ? 'selected' : '' %>><%= t.capitalize %></option>
+          <% end %>
+        </select>
+      </div>
+
+      <div class="md:col-span-3">
+        <label class="label"><span class="label-text">Action Type</span></label>
+        <select class="select select-bordered w-full" name="action_type">
+          <% Ability::ACTION_TYPES.each do |t| %>
+            <option value="<%= t %>" <%= @ability.action_type == t ? 'selected' : '' %>><%= t.capitalize %></option>
+          <% end %>
+        </select>
+      </div>
+
+      <div class="md:col-span-12">
+        <label class="label"><span class="label-text">Description</span></label>
+        <textarea class="textarea textarea-bordered w-full" name="description" rows="3"><%= h(@ability.description || '') %></textarea>
+      </div>
+
+      <div class="md:col-span-4">
+        <label class="label"><span class="label-text">Universe</span></label>
+        <select class="select select-bordered w-full" name="universe_id">
+          <option value="">-- Global --</option>
+          <% (@universes || []).each do |u| %>
+            <option value="<%= u.id %>" <%= @ability.universe_id == u.id ? 'selected' : '' %>><%= h u.name %></option>
+          <% end %>
+        </select>
+      </div>
+
+      <div class="md:col-span-4">
+        <label class="label"><span class="label-text">Icon</span></label>
+        <div class="join w-full">
+          <span class="join-item btn btn-square btn-disabled"><i class="bi bi-<%= @ability.icon_name || 'magic' %>"></i></span>
+          <input type="text" class="input input-bordered join-item w-full" name="icon_name" value="<%= h(@ability.icon_name || '') %>" placeholder="Bootstrap icon name">
+        </div>
+        <label class="label"><span class="label-text-alt text-base-content/70">e.g., fire, lightning, shield</span></label>
+      </div>
+
+      <div class="md:col-span-4">
+        <label class="label"><span class="label-text">Status</span></label>
+        <div class="form-control mt-2">
+          <label class="label cursor-pointer justify-start gap-3">
+            <input type="hidden" name="is_active" value="0">
+            <input type="checkbox" class="toggle toggle-primary" name="is_active" value="1"
+                   <%= @ability.is_active != false ? 'checked' : '' %> id="is_active">
+            <span class="label-text">Active</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card bg-base-200 mb-4">
+  <div class="card-body">
+    <div class="p-4 border-b border-base-content/10 -mx-4 -mt-4 mb-4">
+      <h3 class="font-semibold"><i class="bi bi-person-circle mr-2"></i>User Type</h3>
+    </div>
+    <p class="text-base-content/70 mb-3">
+      PC abilities use the unified 2d8 roll with willpower. NPC abilities use specified damage dice.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="form-control">
+        <label class="label cursor-pointer justify-start gap-3">
+          <input type="radio" name="user_type" value="npc" class="radio radio-primary" id="user_type_npc"
+                 <%= @ability.user_type != 'pc' ? 'checked' : '' %>>
+          <div>
+            <span class="label-text font-semibold">NPC Ability</span>
+            <p class="text-base-content/70 text-sm">Uses specified damage dice. Configure dice on the Damage tab.</p>
+          </div>
+        </label>
+      </div>
+      <div class="form-control">
+        <label class="label cursor-pointer justify-start gap-3">
+          <input type="radio" name="user_type" value="pc" class="radio radio-primary" id="user_type_pc"
+                 <%= @ability.user_type == 'pc' ? 'checked' : '' %>>
+          <div>
+            <span class="label-text font-semibold">PC Ability</span>
+            <p class="text-base-content/70 text-sm">Uses unified 2d8 roll (exploding on 8s) + willpower allocation.</p>
+          </div>
+        </label>
+      </div>
+    </div>
+  </div>
+</div>

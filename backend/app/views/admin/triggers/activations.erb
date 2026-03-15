@@ -1,0 +1,89 @@
+<% @page_title = 'Trigger Activations - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Triggers', path: '/admin/triggers' }, { label: @trigger.name, path: "/admin/triggers/#{@trigger.id}" }, { label: 'Activations' }] %>
+
+<%= admin_content_start %>
+      <h2 class="text-2xl font-bold mb-6">Activations: <%= h @trigger.name %></h2>
+
+      <div class="flex gap-2 mb-4">
+        <a href="/admin/triggers/<%= @trigger.id %>" class="btn btn-outline btn-secondary">
+          <i class="bi bi-arrow-left mr-1"></i>Back to Trigger
+        </a>
+        <a href="/admin/triggers" class="btn btn-outline btn-secondary">
+          <i class="bi bi-list mr-1"></i>All Triggers
+        </a>
+      </div>
+
+      <% if @activations.empty? %>
+        <%= partial 'shared/empty_state', locals: { message: 'No activations recorded for this trigger yet.' } %>
+      <% else %>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Source</th>
+                <th>Content</th>
+                <th>Match</th>
+                <th>Action Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @activations.each do |act| %>
+                <tr>
+                  <td><%= act.activated_at&.strftime('%Y-%m-%d %H:%M:%S') %></td>
+                  <td>
+                    <span class="badge badge-neutral"><%= act.source_type %></span>
+                    <% if act.source_character %>
+                      <br><%= h act.source_character.full_name %>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if act.triggering_content %>
+                      <%
+                        content = act.triggering_content
+                        truncated = content.length > 100 ? content[0, 100] + '...' : content
+                      %>
+                      <span class="text-sm"><%= truncated %></span>
+                    <% else %>
+                      <span class="text-base-content/70">-</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if act.llm_confidence %>
+                      <span class="badge badge-info"><%= (act.llm_confidence * 100).round(1) %>%</span>
+                      <% if act.llm_reasoning %>
+                        <%
+                          reasoning = act.llm_reasoning
+                          truncated_r = reasoning.length > 50 ? reasoning[0, 50] + '...' : reasoning
+                        %>
+                        <br><span class="text-sm text-base-content/70"><%= truncated_r %></span>
+                      <% end %>
+                    <% else %>
+                      <span class="text-sm"><%= act.matching_details %></span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if act.action_executed %>
+                      <% if act.action_success %>
+                        <span class="badge badge-success">Success</span>
+                      <% else %>
+                        <span class="badge badge-error">Failed</span>
+                      <% end %>
+                      <% if act.action_error %>
+                        <%
+                          err = act.action_error
+                          truncated_e = err.length > 50 ? err[0, 50] + '...' : err
+                        %>
+                        <br><span class="text-sm text-error"><%= truncated_e %></span>
+                      <% end %>
+                    <% else %>
+                      <span class="text-base-content/70">Pending</span>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+<%= admin_content_end %>

@@ -1,0 +1,142 @@
+<%= admin_content_start %>
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-2xl font-bold"><i class="bi bi-globe-americas mr-2"></i>World Builder</h2>
+  <% if @universes.any? %>
+    <button type="button" class="btn btn-primary" onclick="createWorldModal.showModal()">
+      <i class="bi bi-plus-lg mr-2"></i>Create World
+    </button>
+  <% end %>
+</div>
+
+<% if @worlds.empty? %>
+  <%= partial 'shared/empty_state', locals: { message: 'No worlds exist yet. Create a world first to start building.' } %>
+
+  <% if @universes.any? %>
+    <div class="card bg-base-200">
+      <div class="p-4 border-b border-base-content/10">
+        <h5 class="font-semibold">Create a New World</h5>
+      </div>
+      <div class="card-body">
+        <form action="/admin/world_builder" method="post">
+          <%= csrf_tag %>
+          <div class="form-control mb-4">
+            <label for="world_name" class="label"><span class="label-text">World Name</span></label>
+            <input type="text" class="input input-bordered w-full" id="world_name" name="name" required>
+          </div>
+          <div class="form-control mb-4">
+            <label for="universe_id" class="label"><span class="label-text">Universe</span></label>
+            <select class="select select-bordered w-full" id="universe_id" name="universe_id" required>
+              <% @universes.each do |universe| %>
+                <option value="<%= universe.id %>"><%= h universe.name %></option>
+              <% end %>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-plus-lg mr-2"></i>Create World
+          </button>
+        </form>
+      </div>
+    </div>
+  <% else %>
+    <div class="alert alert-warning">
+      <i class="bi bi-exclamation-triangle mr-2"></i>
+      No universes exist. Please create a universe first.
+    </div>
+  <% end %>
+<% else %>
+  <p class="text-base-content/70 mb-6">Select a world to edit its terrain, features, and geography.</p>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <% @worlds.each do |world| %>
+      <div class="card bg-base-200 h-full">
+        <div class="card-body">
+          <h5 class="card-title">
+            <i class="bi bi-globe mr-2"></i><%= h world.name %>
+          </h5>
+          <p class="text-base-content/70 text-sm">
+            Universe: <%= h world.universe&.name || 'Unknown' %>
+          </p>
+          <%
+            region_count = @region_counts[world.id] || 0
+            hex_count = @hex_counts[world.id] || 0
+          %>
+          <div class="mb-4">
+            <span class="badge badge-neutral mr-2">
+              <i class="bi bi-grid-3x3 mr-1"></i><%= region_count %> regions
+            </span>
+            <span class="badge badge-neutral">
+              <i class="bi bi-hexagon mr-1"></i><%= hex_count %> hexes
+            </span>
+          </div>
+        </div>
+        <div class="card-actions p-4 pt-0">
+          <a href="/admin/world_builder/<%= world.id %>" class="btn btn-primary flex-1">
+            <i class="bi bi-pencil-square mr-2"></i>Edit World
+          </a>
+          <button type="button" class="btn btn-outline btn-error"
+                  onclick="document.getElementById('deleteWorldModal<%= world.id %>').showModal()">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Delete Confirmation Modal -->
+      <%
+        _delete_world_content =
+          '<p class="py-4">Are you sure you want to delete <strong>' + h(world.name) + '</strong>? ' +
+          'This will permanently remove the world and all associated data ' +
+          '(' + hex_count.to_s + ' hexes, ' + region_count.to_s + ' regions, zones, locations, and rooms).</p>'
+        _delete_world_actions =
+          '<form action="/admin/world_builder/' + world.id.to_s + '/delete" method="post">' +
+          csrf_tag +
+          '<button type="submit" class="btn btn-error"><i class="bi bi-trash mr-2"></i>Delete World</button>' +
+          '</form>'
+      %>
+      <%= partial 'admin/modal', locals: {
+        id: 'deleteWorldModal' + world.id.to_s,
+        title: '<i class="bi bi-exclamation-triangle-fill text-error mr-2"></i>Delete World',
+        content: _delete_world_content,
+        actions: _delete_world_actions,
+        close_label: 'Cancel'
+      } %>
+    <% end %>
+  </div>
+<% end %>
+</div>
+</div>
+
+<!-- Create World Modal -->
+<% if @universes.any? %>
+<dialog class="modal" id="createWorldModal">
+  <div class="modal-box bg-base-200">
+    <h3 class="font-bold text-lg mb-4">
+      <i class="bi bi-globe mr-2"></i>Create New World
+    </h3>
+    <form action="/admin/world_builder" method="post">
+      <%= csrf_tag %>
+      <div class="form-control mb-4">
+        <label class="label"><span class="label-text">World Name</span></label>
+        <input type="text" class="input input-bordered w-full" name="name" required>
+      </div>
+      <div class="form-control mb-4">
+        <label class="label"><span class="label-text">Universe</span></label>
+        <select class="select select-bordered w-full" name="universe_id" required>
+          <% @universes.each do |universe| %>
+            <option value="<%= universe.id %>"><%= h universe.name %></option>
+          <% end %>
+        </select>
+      </div>
+      <div class="modal-action">
+        <button type="button" class="btn btn-ghost"
+                onclick="document.getElementById('createWorldModal').close()">Cancel</button>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-plus-lg mr-2"></i>Create World
+        </button>
+      </div>
+    </form>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+<% end %>

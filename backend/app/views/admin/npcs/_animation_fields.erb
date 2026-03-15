@@ -1,0 +1,50 @@
+<div class="card bg-base-200 mb-4">
+  <div class="p-4 border-b border-base-content/10 flex items-center gap-2">
+    <i class="bi bi-chat-quote"></i>Animation & Voice Configuration
+  </div>
+  <div class="card-body">
+    <div class="form-control">
+      <label class="label">
+        <span class="label-text">Example Dialogue</span>
+      </label>
+      <textarea class="textarea textarea-bordered w-full h-32" name="example_dialogue"
+                placeholder="3-5 lines showing how this NPC speaks, e.g.:&#10;&quot;Ain't nobody got time for that nonsense.&quot;&#10;&quot;Look, I'll level with ya - this ain't my first rodeo.&quot;&#10;&quot;You want my help? Fine. But it'll cost ya.&quot;"><%= h(@archetype.example_dialogue || '') %></textarea>
+      <label class="label">
+        <span class="label-text-alt text-base-content/70">Write sample dialogue lines to anchor the NPC's speech style</span>
+      </label>
+    </div>
+
+    <div class="form-control mt-4">
+      <label class="label">
+        <span class="label-text">Speech Quirks</span>
+      </label>
+      <textarea class="textarea textarea-bordered w-full h-24" name="speech_quirks"
+                placeholder="e.g.: Drops the letter 'g' from -ing words. Uses nautical metaphors. Speaks in short, clipped sentences. Calls everyone 'friend'."><%= h(@archetype.speech_quirks || '') %></textarea>
+      <label class="label">
+        <span class="label-text-alt text-base-content/70">Specific speech patterns, verbal tics, or mannerisms</span>
+      </label>
+    </div>
+
+    <div class="form-control mt-4">
+      <label class="label">
+        <span class="label-text">Vocabulary Notes</span>
+      </label>
+      <textarea class="textarea textarea-bordered w-full h-24" name="vocabulary_notes"
+                placeholder="e.g.: Uses words like 'reckon', 'fixin' to'. Never swears. Avoids technical jargon. Prefers 'shall' over 'will'."><%= h(@archetype.vocabulary_notes || '') %></textarea>
+      <label class="label">
+        <span class="label-text-alt text-base-content/70">Preferred or banned words and phrases</span>
+      </label>
+    </div>
+
+    <div class="form-control mt-4">
+      <label class="label">
+        <span class="label-text">Character Flaws</span>
+      </label>
+      <textarea class="textarea textarea-bordered w-full h-24" name="character_flaws"
+                placeholder="e.g.: Stubborn about admitting mistakes. Distrusts authority figures. Gets flustered when complimented. Overestimates own abilities."><%= h(@archetype.character_flaws || '') %></textarea>
+      <label class="label">
+        <span class="label-text-alt text-base-content/70">Blind spots and weaknesses the NPC embodies naturally</span>
+      </label>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,160 @@
+<!-- Page Banner -->
+<section class="page-banner" style="background-image: url('/images/library.jpg');">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <nav aria-label="breadcrumb">
+        <div class="breadcrumbs text-sm">
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/world">World</a></li>
+            <li>Lore</li>
+          </ul>
+        </div>
+      </nav>
+      <h1>World Lore</h1>
+    </div>
+  </div>
+</section>
+
+<section class="py-12">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <!-- Main Content -->
+      <div class="lg:col-span-8">
+        <div class="card bg-base-200 mb-6">
+          <div class="card-body">
+            <p class="text-lg mb-0">
+              Discover the rich history and mysteries that shape our world. The lore of <%= game_name %>
+              provides the backdrop for countless stories waiting to be told.
+            </p>
+          </div>
+        </div>
+
+        <!-- World Overview -->
+        <div class="card bg-base-200 mb-6">
+          <div class="card-body">
+            <h3 class="card-title mb-4">
+              <i class="bi bi-globe mr-2"></i>World Overview
+            </h3>
+            <p class="text-base-content/70 mb-3">
+              The world of <%= game_name %> is a place where stories come alive. It's a realm of possibilities,
+              where the boundaries between reality and imagination blur and anything can happen.
+            </p>
+            <p class="text-base-content/70 mb-0">
+              Our world supports multiple realities and timelines, allowing for diverse storytelling
+              experiences. Whether you prefer modern urban settings, fantasy realms, or something
+              entirely unique, there's a place for your story here.
+            </p>
+          </div>
+        </div>
+
+        <!-- History -->
+        <div class="card bg-base-200 mb-6">
+          <div class="card-body">
+            <h3 class="card-title mb-4">
+              <i class="bi bi-clock-history mr-2"></i>History
+            </h3>
+            <h5 class="text-primary font-bold mb-2">The Founding</h5>
+            <p class="text-base-content/70 mb-4">
+              <%= game_name %> was founded on the principle that collaborative storytelling creates something
+              greater than any single author could achieve alone. Our community has grown around this
+              central idea, welcoming storytellers from all backgrounds.
+            </p>
+
+            <h5 class="text-primary font-bold mb-2">The Present Era</h5>
+            <p class="text-base-content/70 mb-0">
+              Today, <%= game_name %> continues to evolve with new stories being written every day. Our world
+              expands with each character created and each scene played out, building upon the foundation
+              laid by those who came before.
+            </p>
+          </div>
+        </div>
+
+        <!-- Cultures -->
+        <div class="card bg-base-200 mb-6">
+          <div class="card-body">
+            <h3 class="card-title mb-4">
+              <i class="bi bi-people mr-2"></i>Cultures & Factions
+            </h3>
+            <p class="text-base-content/70 mb-3">
+              The world is home to diverse cultures and factions, each with their own beliefs,
+              traditions, and goals. Characters may align themselves with these groups or forge
+              their own path.
+            </p>
+            <div class="alert mb-0">
+              <i class="bi bi-info-circle mr-2"></i>
+              <span>Detailed faction information will be added as our world develops. Check back soon
+              or join the community to help shape the lore!</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Magic/Systems -->
+        <div class="card bg-base-200">
+          <div class="card-body">
+            <h3 class="card-title mb-4">
+              <i class="bi bi-stars mr-2"></i>Systems & Powers
+            </h3>
+            <p class="text-base-content/70 mb-3">
+              Depending on the setting and story being told, various systems of power may exist
+              in the world. These could include magic, technology, psychic abilities, or other
+              supernatural elements.
+            </p>
+            <p class="text-base-content/70 mb-0">
+              Always check with staff or other players about what abilities are appropriate for
+              the specific story or area you're participating in.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="lg:col-span-4">
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body p-0">
+            <div class="p-4 border-b border-base-content/10">
+              <h3 class="font-bold text-sm">
+                <i class="bi bi-book mr-2"></i>Lore Categories
+              </h3>
+            </div>
+            <ul class="menu">
+              <li><a href="#"><i class="bi bi-globe mr-2 text-primary"></i>World Overview</a></li>
+              <li><a href="#"><i class="bi bi-clock-history mr-2 text-primary"></i>History</a></li>
+              <li><a href="#"><i class="bi bi-people mr-2 text-primary"></i>Cultures</a></li>
+              <li><a href="#"><i class="bi bi-stars mr-2 text-primary"></i>Systems</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body p-0">
+            <div class="p-4 border-b border-base-content/10">
+              <h3 class="font-bold text-sm">
+                <i class="bi bi-link-45deg mr-2"></i>Related Pages
+              </h3>
+            </div>
+            <ul class="menu">
+              <li><a href="/world/locations"><i class="bi bi-map mr-2 text-primary"></i>Locations</a></li>
+              <li><a href="/info/getting-started"><i class="bi bi-rocket-takeoff mr-2 text-primary"></i>Getting Started</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card bg-base-200">
+          <div class="card-body">
+            <h3 class="font-bold text-sm mb-3">
+              <i class="bi bi-pencil mr-2"></i>Contribute
+            </h3>
+            <p class="text-base-content/70 text-sm mb-3">
+              Our lore grows with the community! If you'd like to contribute to the world's history,
+              talk to staff about your ideas.
+            </p>
+            <a href="/contact" class="btn btn-ghost btn-sm btn-block">
+              <i class="bi bi-envelope mr-1"></i>Contact Staff
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

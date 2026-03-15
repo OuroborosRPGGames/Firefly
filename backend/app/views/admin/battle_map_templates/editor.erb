@@ -1,0 +1,8 @@
+<% @page_title = "Edit Template: #{@entity.category}/#{@entity.shape_key} - Admin" %>
+<% @breadcrumbs = [
+  { label: 'Admin', path: '/admin' },
+  { label: 'Map Templates', path: '/admin/battle_map_templates' },
+  { label: "#{@entity.category}/#{@entity.shape_key} v#{@entity.variant}" }
+] %>
+
+<%= partial 'admin/battle_maps/editor' %>

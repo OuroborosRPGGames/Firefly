@@ -1,0 +1,183 @@
+<% @page_title = 'Pattern Designer - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Pattern Designer', path: '/admin/patterns' }] %>
+
+<div class="container mx-auto px-4 py-6">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Sidebar -->
+    <div class="lg:col-span-2">
+      <div class="card bg-base-200 shadow-lg">
+        <div class="card-body p-0">
+          <div class="flex items-center gap-2 px-4 py-3 border-b border-base-content/10">
+            <i class="bi bi-shield-lock text-primary"></i>
+            <h5 class="font-semibold text-base-content">Admin Console</h5>
+          </div>
+          <%= partial 'admin/sidebar' %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="lg:col-span-10">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h2 class="text-2xl font-bold flex items-center gap-2">
+          <i class="bi bi-palette"></i>Pattern Designer
+        </h2>
+        <a href="/admin/patterns/new" class="btn btn-success">
+          <i class="bi bi-plus-lg"></i>New Pattern
+        </a>
+      </div>
+
+      <!-- Tabs for pattern types -->
+      <div role="tablist" class="tabs tabs-boxed mb-6">
+        <a role="tab" class="tab <%= @tab == 'clothing' ? 'tab-active' : '' %>" href="/admin/patterns?tab=clothing">
+          <i class="bi bi-bag mr-1"></i>Clothing
+        </a>
+        <a role="tab" class="tab <%= @tab == 'jewelry' ? 'tab-active' : '' %>" href="/admin/patterns?tab=jewelry">
+          <i class="bi bi-gem mr-1"></i>Jewelry
+        </a>
+        <a role="tab" class="tab <%= @tab == 'weapons' ? 'tab-active' : '' %>" href="/admin/patterns?tab=weapons">
+          <i class="bi bi-lightning mr-1"></i>Weapons
+        </a>
+        <a role="tab" class="tab <%= @tab == 'consumables' ? 'tab-active' : '' %>" href="/admin/patterns?tab=consumables">
+          <i class="bi bi-cup-hot mr-1"></i>Consumables
+        </a>
+        <a role="tab" class="tab <%= @tab == 'other' ? 'tab-active' : '' %>" href="/admin/patterns?tab=other">
+          <i class="bi bi-box mr-1"></i>Other
+        </a>
+      </div>
+
+      <%
+        _cat_options = begin
+          categories = @patterns.map { |p| p.unified_object_type&.category }.compact.uniq.sort
+          categories.map { |cat|
+            "<option value=\"#{h cat}\" #{request.params['category'] == cat ? 'selected' : ''}>#{h cat}</option>"
+          }.join("\n")
+        end
+
+        _filter_content = <<~HTML
+          <input type="hidden" name="tab" value="#{h @tab}">
+          <div class="md:col-span-6">
+            <label class="label"><span class="label-text">Search</span></label>
+            <input type="text" class="input input-bordered w-full" id="search" name="q"
+              placeholder="Search descriptions..." value="#{h request.params['q']}">
+          </div>
+          <div class="md:col-span-3">
+            <label class="label"><span class="label-text">Category</span></label>
+            <select class="select select-bordered w-full" id="category" name="category">
+              <option value="">All Categories</option>
+              #{_cat_options}
+            </select>
+          </div>
+          <div class="md:col-span-3 flex items-end">
+            <button type="submit" class="btn btn-primary w-full">
+              <i class="bi bi-search"></i>Filter
+            </button>
+          </div>
+        HTML
+      %>
+      <%= partial 'admin/filter_form', locals: {
+        action: '/admin/patterns',
+        form_class: 'grid grid-cols-1 md:grid-cols-12 gap-4',
+        margin: 'mb-6',
+        content: _filter_content
+      } %>
+
+      <!-- Pattern count -->
+      <p class="text-base-content/70 mb-4">
+        Showing <%= @patterns.length %> patterns
+        <% if @patterns.length >= 100 %>
+          <span class="text-warning">(limit reached)</span>
+        <% end %>
+      </p>
+
+      <!-- Patterns table -->
+      <% if @patterns.empty? %>
+        <%= partial 'shared/empty_state', locals: { message: 'No patterns found in this category.' } %>
+      <% else %>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th class="w-16">ID</th>
+                <th class="w-36">Type</th>
+                <th>Description</th>
+                <th class="w-24">Category</th>
+                <th class="w-20">Price</th>
+                <th class="w-24">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @patterns.each do |pattern| %>
+                <tr class="hover">
+                  <td><code class="text-sm"><%= pattern.id %></code></td>
+                  <td>
+                    <span class="badge badge-neutral">
+                      <%= h(pattern.unified_object_type&.name || 'Unknown') %>
+                    </span>
+                  </td>
+                  <td>
+                    <span title="<%= h pattern.description %>">
+                      <%= h(pattern.description.to_s.length > 80 ? pattern.description[0..77] + '...' : pattern.description) %>
+                    </span>
+                    <% if pattern.sheer %>
+                      <span class="badge badge-info badge-sm ml-1" title="Sheer">S</span>
+                    <% end %>
+                    <% if pattern.container %>
+                      <span class="badge badge-warning badge-sm ml-1" title="Container">C</span>
+                    <% end %>
+                    <% if pattern.magic_type %>
+                      <span class="badge badge-secondary badge-sm ml-1" title="Magic: <%= h pattern.magic_type %>">M</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <span class="text-base-content/70 text-sm"><%= h(pattern.unified_object_type&.category || '-') %></span>
+                  </td>
+                  <td>
+                    <% if pattern.price %>
+                      $<%= '%.2f' % pattern.price %>
+                    <% else %>
+                      <span class="text-base-content/50">-</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <a href="/admin/patterns/<%= pattern.id %>" class="btn btn-sm btn-outline btn-primary">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+
+      <!-- Quick stats -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+        <div class="card bg-base-200">
+          <div class="card-body text-center py-4">
+            <h3 class="text-2xl font-bold"><%= Pattern.clothing.count %></h3>
+            <p class="text-base-content/70 text-sm">Clothing Patterns</p>
+          </div>
+        </div>
+        <div class="card bg-base-200">
+          <div class="card-body text-center py-4">
+            <h3 class="text-2xl font-bold"><%= Pattern.jewelry.count %></h3>
+            <p class="text-base-content/70 text-sm">Jewelry Patterns</p>
+          </div>
+        </div>
+        <div class="card bg-base-200">
+          <div class="card-body text-center py-4">
+            <h3 class="text-2xl font-bold"><%= Pattern.weapons.count %></h3>
+            <p class="text-base-content/70 text-sm">Weapon Patterns</p>
+          </div>
+        </div>
+        <div class="card bg-base-200">
+          <div class="card-body text-center py-4">
+            <h3 class="text-2xl font-bold"><%= Pattern.consumables.count %></h3>
+            <p class="text-base-content/70 text-sm">Consumable Patterns</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

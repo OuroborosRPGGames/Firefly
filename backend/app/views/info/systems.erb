@@ -1,0 +1,323 @@
+<!-- Page Banner -->
+<section class="page-banner" style="background-image: url('/images/library.jpg');">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <nav aria-label="breadcrumb">
+        <div class="breadcrumbs text-sm">
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/info">Game Info</a></li>
+            <li>Game Systems</li>
+          </ul>
+        </div>
+      </nav>
+      <h1>Game Systems</h1>
+      <p class="text-lg mb-0">Overview of major game systems and their commands</p>
+    </div>
+  </div>
+</section>
+
+<section class="py-8">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Main Content - Systems -->
+      <div class="lg:col-span-9 order-2 lg:order-1">
+        <% if @help_systems.empty? %>
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle mr-2"></i>
+            No game systems documented yet. Check back later!
+          </div>
+        <% else %>
+          <% @help_systems.each do |sys| %>
+            <div class="system-card mb-4" id="system-<%= sys.name %>">
+              <div class="collapse collapse-arrow collapse-open bg-base-200 rounded-lg">
+                <input type="checkbox" class="system-toggle" data-system-id="<%= sys.id %>" checked />
+                <div class="collapse-title flex justify-between items-center">
+                  <h3 class="text-lg font-bold mb-0 text-white">
+                    <i class="bi bi-collection mr-2 text-primary"></i>
+                    <%= sys.display_name || sys.name.capitalize %>
+                  </h3>
+                </div>
+                <div class="collapse-content">
+                <div class="p-4">
+                  <% if sys.summary %>
+                    <p class="text-lg text-base-content/70 mb-4"><%= sys.summary %></p>
+                  <% end %>
+
+                  <% if sys.has_player_guide? %>
+                    <!-- Full Player Guide (Markdown rendered) -->
+                    <div class="system-guide mb-4">
+                      <%= sys.player_guide_html %>
+                    </div>
+
+                    <!-- Quick Reference Card -->
+                    <% if sys.quick_reference && !sys.quick_reference.strip.empty? %>
+                      <div class="mb-4">
+                        <div class="collapse collapse-arrow bg-base-300 rounded-lg border border-info">
+                          <input type="checkbox" />
+                          <div class="collapse-title text-sm font-medium">
+                            <i class="bi bi-card-list mr-1"></i>Quick Reference
+                          </div>
+                          <div class="collapse-content">
+                            <%= sys.quick_reference_html %>
+                          </div>
+                        </div>
+                      </div>
+                    <% end %>
+                  <% else %>
+                    <!-- Fallback: Show description if no player guide -->
+                    <% desc_html = sys.description_html %>
+                    <% if desc_html %>
+                      <div class="system-guide mb-4">
+                        <%= desc_html %>
+                      </div>
+                    <% end %>
+
+                    <!-- Commands in this system (shown when no player guide) -->
+                    <% if sys.command_names && !sys.command_names.to_a.empty? %>
+                      <div class="mb-4">
+                        <h5 class="text-primary mb-3"><i class="bi bi-terminal mr-2"></i>Commands</h5>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                          <% sys.command_names.to_a.each do |cmd_name| %>
+                            <% hf = Helpfile.first(command_name: cmd_name) %>
+                            <a href="/info/commands#cmd-<%= cmd_name %>" class="no-underline">
+                              <div class="p-2 rounded bg-base-300 border border-base-content/20 flex items-center hover:border-primary transition-colors">
+                                <code class="text-primary mr-2"><%= cmd_name %></code>
+                                <% if hf %>
+                                  <small class="text-base-content/70 truncate"><%= hf.summary&.slice(0, 30) %><%= '...' if hf.summary && hf.summary.length > 30 %></small>
+                                <% end %>
+                              </div>
+                            </a>
+                          <% end %>
+                        </div>
+                      </div>
+                    <% end %>
+                  <% end %>
+
+                  <!-- Related systems -->
+                  <% if sys.related_systems && !sys.related_systems.to_a.empty? %>
+                    <div class="mb-3">
+                      <strong class="text-base-content/70">Related Systems:</strong>
+                      <% sys.related_systems.to_a.each do |rel| %>
+                        <a href="#system-<%= rel %>" class="badge badge-neutral no-underline ml-1"><%= rel %></a>
+                      <% end %>
+                    </div>
+                  <% end %>
+
+                  <% if @is_admin %>
+                    <!-- Staff Information -->
+                    <hr class="border-warning my-4">
+                    <div class="bg-base-300 p-4 rounded-lg border border-warning">
+                      <h6 class="text-warning mb-3 font-bold"><i class="bi bi-shield-lock mr-1"></i>Staff Documentation</h6>
+
+                      <% if sys.has_staff_guide? %>
+                        <!-- Full Staff Guide (Markdown rendered) -->
+                        <div class="staff-guide mb-3">
+                          <%= sys.staff_guide_html %>
+                        </div>
+                      <% else %>
+                        <% notes_html = sys.staff_notes_html %>
+                        <% if notes_html %>
+                          <div class="staff-guide mb-3">
+                            <%= notes_html %>
+                          </div>
+                        <% end %>
+
+                        <% if sys.key_files && !sys.key_files.to_a.empty? %>
+                          <div class="mb-3">
+                            <strong class="text-base-content/70 text-sm">Key Implementation Files:</strong>
+                            <ul class="text-sm mb-0 font-mono">
+                              <% sys.key_files.to_a.each do |file| %>
+                                <li><code><%= file %></code></li>
+                              <% end %>
+                            </ul>
+                          </div>
+                        <% end %>
+                      <% end %>
+
+                      <!-- Constants Reference -->
+                      <% constants = sys.parsed_constants %>
+                      <% if constants && !constants.empty? %>
+                        <div class="mb-3">
+                          <div class="collapse collapse-arrow bg-base-300 rounded-lg border border-warning">
+                            <input type="checkbox" />
+                            <div class="collapse-title text-sm font-medium text-warning">
+                              <i class="bi bi-gear mr-1"></i>View Constants
+                            </div>
+                            <div class="collapse-content">
+                              <div class="bg-black p-3 rounded">
+                                <pre class="text-warning mb-0 text-sm whitespace-pre-wrap"><%= JSON.pretty_generate(constants) %></pre>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      <% end %>
+
+                      <div class="mt-3">
+                        <a href="/admin/help/systems/<%= sys.id %>" class="btn btn-sm btn-outline btn-warning">
+                          <i class="bi bi-pencil mr-1"></i>Edit System
+                        </a>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+
+      <!-- Sidebar - System List -->
+      <div class="lg:col-span-3 order-1 lg:order-2 mb-4">
+        <div class="card bg-base-200 lg:sticky lg:top-20">
+          <div class="card-body p-0">
+            <div class="p-4 border-b border-base-content/10">
+              <h3 class="font-bold text-sm">
+                <i class="bi bi-collection mr-2"></i>Systems (<%= @help_systems.count %>)
+              </h3>
+            </div>
+            <ul class="menu menu-sm">
+              <% @help_systems.each do |sys| %>
+                <li>
+                  <a href="#system-<%= sys.name %>" class="flex justify-between">
+                    <span><%= sys.display_name || sys.name.capitalize %></span>
+                    <span class="badge badge-sm badge-neutral"><%= sys.command_names&.to_a&.count || 0 %></span>
+                  </a>
+                </li>
+              <% end %>
+            </ul>
+            <div class="p-4 border-t border-base-content/10">
+              <a href="/info/commands" class="btn btn-outline btn-primary btn-sm btn-block">
+                <i class="bi bi-terminal mr-1"></i>View All Commands
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+/* DaisyUI collapse styling overrides */
+.system-card .collapse-title {
+  min-height: auto;
+  padding: 1rem;
+}
+.system-card .collapse-content {
+  padding: 0;
+}
+
+/* Markdown content styling for system guides */
+.system-guide, .staff-guide {
+  line-height: 1.7;
+}
+.system-guide h2, .staff-guide h2 {
+  color: #6ea8fe;
+  font-size: 1.5rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #495057;
+}
+.system-guide h3, .staff-guide h3 {
+  color: #8bb9fe;
+  font-size: 1.2rem;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+.system-guide h4, .staff-guide h4 {
+  color: #aecbfe;
+  font-size: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+.system-guide p, .staff-guide p {
+  margin-bottom: 1rem;
+}
+.system-guide ul, .system-guide ol,
+.staff-guide ul, .staff-guide ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+.system-guide li, .staff-guide li {
+  margin-bottom: 0.25rem;
+}
+.system-guide code, .staff-guide code {
+  background: #1e1e1e;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.9em;
+  color: #e06c75;
+}
+.system-guide pre, .staff-guide pre {
+  background: #1e1e1e;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+.system-guide pre code, .staff-guide pre code {
+  background: transparent;
+  padding: 0;
+  color: #abb2bf;
+}
+.system-guide table, .staff-guide table {
+  width: 100%;
+  margin-bottom: 1rem;
+  border-collapse: collapse;
+}
+.system-guide th, .system-guide td,
+.staff-guide th, .staff-guide td {
+  padding: 0.5rem;
+  border: 1px solid #495057;
+  text-align: left;
+}
+.system-guide th, .staff-guide th {
+  background: #2d2d2d;
+  color: #6ea8fe;
+  font-weight: 600;
+}
+.system-guide tr:nth-child(even), .staff-guide tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+.system-guide strong, .staff-guide strong {
+  color: #ffffff;
+}
+.system-guide blockquote, .staff-guide blockquote {
+  border-left: 4px solid #6ea8fe;
+  margin: 1rem 0;
+  padding: 0.5rem 1rem;
+  background: rgba(110, 168, 254, 0.1);
+}
+.system-guide hr, .staff-guide hr {
+  border: 0;
+  border-top: 1px solid #495057;
+  margin: 1.5rem 0;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Smooth scroll for anchor links with DaisyUI collapse expansion
+  document.querySelectorAll('a[href^="#system-"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      const targetId = this.getAttribute('href');
+      const target = document.querySelector(targetId);
+      if (target) {
+        e.preventDefault();
+        const offset = 90; // Account for sticky header
+        const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - offset;
+        window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+
+        // Expand the DaisyUI collapse if it's collapsed
+        const collapseCheckbox = target.querySelector('.system-toggle');
+        if (collapseCheckbox && !collapseCheckbox.checked) {
+          collapseCheckbox.checked = true;
+        }
+      }
+    });
+  });
+});
+</script>

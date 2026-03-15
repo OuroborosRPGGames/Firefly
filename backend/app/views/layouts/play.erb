@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= @character ? "#{h @character.full_name} — #{h game_name}" : h(game_name) %></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/css/play.css?v=<%= Time.now.to_i %>">
+    <link rel="stylesheet" href="/css/battle-map-loading.css?v=<%= Time.now.to_i %>">
+    <%= content_for(:head) if respond_to?(:content_for) %>
+</head>
+<body class="play-body">
+    <% if flash && flash['error'] %>
+        <div class="play-flash play-flash--error"><%= h flash['error'] %></div>
+    <% end %>
+    <% if flash && flash['success'] %>
+        <div class="play-flash play-flash--success"><%= h flash['success'] %></div>
+    <% end %>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/battle-map-renderer.js?v=<%= Time.now.to_i %>"></script>
+
+    <%= yield %>
+
+    <%= content_for(:scripts) if respond_to?(:content_for) %>
+</body>
+</html>

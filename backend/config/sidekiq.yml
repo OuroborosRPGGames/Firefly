@@ -1,0 +1,8 @@
+:tag: firefly
+:concurrency: 60
+:require: ./config/sidekiq_boot
+:queues:
+  - [llm, 10]
+  - [battle_map, 5]
+  - [default, 1]
+:timeout: 300

@@ -1,0 +1,495 @@
+<% @page_title = 'Ability Balance Simulator - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Ability Simulator' }] %>
+
+<%= admin_content_start %>
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold"><i class="bi bi-graph-up-arrow mr-2"></i>Ability Balance Simulator</h2>
+        <button type="submit" form="weights-form" class="btn btn-success">
+          <i class="bi bi-save mr-1"></i>Save All Changes
+        </button>
+      </div>
+
+      <% if @last_run && @last_run['timestamp'] %>
+      <div class="alert alert-info mb-4">
+        <i class="bi bi-info-circle mr-2"></i>
+        <span>
+          <strong>Last Auto-Tune:</strong> <%= @last_run['timestamp'] %>
+          (<%= @last_run['mode'] %> mode, <%= @last_run['iterations'] %> iterations)
+        </span>
+      </div>
+      <% end %>
+
+      <!-- Quick Stats Row -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div class="stat bg-base-200 rounded-lg p-3">
+          <div class="stat-title text-xs">Baseline Damage</div>
+          <div class="stat-value text-lg text-primary"><%= @baseline[:damage] || 11 %></div>
+        </div>
+        <div class="stat bg-base-200 rounded-lg p-3">
+          <div class="stat-title text-xs">Combatant HP</div>
+          <div class="stat-value text-lg text-primary"><%= @baseline[:hp] || 6 %></div>
+        </div>
+        <div class="stat bg-base-200 rounded-lg p-3">
+          <div class="stat-title text-xs">Hits/Round</div>
+          <div class="stat-value text-lg text-primary"><%= @baseline[:hits_per_round] || 1 %></div>
+        </div>
+        <div class="stat bg-base-200 rounded-lg p-3">
+          <div class="stat-title text-xs">Rounds/Fight</div>
+          <div class="stat-value text-lg text-primary"><%= @baseline[:rounds_per_fight] || 4 %></div>
+        </div>
+      </div>
+
+      <form id="weights-form" method="post" action="/admin/ability_simulator">
+        <!-- Tabs for Effect Categories -->
+        <div class="tabs tabs-boxed bg-base-200 mb-4">
+          <a class="tab tab-active" data-tab="status">Status Effects</a>
+          <a class="tab" data-tab="damage">Damage & Healing</a>
+          <a class="tab" data-tab="defensive">Defensive</a>
+          <a class="tab" data-tab="aoe">Area Effects</a>
+          <a class="tab" data-tab="costs">Costs & Cooldowns</a>
+          <a class="tab" data-tab="autotune">Auto-Tune</a>
+        </div>
+
+        <%
+        # Helper lambda to render a parameter field with padlock toggle
+        param_field = ->(label:, name:, step: 0.01) {
+          parts = name.split('.')
+          if parts[0] == 'coefficients'
+            coef_key = parts[1..-1].join('.')
+            value = @coefficients[coef_key] || 1.0
+            lock_key = coef_key
+            lock_name = 'locked[]'
+            locked = @locked.include?(lock_key)
+          else
+            weight_path = parts[1..-1].join('.')
+            value = AbilityPowerWeights.weight(weight_path) || 1.0
+            lock_key = weight_path
+            lock_name = 'locked_weights[]'
+            locked = (@locked_weights || []).include?(lock_key)
+          end
+
+          formatted = value.is_a?(Float) ? ('%.2f' % value) : value
+          lock_icon = locked ? 'bi-lock-fill text-warning' : 'bi-unlock text-base-content/40'
+          lock_title = locked ? 'Click to unlock' : 'Click to lock'
+          disabled_attr = locked ? ' disabled' : ''
+          hidden_disabled = locked ? '' : ' disabled'
+
+          '<label class="flex items-center gap-1">' \
+          "<span class=\"lock-toggle cursor-pointer inline-flex items-center justify-center w-5 h-5 flex-shrink-0 rounded hover:bg-base-content/10\" onclick=\"toggleLock(this)\" title=\"#{lock_title}\">" \
+          "<i class=\"bi #{lock_icon} text-sm\"></i>" \
+          '</span>' \
+          "<span class=\"text-sm flex-1\">#{label}</span>" \
+          "<input type=\"number\" step=\"#{step}\" class=\"input input-bordered input-xs w-20\"" \
+          " name=\"weights[#{name}]\" value=\"#{formatted}\"#{disabled_attr}>" \
+          "<input type=\"hidden\" name=\"#{lock_name}\" value=\"#{lock_key}\"#{hidden_disabled}>" \
+          '</label>'
+        }
+        %>
+
+        <!-- Status Effects Tab -->
+        <div id="tab-status" class="sim-tab-panel">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- Crowd Control -->
+            <div class="card bg-base-200">
+              <div class="card-body">
+                <h3 class="card-title text-lg"><i class="bi bi-lightning-charge text-warning mr-2"></i>Crowd Control</h3>
+                <p class="text-sm text-base-content/60 mb-4">Status effects that disable or impair targets</p>
+
+                <div class="space-y-4">
+                  <!-- Stun -->
+                  <div class="bg-base-300 rounded-lg p-3">
+                    <h4 class="font-medium mb-2">Stun</h4>
+                    <p class="text-xs text-base-content/60 mb-2">Target loses their turn completely</p>
+                    <div class="grid grid-cols-2 gap-2">
+                      <%= param_field.call(label: 'Base Power', name: 'weights.status.stunned', step: 0.1) %>
+                      <%= param_field.call(label: '1-Round', name: 'coefficients.cc_stun_1r') %>
+                      <%= param_field.call(label: '2-Round', name: 'coefficients.cc_stun_2r') %>
+                    </div>
+                  </div>
+
+                  <!-- Daze -->
+                  <div class="bg-base-300 rounded-lg p-3">
+                    <h4 class="font-medium mb-2">Daze</h4>
+                    <p class="text-xs text-base-content/60 mb-2">Target has disadvantage on actions</p>
+                    <div class="grid grid-cols-2 gap-2">
+                      <%= param_field.call(label: 'Base Power', name: 'weights.status.dazed', step: 0.1) %>
+                      <%= param_field.call(label: '1-Round', name: 'coefficients.cc_daze_1r') %>
+                      <%= param_field.call(label: '2-Round', name: 'coefficients.cc_daze_2r') %>
+                      <%= param_field.call(label: '3-Round', name: 'coefficients.cc_daze_3r') %>
+                    </div>
+                  </div>
+
+                  <!-- Other CC -->
+                  <div class="bg-base-300 rounded-lg p-3">
+                    <h4 class="font-medium mb-2">Other CC</h4>
+                    <div class="grid grid-cols-2 gap-2">
+                      <%= param_field.call(label: 'Prone', name: 'weights.status.prone', step: 0.1) %>
+                      <%= param_field.call(label: 'Immobilized', name: 'weights.status.immobilized', step: 0.1) %>
+                      <%= param_field.call(label: 'Snared', name: 'weights.status.snared', step: 0.1) %>
+                      <%= param_field.call(label: 'Slowed', name: 'weights.status.slowed', step: 0.1) %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Debuffs -->
+            <div class="card bg-base-200">
+              <div class="card-body">
+                <h3 class="card-title text-lg"><i class="bi bi-arrow-down-circle text-error mr-2"></i>Debuffs</h3>
+                <p class="text-sm text-base-content/60 mb-4">Effects that weaken targets</p>
+
+                <div class="space-y-4">
+                  <!-- Vulnerability -->
+                  <div class="bg-base-300 rounded-lg p-3">
+                    <h4 class="font-medium mb-2">Vulnerability</h4>
+                    <p class="text-xs text-base-content/60 mb-2">Target takes increased damage</p>
+                    <div class="grid grid-cols-2 gap-2">
+                      <%= param_field.call(label: 'Base (2x)', name: 'weights.status.vulnerable', step: 0.1) %>
+                      <%= param_field.call(label: '1.5x Weight', name: 'weights.status.vulnerable_1_5x', step: 0.1) %>
+                      <%= param_field.call(label: 'Triple (3x)', name: 'weights.status.vulnerable_3x', step: 0.1) %>
+                      <%= param_field.call(label: '2x Coef', name: 'coefficients.vuln_2x_2r') %>
+                      <%= param_field.call(label: '3x Coef', name: 'coefficients.vuln_3x_1r') %>
+                      <%= param_field.call(label: '1.5x Coef', name: 'coefficients.vuln_1_5x_3r') %>
+                    </div>
+                  </div>
+
+                  <!-- Frightened/Taunted -->
+                  <div class="bg-base-300 rounded-lg p-3">
+                    <h4 class="font-medium mb-2">Mental Effects</h4>
+                    <div class="grid grid-cols-2 gap-2">
+                      <%= param_field.call(label: 'Frightened', name: 'weights.status.frightened', step: 0.1) %>
+                      <%= param_field.call(label: 'Taunted', name: 'weights.status.taunted', step: 0.1) %>
+                      <%= param_field.call(label: 'Frightened Coef', name: 'coefficients.debuff_frightened_2r') %>
+                      <%= param_field.call(label: 'Taunted Coef', name: 'coefficients.debuff_taunted_2r') %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Damage & Healing Tab -->
+        <div id="tab-damage" class="sim-tab-panel hidden">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- DoT -->
+            <div class="card bg-base-200">
+              <div class="card-body">
+                <h3 class="card-title text-lg"><i class="bi bi-fire text-orange-500 mr-2"></i>Damage Over Time</h3>
+                <p class="text-sm text-base-content/60 mb-4">Effects that deal damage each round</p>
+
+                <div class="space-y-4">
+                  <% %w[burning poisoned bleeding freezing].each do |dot_type| %>
+                  <div class="bg-base-300 rounded-lg p-3">
+                    <h4 class="font-medium mb-2"><%= dot_type.capitalize %></h4>
+                    <div class="grid grid-cols-2 gap-2">
+                      <%= param_field.call(label: 'Base Power', name: "weights.status.#{dot_type}", step: 0.1) %>
+                      <%= param_field.call(label: '2-Round', name: "coefficients.dot_#{dot_type}_2r") %>
+                      <%= param_field.call(label: '3-Round', name: "coefficients.dot_#{dot_type}_3r") %>
+                    </div>
+                  </div>
+                  <% end %>
+
+                  <!-- DoT Global -->
+                  <div class="bg-base-300 rounded-lg p-3">
+                    <h4 class="font-medium mb-2">DoT Global Settings</h4>
+                    <div class="grid grid-cols-2 gap-2">
+                      <%= param_field.call(label: 'Duration Base', name: 'coefficients.duration_base') %>
+                      <%= param_field.call(label: 'Tick Decay', name: 'coefficients.dot_tick_decay') %>
+                      <%= param_field.call(label: 'Duration Decay', name: 'coefficients.duration_decay') %>
+                      <%= param_field.call(label: 'Duration Cap', name: 'coefficients.duration_max_factor') %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Healing & Buffs -->
+            <div class="card bg-base-200">
+              <div class="card-body">
+                <h3 class="card-title text-lg"><i class="bi bi-heart-pulse text-success mr-2"></i>Healing & Buffs</h3>
+                <p class="text-sm text-base-content/60 mb-4">Beneficial effects</p>
+
+                <div class="space-y-4">
+                  <!-- Healing -->
+                  <div class="bg-base-300 rounded-lg p-3">
+                    <h4 class="font-medium mb-2">Healing</h4>
+                    <div class="grid grid-cols-2 gap-2">
+                      <%= param_field.call(label: 'Heal Mult', name: 'coefficients.heal_mult') %>
+                      <%= param_field.call(label: 'Regen Power', name: 'weights.status.regenerating', step: 0.1) %>
+                    </div>
+                  </div>
+
+                  <!-- Empowered -->
+                  <div class="bg-base-300 rounded-lg p-3">
+                    <h4 class="font-medium mb-2">Empowered (Damage Buff)</h4>
+                    <div class="grid grid-cols-2 gap-2">
+                      <%= param_field.call(label: '+3 Damage', name: 'weights.status.empowered_3dmg', step: 0.1) %>
+                      <%= param_field.call(label: '+5 Damage', name: 'weights.status.empowered_5dmg', step: 0.1) %>
+                      <%= param_field.call(label: '+10 Damage', name: 'weights.status.empowered_10dmg', step: 0.1) %>
+                      <%= param_field.call(label: '+3 Coef', name: 'coefficients.buff_3dmg_3r') %>
+                      <%= param_field.call(label: '+5 Coef', name: 'coefficients.buff_5dmg_2r') %>
+                      <%= param_field.call(label: '+10 Coef', name: 'coefficients.buff_10dmg_1r') %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Defensive Tab -->
+        <div id="tab-defensive" class="sim-tab-panel hidden">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- Shields -->
+            <div class="card bg-base-200">
+              <div class="card-body">
+                <h3 class="card-title text-lg"><i class="bi bi-shield-fill text-info mr-2"></i>Shields</h3>
+                <p class="text-sm text-base-content/60 mb-4">Temporary HP that absorbs damage</p>
+
+                <div class="space-y-4">
+                  <div class="bg-base-300 rounded-lg p-3">
+                    <h4 class="font-medium mb-2">Shield Power Values</h4>
+                    <div class="grid grid-cols-2 gap-2">
+                      <%= param_field.call(label: '10 HP Shield', name: 'weights.status.shielded_10hp', step: 0.1) %>
+                      <%= param_field.call(label: '15 HP Shield', name: 'weights.status.shielded_15hp', step: 0.1) %>
+                      <%= param_field.call(label: '20 HP Shield', name: 'weights.status.shielded_20hp', step: 0.1) %>
+                      <%= param_field.call(label: '10 HP Coef', name: 'coefficients.shield_10hp_3r') %>
+                      <%= param_field.call(label: '15 HP Coef', name: 'coefficients.shield_15hp_2r') %>
+                      <%= param_field.call(label: '20 HP Coef', name: 'coefficients.shield_20hp_2r') %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Armor -->
+            <div class="card bg-base-200">
+              <div class="card-body">
+                <h3 class="card-title text-lg"><i class="bi bi-shield-shaded text-secondary mr-2"></i>Damage Reduction</h3>
+                <p class="text-sm text-base-content/60 mb-4">Reduces incoming damage</p>
+
+                <div class="space-y-4">
+                  <div class="bg-base-300 rounded-lg p-3">
+                    <h4 class="font-medium mb-2">Armor (Self)</h4>
+                    <div class="grid grid-cols-2 gap-2">
+                      <%= param_field.call(label: '-3 Damage', name: 'weights.status.armored_3red', step: 0.1) %>
+                      <%= param_field.call(label: '-4 Damage', name: 'weights.status.armored_4red', step: 0.1) %>
+                      <%= param_field.call(label: '-6 Damage', name: 'weights.status.armored_6red', step: 0.1) %>
+                    </div>
+                  </div>
+
+                  <div class="bg-base-300 rounded-lg p-3">
+                    <h4 class="font-medium mb-2">Protection (Ally)</h4>
+                    <div class="grid grid-cols-2 gap-2">
+                      <%= param_field.call(label: '-3 Damage', name: 'weights.status.protected_3red', step: 0.1) %>
+                      <%= param_field.call(label: '-5 Damage', name: 'weights.status.protected_5red', step: 0.1) %>
+                      <%= param_field.call(label: '-8 Damage', name: 'weights.status.protected_8red', step: 0.1) %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AoE Tab -->
+        <div id="tab-aoe" class="sim-tab-panel hidden">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- Circle AoE -->
+            <div class="card bg-base-200">
+              <div class="card-body">
+                <h3 class="card-title text-lg"><i class="bi bi-circle text-primary mr-2"></i>Circle AoE</h3>
+                <p class="text-sm text-base-content/60 mb-4">Expected targets by radius</p>
+
+                <div class="bg-base-300 rounded-lg p-3">
+                  <div class="grid grid-cols-2 gap-2">
+                    <%= param_field.call(label: 'Radius 1', name: 'weights.aoe_circle.radius_1', step: 0.1) %>
+                    <%= param_field.call(label: 'Radius 2', name: 'weights.aoe_circle.radius_2', step: 0.1) %>
+                    <%= param_field.call(label: 'Radius 3', name: 'weights.aoe_circle.radius_3', step: 0.1) %>
+                    <%= param_field.call(label: 'Radius 4', name: 'weights.aoe_circle.radius_4', step: 0.1) %>
+                    <%= param_field.call(label: 'Action Econ', name: 'coefficients.aoe_action_economy') %>
+                    <%= param_field.call(label: 'FF Penalty', name: 'coefficients.aoe_ff_penalty') %>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Chain & Line -->
+            <div class="card bg-base-200">
+              <div class="card-body">
+                <h3 class="card-title text-lg"><i class="bi bi-lightning text-warning mr-2"></i>Chain & Line</h3>
+                <p class="text-sm text-base-content/60 mb-4">Multi-target effects</p>
+
+                <div class="space-y-4">
+                  <div class="bg-base-300 rounded-lg p-3">
+                    <h4 class="font-medium mb-2">Chain Effects</h4>
+                    <div class="grid grid-cols-2 gap-2">
+                      <%= param_field.call(label: 'Max Targets', name: 'weights.chain.default_max_targets', step: 0.1) %>
+                      <%= param_field.call(label: 'Falloff', name: 'weights.chain.default_falloff', step: 0.1) %>
+                      <%= param_field.call(label: 'Efficiency', name: 'coefficients.chain_target_efficiency') %>
+                    </div>
+                  </div>
+
+                  <div class="bg-base-300 rounded-lg p-3">
+                    <h4 class="font-medium mb-2">Cone & Line</h4>
+                    <div class="grid grid-cols-2 gap-2">
+                      <%= param_field.call(label: 'Cone Divisor', name: 'weights.aoe_cone.base_divisor') %>
+                      <%= param_field.call(label: 'Line Divisor', name: 'weights.aoe_line.divisor') %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Costs Tab -->
+        <div id="tab-costs" class="sim-tab-panel hidden">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="card bg-base-200">
+              <div class="card-body">
+                <h3 class="card-title text-lg"><i class="bi bi-currency-exchange text-success mr-2"></i>Resource Costs</h3>
+                <p class="text-sm text-base-content/60 mb-4">How costs offset ability power</p>
+
+                <div class="bg-base-300 rounded-lg p-3">
+                  <div class="grid grid-cols-2 gap-2">
+                    <%= param_field.call(label: 'Power/WP', name: 'weights.cost.willpower_per_point', step: 0.1) %>
+                    <%= param_field.call(label: 'Ability Penalty', name: 'weights.cost.ability_penalty_per_point', step: 0.1) %>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card bg-base-200">
+              <div class="card-body">
+                <h3 class="card-title text-lg"><i class="bi bi-clock-history text-info mr-2"></i>Cooldowns</h3>
+                <p class="text-sm text-base-content/60 mb-4">Time between uses</p>
+
+                <div class="bg-base-300 rounded-lg p-3">
+                  <div class="grid grid-cols-2 gap-2">
+                    <%= param_field.call(label: 'Max Penalty %', name: 'weights.cost.cooldown_max_penalty_pct') %>
+                    <%= param_field.call(label: 'Seconds Div', name: 'weights.cost.cooldown_seconds_divisor', step: 1) %>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Auto-Tune Tab -->
+        <div id="tab-autotune" class="sim-tab-panel hidden">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="card bg-base-200">
+              <div class="card-body">
+                <h3 class="card-title text-lg"><i class="bi bi-gear-wide-connected text-primary mr-2"></i>Run Auto-Tune</h3>
+                <p class="text-sm text-base-content/60 mb-4">
+                  Automatically adjust coefficients to achieve ~50% win rate for each effect type.
+                </p>
+
+                <div class="form-control mb-3">
+                  <label class="label">
+                    <span class="label-text">Iterations</span>
+                  </label>
+                  <input type="number" class="input input-bordered w-full"
+                         id="iterations" name="iterations" value="200" min="10" max="1000"
+                         form="autotune-form">
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/60">More = more accurate (10-1000)</span>
+                  </label>
+                </div>
+
+                <div class="form-control mb-4">
+                  <label class="label">
+                    <span class="label-text">Mode</span>
+                  </label>
+                  <select class="select select-bordered w-full" id="mode" name="mode" form="autotune-form">
+                    <option value="refine">Refine (use current values)</option>
+                    <option value="fresh">Fresh (start from defaults)</option>
+                  </select>
+                </div>
+
+                <form id="autotune-form" method="post" action="/admin/ability_simulator/run">
+                  <button type="submit" class="btn btn-primary w-full">
+                    <i class="bi bi-play-fill mr-2"></i>Run Auto-Tune
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <div class="card bg-base-200 lg:col-span-2">
+              <div class="card-body">
+                <h3 class="card-title text-lg"><i class="bi bi-info-circle mr-2"></i>How It Works</h3>
+
+                <div class="prose prose-sm max-w-none text-base-content/80">
+                  <p>The simulator creates synthetic abilities for each effect type and runs simulated fights.</p>
+
+                  <h4 class="text-sm font-semibold mt-3">Balance Goal</h4>
+                  <p class="text-sm">Each coefficient is tuned until abilities achieve ~50% win rate against baseline damage abilities.</p>
+
+                  <h4 class="text-sm font-semibold mt-3">Weights vs Coefficients</h4>
+                  <ul class="text-sm list-disc list-inside">
+                    <li><strong>Weights</strong> - Base power values (e.g., "Stun = 11 power")</li>
+                    <li><strong>Coefficients</strong> - Balance multipliers tuned by simulation</li>
+                  </ul>
+
+                  <h4 class="text-sm font-semibold mt-3">Locking</h4>
+                  <p class="text-sm">Click the <i class="bi bi-unlock"></i> padlock next to any parameter to lock it. Locked coefficients are skipped by auto-tuning. Locked weights are protected from accidental edits.</p>
+                </div>
+              </div>
+            </div>
+
+            <% if @last_run && @last_run['results'] && !@last_run['results'].empty? %>
+            <div class="card bg-base-200 lg:col-span-3">
+              <div class="card-body">
+                <h3 class="card-title text-lg"><i class="bi bi-bar-chart mr-2"></i>Last Run Results</h3>
+
+                <div class="overflow-x-auto max-h-96">
+                  <table class="table table-zebra table-sm">
+                    <thead class="sticky top-0 bg-base-200">
+                      <tr>
+                        <th>Coefficient</th>
+                        <th>Original</th>
+                        <th>Tuned</th>
+                        <th>Win Rate</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% @last_run['results'].sort_by { |k, _| k }.each do |key, result| %>
+                      <tr>
+                        <td><code class="text-primary text-xs"><%= key %></code></td>
+                        <td><%= result['original'] ? ('%.3f' % result['original']) : '-' %></td>
+                        <td><%= result['final'] ? ('%.3f' % result['final']) : '-' %></td>
+                        <td>
+                          <% if result['win_rate'] %>
+                            <span class="<%= result['win_rate'] >= 45 && result['win_rate'] <= 55 ? 'text-success' : 'text-warning' %>">
+                              <%= '%.1f' % result['win_rate'] %>%
+                            </span>
+                          <% else %>
+                            -
+                          <% end %>
+                        </td>
+                        <td>
+                          <% if result['locked'] %>
+                            <span class="badge badge-neutral badge-xs"><i class="bi bi-lock-fill mr-1"></i>Locked</span>
+                          <% elsif result['balanced'] %>
+                            <span class="badge badge-success badge-xs">OK</span>
+                          <% elsif result['win_rate'] %>
+                            <span class="badge badge-warning badge-xs">Off</span>
+                          <% end %>
+                        </td>
+                      </tr>
+                      <% end %>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <% end %>
+          </div>
+        </div>
+      </form>
+    
+<%= admin_content_end %>

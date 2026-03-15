@@ -1,0 +1,1025 @@
+<!-- Page Banner -->
+<section class="page-banner" style="background-image: url('/images/library.jpg');">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <div class="breadcrumbs text-sm mb-2">
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/dashboard">Dashboard</a></li>
+          <li>Create Character</li>
+        </ul>
+      </div>
+      <h1>Create New Character</h1>
+    </div>
+  </div>
+</section>
+
+<section class="py-12">
+  <div class="container mx-auto px-4">
+    <p class="text-base-content/70 mb-4">
+      Design your character with detailed customization options. Fields marked with <span class="text-error">*</span> are required.
+    </p>
+
+    <!-- DaisyUI Tabs (button-style for forms) -->
+    <div role="tablist" class="tabs tabs-boxed mb-4 bg-base-200" id="characterTabs">
+      <button type="button" role="tab" class="tab tab-active" id="basic-tab" data-target="basic-panel">
+        <i class="bi bi-person mr-1"></i>Basic Info
+      </button>
+      <button type="button" role="tab" class="tab" id="appearance-tab" data-target="appearance-panel">
+        <i class="bi bi-eye mr-1"></i>Appearance
+      </button>
+      <button type="button" role="tab" class="tab" id="skills-tab" data-target="skills-panel">
+        <i class="bi bi-star mr-1"></i>Skills
+      </button>
+      <button type="button" role="tab" class="tab" id="background-tab" data-target="background-panel">
+        <i class="bi bi-book mr-1"></i>Background
+      </button>
+      <button type="button" role="tab" class="tab" id="voice-tab" data-target="voice-panel">
+        <i class="bi bi-mic mr-1"></i>Voice
+      </button>
+    </div>
+
+    <form action="/characters/create" method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+      <%= csrf_tag %>
+
+      <div class="tab-content-wrapper">
+        <!-- Basic Information Tab -->
+        <div class="tab-panel" id="basic-panel" role="tabpanel">
+          <div class="card bg-base-200 shadow-xl mb-4">
+            <div class="card-body">
+              <h2 class="card-title">Character Details</h2>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div class="form-control">
+                  <label for="forename" class="label">
+                    <span class="label-text">First Name <span class="text-error">*</span></span>
+                  </label>
+                  <input type="text" class="input input-bordered" id="forename" name="forename" placeholder="Jane" required>
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/70">Character's first name (will be auto-capitalized)</span>
+                  </label>
+                </div>
+
+                <div class="form-control">
+                  <label for="surname" class="label">
+                    <span class="label-text">Last Name <span class="text-error">*</span></span>
+                  </label>
+                  <input type="text" class="input input-bordered" id="surname" name="surname" placeholder="Doe" required>
+                </div>
+
+                <div class="form-control">
+                  <label for="nickname" class="label">
+                    <span class="label-text">Nickname</span>
+                  </label>
+                  <input type="text" class="input input-bordered" id="nickname" name="nickname" placeholder="Johnny" maxlength="50">
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/70">Optional - what other characters may know them as</span>
+                  </label>
+                </div>
+
+                <div class="form-control">
+                  <label for="birthdate" class="label">
+                    <span class="label-text">Birthdate <span class="text-error">*</span></span>
+                  </label>
+                  <input type="date" class="input input-bordered" id="birthdate" name="birthdate" required>
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/70">Character must be 18+ years old</span>
+                  </label>
+                </div>
+
+                <div class="form-control">
+                  <label for="point_of_view" class="label">
+                    <span class="label-text">Point of View</span>
+                  </label>
+                  <select class="select select-bordered" id="point_of_view" name="point_of_view">
+                    <option value="First">First Person (I did something)</option>
+                    <option value="Second">Second Person (You did something)</option>
+                    <option value="Third" selected>Third Person (Bob did something)</option>
+                  </select>
+                </div>
+
+                <div class="form-control">
+                  <label for="recruited_by" class="label">
+                    <span class="label-text">Recruited By</span>
+                  </label>
+                  <input type="text" class="input input-bordered" id="recruited_by" name="recruited_by" placeholder="Player who recruited you">
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Appearance Tab -->
+        <div class="tab-panel hidden" id="appearance-panel" role="tabpanel">
+          <div class="card bg-base-200 shadow-xl mb-4">
+            <div class="card-body">
+              <h2 class="card-title">Basic Appearance</h2>
+              <div class="form-control mt-4">
+                <label for="short_desc" class="label">
+                  <span class="label-text">Short Description <span class="text-error">*</span></span>
+                </label>
+                <input type="text" class="input input-bordered" id="short_desc" name="short_desc" placeholder="a short blonde caucasian woman" maxlength="60" required>
+                <label class="label">
+                  <span class="label-text-alt text-base-content/70">Basic description conveying obvious details (60 chars max)</span>
+                </label>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div class="form-control">
+                  <label for="gender" class="label">
+                    <span class="label-text">Apparent Gender <span class="text-error">*</span></span>
+                  </label>
+                  <select class="select select-bordered" id="gender" name="gender" required>
+                    <option value="">Select gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Androgynous">Androgynous</option>
+                  </select>
+                </div>
+
+                <div class="form-control">
+                  <label for="distinctive_color" class="label">
+                    <span class="label-text">Distinctive Color</span>
+                  </label>
+                  <input type="color" class="input input-bordered w-full h-12" id="distinctive_color" name="distinctive_color" value="#3B82F6">
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/70">Color used for your character's speech and display on channels</span>
+                  </label>
+                </div>
+
+                <div class="form-control">
+                  <label for="character_picture" class="label">
+                    <span class="label-text">Character Picture</span>
+                  </label>
+                  <input type="file" class="file-input file-input-bordered w-full" id="character_picture" name="character_picture" accept="image/*">
+                </div>
+
+                <div class="form-control">
+                  <label for="picture_url" class="label">
+                    <span class="label-text">Or Picture URL</span>
+                  </label>
+                  <input type="url" class="input input-bordered" id="picture_url" name="picture_url" placeholder="https://example.com/character.jpg">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card bg-base-200 shadow-xl mb-4">
+            <div class="card-body">
+              <h2 class="card-title">Physical Details</h2>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div class="form-control">
+                  <label for="height_ft" class="label">
+                    <span class="label-text">Height (Feet)</span>
+                  </label>
+                  <input type="number" class="input input-bordered" id="height_ft" name="height_ft" min="4" max="7" placeholder="5">
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/70">Or use CM below</span>
+                  </label>
+                </div>
+                <div class="form-control">
+                  <label for="height_in" class="label">
+                    <span class="label-text">Height (Inches)</span>
+                  </label>
+                  <input type="number" class="input input-bordered" id="height_in" name="height_in" min="0" max="11" placeholder="6">
+                </div>
+                <div class="form-control">
+                  <label for="height_cm" class="label">
+                    <span class="label-text">Height (CM) <span class="text-error">*</span></span>
+                  </label>
+                  <input type="number" class="input input-bordered" id="height_cm" name="height_cm" min="60" max="280" placeholder="170" required>
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/70">Required</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div class="form-control">
+                  <label for="ethnicity" class="label">
+                    <span class="label-text">Ethnicity <span class="text-error">*</span></span>
+                  </label>
+                  <select class="select select-bordered" id="ethnicity" name="ethnicity" required>
+                    <option value="">Select ethnicity</option>
+                    <option value="Caucasian">Caucasian</option>
+                    <option value="Black">Black</option>
+                    <option value="Hispanic">Hispanic</option>
+                    <option value="East Asian">East Asian</option>
+                    <option value="South Asian">South Asian</option>
+                    <option value="Southeast Asian">Southeast Asian</option>
+                    <option value="Middle Eastern">Middle Eastern</option>
+                    <option value="Indigenous">Indigenous</option>
+                    <option value="Pacific Islander">Pacific Islander</option>
+                    <option value="Mixed">Mixed</option>
+                    <option value="Other">Other (specify below)</option>
+                  </select>
+                </div>
+                <div class="form-control">
+                  <label for="custom_ethnicity" class="label">
+                    <span class="label-text">Custom Ethnicity (optional)</span>
+                  </label>
+                  <input type="text" class="input input-bordered" id="custom_ethnicity" name="custom_ethnicity" placeholder="Specify if 'Other' selected">
+                </div>
+              </div>
+
+              <div class="form-control mt-4">
+                <label for="body_type" class="label">
+                  <span class="label-text">Body Type <span class="text-error">*</span></span>
+                </label>
+                <select class="select select-bordered" id="body_type" name="body_type" required>
+                  <option value="">Select body type</option>
+                  <option value="Skinny">Skinny: Substantially more underweight than average</option>
+                  <option value="Slender">Slender: Low body fat and average musculature</option>
+                  <option value="Average-build">Average: Typical build with small amount of body fat</option>
+                  <option value="Athletic">Athletic: Low body fat and visibly toned musculature</option>
+                  <option value="Rubenesque">Rubenesque: More body fat but aesthetically distributed</option>
+                  <option value="Muscular">Muscular: Substantially developed musculature</option>
+                  <option value="Chubby">Chubby: Enough body fat to develop a noticeable belly</option>
+                  <option value="Hulking">Hulking: Extreme levels of musculature</option>
+                  <option value="Fat">Fat: Substantially overweight</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Appearance Preview - Black background to mimic game client -->
+          <div class="card mb-4 border border-base-content/10">
+            <div class="card-body bg-base-300">
+              <div class="flex items-center gap-2 mb-4">
+                <i class="bi bi-eye"></i>
+                <h2 class="card-title mb-0">Live Appearance Preview</h2>
+                <span class="badge badge-secondary ml-2">As seen in-game</span>
+              </div>
+              <div class="bg-black text-white p-4 rounded-lg" style="min-height: 200px;">
+                <div id="liveAppearancePreview" class="appearance-preview-content">
+                  <p class="text-gray-500 text-center py-3">
+                    <i class="bi bi-person-bounding-box text-4xl block mb-2"></i>
+                    Your character's appearance will be displayed here as you fill in details and add descriptions.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Description Manager - Full integration -->
+          <div class="card bg-base-200 shadow-xl mb-4">
+            <div class="card-body">
+              <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2">
+                  <i class="bi bi-body-text"></i>
+                  <h2 class="card-title mb-0">Detailed Descriptions</h2>
+                  <span class="badge badge-info ml-2">Hair, Eyes, Tattoos, etc.</span>
+                </div>
+                <button type="button" class="btn btn-outline btn-sm" id="importContentBtn">
+                  <i class="bi bi-upload mr-1"></i>Import
+                </button>
+              </div>
+
+              <!-- Import Panel (hidden by default) -->
+              <div id="importPanel" class="alert alert-info mb-4 hidden">
+                <div class="flex justify-between items-start mb-2">
+                  <h6 class="font-bold"><i class="bi bi-box-arrow-in-down mr-2"></i>Import from Package</h6>
+                  <button type="button" class="btn btn-ghost btn-xs btn-circle" id="closeImportPanel" aria-label="Close">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                </div>
+                <p class="text-sm text-base-content/70 mb-2">
+                  Upload a character export ZIP to import descriptions and item patterns.
+                </p>
+                <div class="join w-full">
+                  <input type="file" class="file-input file-input-bordered file-input-sm join-item flex-1" id="importPackageFile" accept=".zip">
+                  <button type="button" class="btn btn-primary btn-sm join-item" id="processImportBtn" disabled>
+                    <i class="bi bi-arrow-right mr-1"></i>Import
+                  </button>
+                </div>
+                <div id="importStatus" class="text-sm mt-2 hidden"></div>
+              </div>
+
+              <p class="text-base-content/70 mb-4">
+                Add detailed descriptions for specific body parts. If you don't add a hair description, your character
+                will appear bald. If you don't add an eyes description, they'll have brown eyes by default.
+                <strong>Drag descriptions</strong> to reorder them. Click the <strong>suffix badge</strong> (e.g., ". " or ", ")
+                to change how descriptions flow together. Click thumbnails to view full-size images.
+              </p>
+              <div id="descriptionManagerMount">
+                <!-- Description manager will be mounted here once draft character is created -->
+                <div class="text-center py-4" id="descManagerPlaceholder">
+                  <span class="loading loading-spinner loading-sm text-primary mr-2"></span>
+                  <span class="text-base-content/70">Loading description manager...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Skills/Stats Tab -->
+        <div class="tab-panel hidden" id="skills-panel" role="tabpanel">
+          <% stat_blocks = StatBlock.where(is_active: true).order(:name).all %>
+          <% if stat_blocks.empty? %>
+            <div class="card bg-base-200 shadow-xl">
+              <div class="card-body text-center py-12">
+                <i class="bi bi-info-circle text-6xl text-base-content/50 mb-4"></i>
+                <h4 class="text-xl font-bold">No Stat Blocks Available</h4>
+                <p class="text-base-content/70">
+                  No stat blocks have been configured yet. Your character will be created with default attributes.
+                </p>
+              </div>
+            </div>
+          <% else %>
+            <% stat_blocks.each do |block| %>
+              <div class="card bg-base-200 shadow-xl mb-4 stat-block-card"
+                   data-block-id="<%= block.id %>"
+                   data-block-type="<%= block.block_type %>"
+                   data-total-points="<%= block.total_points %>"
+                   data-secondary-points="<%= block.secondary_points %>"
+                   data-min-value="<%= block.min_stat_value %>"
+                   data-max-value="<%= block.max_stat_value %>"
+                   data-cost-formula="<%= block.cost_formula %>">
+                <div class="card-body">
+                  <div class="flex justify-between items-center mb-4">
+                    <h2 class="card-title"><i class="bi bi-bar-chart mr-2"></i><%= h block.name %></h2>
+                    <% if block.single? %>
+                      <span class="badge badge-primary">
+                        <span class="points-remaining" data-block-id="<%= block.id %>"><%= block.total_points %></span>
+                        / <%= block.total_points %> points
+                      </span>
+                    <% else %>
+                      <div class="flex gap-2">
+                        <span class="badge badge-primary">
+                          <%= block.primary_label %>:
+                          <span class="primary-points-remaining" data-block-id="<%= block.id %>"><%= block.total_points %></span>
+                          / <%= block.total_points %>
+                        </span>
+                        <span class="badge badge-info">
+                          <%= block.secondary_label %>:
+                          <span class="secondary-points-remaining" data-block-id="<%= block.id %>"><%= block.secondary_points %></span>
+                          / <%= block.secondary_points %>
+                        </span>
+                      </div>
+                    <% end %>
+                  </div>
+
+                  <% if block.description %>
+                    <p class="text-base-content/70 text-sm mb-4"><%= block.description %></p>
+                  <% end %>
+
+                  <% if block.paired? %>
+                    <!-- Primary Stats -->
+                    <h6 class="uppercase text-base-content/70 text-sm font-bold mb-2"><%= block.primary_label %></h6>
+                    <div class="stat-list mb-4">
+                      <% block.primary_stats.order(:display_order).each do |stat| %>
+                        <%= render_stat_allocation_row(stat, block) %>
+                      <% end %>
+                    </div>
+
+                    <!-- Secondary Stats -->
+                    <h6 class="uppercase text-base-content/70 text-sm font-bold mb-2"><%= block.secondary_label %></h6>
+                    <div class="stat-list">
+                      <% block.secondary_stats.order(:display_order).each do |stat| %>
+                        <%= render_stat_allocation_row(stat, block) %>
+                      <% end %>
+                    </div>
+                  <% else %>
+                    <!-- Single pool stats -->
+                    <div class="stat-list">
+                      <% block.stats_dataset.order(:display_order).each do |stat| %>
+                        <%= render_stat_allocation_row(stat, block) %>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+
+        <!-- Background Tab -->
+        <div class="tab-panel hidden" id="background-panel" role="tabpanel">
+          <div class="card bg-base-200 shadow-xl">
+            <div class="card-body">
+              <h2 class="card-title">Character Background</h2>
+              <div class="form-control mt-4">
+                <label for="personality" class="label">
+                  <span class="label-text">Personality Traits</span>
+                </label>
+                <input type="text" class="input input-bordered" id="personality" name="personality" placeholder="Key personality traits (e.g., brave, cautious, friendly)">
+              </div>
+
+              <div class="form-control mt-4">
+                <label for="backstory" class="label">
+                  <span class="label-text">Background Story</span>
+                </label>
+                <textarea class="textarea textarea-bordered h-32" id="backstory" name="backstory" data-grammar-check placeholder="Tell your character's story..."></textarea>
+              </div>
+
+              <div class="form-control mt-4">
+                <label for="goals" class="label">
+                  <span class="label-text">Goals & Motivations</span>
+                </label>
+                <textarea class="textarea textarea-bordered h-24" id="goals" name="goals" data-grammar-check placeholder="What drives your character?"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Voice Tab -->
+        <div class="tab-panel hidden" id="voice-panel" role="tabpanel">
+          <div class="card bg-base-200 shadow-xl mb-4">
+            <div class="card-body">
+              <h2 class="card-title">
+                <i class="bi bi-mic mr-2"></i>Character Voice
+              </h2>
+              <p class="text-base-content/70 mb-4 mt-2">
+                Select a voice for your character that will be used when Text-to-Speech narration mode is enabled.
+                Other players will hear this voice when your character speaks.
+              </p>
+
+              <!-- Voice Selection -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Female Voices -->
+                <div>
+                  <h5 class="font-bold mb-3"><i class="bi bi-gender-female mr-2"></i>Female Voices</h5>
+                  <div class="space-y-2">
+                    <% TtsService::CHIRP3_HD_VOICES[:female].each do |voice_name, info| %>
+                      <div class="flex items-center justify-between p-3 rounded-lg border border-base-content/10 bg-base-100">
+                        <div class="flex items-center gap-3">
+                          <input class="radio radio-primary" type="radio" name="voice_type" id="voice_<%= voice_name.downcase %>" value="<%= voice_name %>" <%= voice_name == 'Kore' ? 'checked' : '' %>>
+                          <label for="voice_<%= voice_name.downcase %>" class="cursor-pointer">
+                            <span class="font-semibold"><%= voice_name %></span>
+                            <br><span class="text-sm text-base-content/70"><%= info[:description] %></span>
+                          </label>
+                        </div>
+                        <button type="button" class="btn btn-outline btn-primary btn-sm voice-preview-btn" data-voice="<%= voice_name %>">
+                          <i class="bi bi-play-fill"></i>
+                        </button>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+
+                <!-- Male Voices -->
+                <div>
+                  <h5 class="font-bold mb-3"><i class="bi bi-gender-male mr-2"></i>Male Voices</h5>
+                  <div class="space-y-2">
+                    <% TtsService::CHIRP3_HD_VOICES[:male].each do |voice_name, info| %>
+                      <div class="flex items-center justify-between p-3 rounded-lg border border-base-content/10 bg-base-100">
+                        <div class="flex items-center gap-3">
+                          <input class="radio radio-primary" type="radio" name="voice_type" id="voice_<%= voice_name.downcase %>" value="<%= voice_name %>">
+                          <label for="voice_<%= voice_name.downcase %>" class="cursor-pointer">
+                            <span class="font-semibold"><%= voice_name %></span>
+                            <br><span class="text-sm text-base-content/70"><%= info[:description] %></span>
+                          </label>
+                        </div>
+                        <button type="button" class="btn btn-outline btn-primary btn-sm voice-preview-btn" data-voice="<%= voice_name %>">
+                          <i class="bi bi-play-fill"></i>
+                        </button>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Voice Customization -->
+          <div class="card bg-base-200 shadow-xl">
+            <div class="card-body">
+              <h2 class="card-title">
+                <i class="bi bi-sliders mr-2"></i>Voice Customization
+              </h2>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                <div class="form-control">
+                  <label for="voice_speed" class="label">
+                    <span class="label-text"><i class="bi bi-speedometer mr-1"></i>Speaking Speed</span>
+                  </label>
+                  <input type="range" class="range range-primary" id="voice_speed" name="voice_speed" min="0.25" max="4.0" step="0.25" value="1.0">
+                  <div class="flex justify-between mt-2">
+                    <span class="text-sm text-base-content/70">Slow (0.25x)</span>
+                    <span class="badge badge-primary" id="speed-display">1.0x</span>
+                    <span class="text-sm text-base-content/70">Fast (4.0x)</span>
+                  </div>
+                </div>
+                <div class="form-control">
+                  <label for="voice_pitch" class="label">
+                    <span class="label-text"><i class="bi bi-music-note mr-1"></i>Voice Pitch</span>
+                  </label>
+                  <input type="range" class="range range-primary" id="voice_pitch" name="voice_pitch" min="-20" max="20" step="1" value="0">
+                  <div class="flex justify-between mt-2">
+                    <span class="text-sm text-base-content/70">Lower (-20)</span>
+                    <span class="badge badge-primary" id="pitch-display">0</span>
+                    <span class="text-sm text-base-content/70">Higher (+20)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="alert alert-info mt-4">
+                <i class="bi bi-info-circle mr-2"></i>
+                <span><strong>Tip:</strong> Click the play button next to any voice to hear a preview.
+                You can change your voice settings later in character settings.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Audio Player (hidden) -->
+          <audio id="voice-preview-audio" class="hidden"></audio>
+        </div>
+      </div>
+
+      <!-- Completion Checklist -->
+      <div class="card bg-base-200 shadow-xl mb-4" id="completionChecklist">
+        <div class="card-body">
+          <h2 class="card-title">
+            <i class="bi bi-list-check mr-2"></i>Character Completion Checklist
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            <div class="completion-item" data-section="basic" data-required="true">
+              <i class="bi bi-x-circle completion-icon text-error"></i>
+              <span class="completion-label font-medium">Basic Info</span>
+              <small class="completion-detail text-base-content/70 block">Name, birthdate</small>
+            </div>
+            <div class="completion-item" data-section="appearance" data-required="true">
+              <i class="bi bi-x-circle completion-icon text-error"></i>
+              <span class="completion-label font-medium">Appearance</span>
+              <small class="completion-detail text-base-content/70 block">Gender, build, height</small>
+            </div>
+            <div class="completion-item" data-section="skills" data-required="true">
+              <i class="bi bi-x-circle completion-icon text-error"></i>
+              <span class="completion-label font-medium">Skills</span>
+              <small class="completion-detail text-base-content/70 block">Allocate stats</small>
+            </div>
+            <div class="completion-item" data-section="background" data-required="false">
+              <span class="completion-icon-placeholder" style="display: inline-block; width: 16px;"></span>
+              <span class="completion-label text-base-content/70">Background</span>
+              <small class="completion-detail text-base-content/70 block">Optional</small>
+            </div>
+            <div class="completion-item" data-section="voice" data-required="false">
+              <span class="completion-icon-placeholder" style="display: inline-block; width: 16px;"></span>
+              <span class="completion-label text-base-content/70">Voice</span>
+              <small class="completion-detail text-base-content/70 block">Optional</small>
+            </div>
+          </div>
+          <div id="validationErrors" class="alert alert-warning mt-4 hidden">
+            <i class="bi bi-exclamation-triangle mr-2"></i>
+            <span id="validationErrorText">Please complete all required sections before creating your character.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="text-center mt-6">
+        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" disabled>
+          <i class="bi bi-check-lg mr-2"></i>Create Character
+        </button>
+        <p class="text-base-content/70 text-sm mt-2" id="submitHint">Complete the required sections above to enable character creation.</p>
+      </div>
+    </form>
+
+    <div class="text-center mt-6">
+      <a href="/dashboard" class="text-base-content/70 hover:text-base-content"><i class="bi bi-arrow-left mr-1"></i>Back to Dashboard</a>
+    </div>
+  </div>
+</section>
+
+<!-- Description System CSS -->
+<link rel="stylesheet" href="/css/descriptions.css?v=3">
+<!-- Shared Lightbox -->
+<link rel="stylesheet" href="/css/lightbox.css">
+<script src="/js/lightbox.js"></script>
+
+<script src="/js/stat_allocation.js"></script>
+<script src="/js/voice_preview.js"></script>
+<script src="/js/draft_character_preview.js"></script>
+<script src="/js/gradient-ciede2000.js"></script>
+<script src="/js/gradient-creator.js?v=3"></script>
+<script src="/js/gradient-picker.js?v=4"></script>
+<script src="/js/description-editor.js?v=5"></script>
+<script src="/js/description-manager.js?v=3"></script>
+<script src="/js/description-modal.js?v=3"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // ============================
+    // Tab Switching (DaisyUI-style)
+    // ============================
+    const tabContainer = document.getElementById('characterTabs');
+    const tabButtons = tabContainer?.querySelectorAll('.tab');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+
+    function switchToTab(tabButton) {
+      const targetId = tabButton.dataset.target;
+
+      // Update tab button states
+      tabButtons?.forEach(btn => btn.classList.remove('tab-active'));
+      tabButton.classList.add('tab-active');
+
+      // Update panel visibility
+      tabPanels.forEach(panel => {
+        if (panel.id === targetId) {
+          panel.classList.remove('hidden');
+        } else {
+          panel.classList.add('hidden');
+        }
+      });
+    }
+
+    // Attach click handlers to tabs
+    tabButtons?.forEach(tab => {
+      tab.addEventListener('click', () => switchToTab(tab));
+    });
+
+    // Make switchToTab available globally for form validation
+    window.switchToTab = switchToTab;
+
+    // Initialize stat allocation manager
+    if (typeof StatAllocationManager !== 'undefined') {
+      window.statManager = new StatAllocationManager();
+    }
+
+    // Initialize voice preview manager
+    if (typeof VoicePreviewManager !== 'undefined') {
+      window.voiceManager = new VoicePreviewManager();
+    }
+
+    // Initialize draft character preview manager (uses server-side rendering)
+    if (typeof DraftCharacterPreviewManager !== 'undefined') {
+      window.draftPreviewManager = new DraftCharacterPreviewManager();
+
+      // Initialize description manager once draft is created
+      const initDescriptionManager = () => {
+        const draftId = window.draftPreviewManager?.getDraftId();
+        if (draftId && typeof DescriptionManager !== 'undefined') {
+          const placeholder = document.getElementById('descManagerPlaceholder');
+          if (placeholder) placeholder.remove();
+
+          window.descriptionManager = new DescriptionManager('#descriptionManagerMount', draftId, {
+            showPreview: false, // Preview is shown in the main preview panel
+            onDescriptionChange: () => {
+              // Refresh the appearance preview when descriptions change
+              if (window.draftPreviewManager) {
+                window.draftPreviewManager.refreshPreview();
+              }
+            }
+          });
+        } else if (!draftId) {
+          // Draft not ready yet, try again shortly
+          setTimeout(initDescriptionManager, 500);
+        }
+      };
+
+      // Start trying to initialize description manager after a brief delay
+      setTimeout(initDescriptionManager, 600);
+    }
+
+    // ============================
+    // Height Conversion (feet/inches → cm)
+    // ============================
+    const heightFtInput = document.getElementById('height_ft');
+    const heightInInput = document.getElementById('height_in');
+    const heightCmInput = document.getElementById('height_cm');
+
+    function updateHeightCm() {
+      const ft = parseInt(heightFtInput?.value) || 0;
+      const inches = parseInt(heightInInput?.value) || 0;
+      if (ft > 0 || inches > 0) {
+        const totalInches = (ft * 12) + inches;
+        const cm = Math.round(totalInches * 2.54);
+        if (heightCmInput && cm > 0) {
+          heightCmInput.value = cm;
+          // Trigger change event for validation
+          heightCmInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      }
+    }
+
+    // Auto-calculate cm when feet or inches change
+    heightFtInput?.addEventListener('input', updateHeightCm);
+    heightInInput?.addEventListener('input', updateHeightCm);
+
+    // ============================
+    // Form Validation System
+    // ============================
+    const form = document.querySelector('form[action="/characters/create"]');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitHint = document.getElementById('submitHint');
+    const validationErrors = document.getElementById('validationErrors');
+    const validationErrorText = document.getElementById('validationErrorText');
+
+    // Define required fields per section
+    const sectionRequirements = {
+      basic: {
+        fields: ['forename', 'surname', 'birthdate'],
+        validate: () => {
+          const forename = document.getElementById('forename')?.value?.trim();
+          const surname = document.getElementById('surname')?.value?.trim();
+          const birthdate = document.getElementById('birthdate')?.value;
+          return forename && surname && birthdate;
+        },
+        tabId: 'basic-tab'
+      },
+      appearance: {
+        fields: ['gender', 'short_desc', 'body_type', 'ethnicity', 'height_cm'],
+        validate: () => {
+          const gender = document.getElementById('gender')?.value;
+          const shortDesc = document.getElementById('short_desc')?.value?.trim();
+          const bodyType = document.getElementById('body_type')?.value;
+          const ethnicity = document.getElementById('ethnicity')?.value;
+          const heightCm = document.getElementById('height_cm')?.value;
+
+          // Explicitly check for non-empty values (handles empty string from unselected dropdowns)
+          const hasGender = gender && gender.length > 0;
+          const hasShortDesc = shortDesc && shortDesc.length > 0;
+          const hasBodyType = bodyType && bodyType.length > 0;
+          const hasEthnicity = ethnicity && ethnicity.length > 0;
+          const hasHeight = heightCm && heightCm.length > 0;
+
+          return hasGender && hasShortDesc && hasBodyType && hasEthnicity && hasHeight;
+        },
+        tabId: 'appearance-tab'
+      },
+      skills: {
+        fields: [],
+        validate: () => {
+          // Check if stat blocks exist
+          const statBlocks = document.querySelectorAll('.stat-block-card');
+          if (statBlocks.length === 0) {
+            // No stat blocks = mark as optional and return false (shows nothing)
+            const item = document.querySelector('.completion-item[data-section="skills"]');
+            if (item) item.dataset.required = 'false';
+            return false;
+          }
+
+          // Check if any stat has been raised above its minimum value
+          let hasAllocated = false;
+          statBlocks.forEach(block => {
+            const minValue = parseInt(block.dataset.minValue) || 1;
+            const statValues = block.querySelectorAll('.stat-value');
+            statValues.forEach(valueEl => {
+              const currentValue = parseInt(valueEl.textContent) || 0;
+              if (currentValue > minValue) {
+                hasAllocated = true;
+              }
+            });
+          });
+          return hasAllocated;
+        },
+        tabId: 'skills-tab'
+      },
+      background: {
+        fields: [],
+        validate: () => {
+          // Check if any background content was entered
+          const personality = document.getElementById('personality')?.value?.trim();
+          const backstory = document.getElementById('backstory')?.value?.trim();
+          const goals = document.getElementById('goals')?.value?.trim();
+          return !!(personality || backstory || goals);
+        },
+        tabId: 'background-tab'
+      },
+      voice: {
+        fields: [],
+        validate: () => false, // Optional with default - show nothing until user interacts
+        tabId: 'voice-tab'
+      }
+    };
+
+    function updateSectionStatus(section, isComplete) {
+      const item = document.querySelector(`.completion-item[data-section="${section}"]`);
+      if (!item) return;
+
+      const icon = item.querySelector('.completion-icon');
+      const placeholder = item.querySelector('.completion-icon-placeholder');
+      const label = item.querySelector('.completion-label');
+      const tab = document.getElementById(sectionRequirements[section].tabId);
+      const isRequired = item.dataset.required === 'true';
+
+      if (isComplete) {
+        // Show green tick for completed sections
+        if (placeholder) {
+          // Replace placeholder with icon
+          const newIcon = document.createElement('i');
+          newIcon.className = 'bi bi-check-circle completion-icon text-success';
+          placeholder.replaceWith(newIcon);
+        } else if (icon) {
+          icon.className = 'bi bi-check-circle completion-icon text-success';
+        }
+        if (label) label.classList.remove('text-base-content/70');
+        if (tab) {
+          tab.classList.remove('text-error');
+          tab.classList.remove('border-error');
+        }
+      } else if (isRequired) {
+        // Show red X for incomplete required sections
+        if (icon) {
+          icon.className = 'bi bi-x-circle completion-icon text-error';
+        }
+        if (label) label.classList.remove('text-base-content/70');
+      } else {
+        // Optional sections: show nothing (placeholder) when not done
+        if (icon && !icon.classList.contains('completion-icon-placeholder')) {
+          const newPlaceholder = document.createElement('span');
+          newPlaceholder.className = 'completion-icon-placeholder';
+          newPlaceholder.style.display = 'inline-block';
+          newPlaceholder.style.width = '16px';
+          icon.replaceWith(newPlaceholder);
+        }
+        if (label) label.classList.add('text-base-content/70');
+      }
+    }
+
+    function highlightIncompleteTab(section) {
+      const tab = document.getElementById(sectionRequirements[section].tabId);
+      if (tab) {
+        tab.classList.add('text-error');
+      }
+    }
+
+    function validateForm() {
+      const results = {};
+      const incomplete = [];
+
+      for (const section in sectionRequirements) {
+        const isValid = sectionRequirements[section].validate();
+        results[section] = isValid;
+        updateSectionStatus(section, isValid);
+
+        if (!isValid && section !== 'background' && section !== 'voice') {
+          incomplete.push(section);
+        }
+      }
+
+      const allValid = incomplete.length === 0;
+
+      // Update submit button
+      if (submitBtn) {
+        submitBtn.disabled = !allValid;
+      }
+
+      // Update hint text
+      if (submitHint) {
+        if (allValid) {
+          submitHint.textContent = 'Ready to create your character!';
+          submitHint.classList.remove('text-base-content/70');
+          submitHint.classList.add('text-success');
+        } else {
+          submitHint.textContent = 'Complete the required sections above to enable character creation.';
+          submitHint.classList.add('text-base-content/70');
+          submitHint.classList.remove('text-success');
+        }
+      }
+
+      // Show/hide validation errors
+      if (validationErrors) {
+        if (incomplete.length > 0) {
+          const sectionNames = incomplete.map(s => {
+            switch(s) {
+              case 'basic': return 'Basic Info';
+              case 'appearance': return 'Appearance';
+              case 'skills': return 'Skills';
+              default: return s;
+            }
+          });
+          validationErrorText.textContent = `Please complete: ${sectionNames.join(', ')}`;
+        }
+        validationErrors.classList.toggle('hidden', allValid);
+      }
+
+      return allValid;
+    }
+
+    // Attach validation to all form inputs
+    if (form) {
+      form.querySelectorAll('input, select, textarea').forEach(input => {
+        input.addEventListener('input', validateForm);
+        input.addEventListener('change', validateForm);
+      });
+
+      // Also validate when stat allocation changes
+      document.querySelectorAll('.stat-increase, .stat-decrease').forEach(btn => {
+        btn.addEventListener('click', () => {
+          setTimeout(validateForm, 50); // Delay to let stat manager update
+        });
+      });
+
+      // Validate when tabs are clicked (in case user fills things out of order)
+      document.querySelectorAll('#characterTabs .tab').forEach(tab => {
+        tab.addEventListener('click', validateForm);
+      });
+
+      // Prevent form submission if invalid
+      form.addEventListener('submit', (e) => {
+        if (!validateForm()) {
+          e.preventDefault();
+
+          // Find first incomplete section and switch to its tab
+          for (const section in sectionRequirements) {
+            if (!sectionRequirements[section].validate() && section !== 'background' && section !== 'voice') {
+              const tab = document.getElementById(sectionRequirements[section].tabId);
+              if (tab) {
+                // Use our custom tab switcher
+                switchToTab(tab);
+                highlightIncompleteTab(section);
+              }
+              break;
+            }
+          }
+
+          // Scroll to checklist
+          document.getElementById('completionChecklist')?.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+
+      // Initial validation
+      validateForm();
+    }
+
+    // ============================
+    // Content Import System
+    // ============================
+    const importBtn = document.getElementById('importContentBtn');
+    const importPanel = document.getElementById('importPanel');
+    const closeImportBtn = document.getElementById('closeImportPanel');
+    const importFile = document.getElementById('importPackageFile');
+    const processImportBtn = document.getElementById('processImportBtn');
+    const importStatus = document.getElementById('importStatus');
+
+    if (importBtn && importPanel) {
+      // Toggle import panel
+      importBtn.addEventListener('click', () => {
+        importPanel.classList.toggle('hidden');
+      });
+
+      closeImportBtn?.addEventListener('click', () => {
+        importPanel.classList.add('hidden');
+        importFile.value = '';
+        processImportBtn.disabled = true;
+        importStatus.classList.add('hidden');
+      });
+
+      // Enable import button when file selected
+      importFile?.addEventListener('change', () => {
+        processImportBtn.disabled = !importFile.files.length;
+      });
+
+      // Process import
+      processImportBtn?.addEventListener('click', async () => {
+        const file = importFile.files[0];
+        if (!file) return;
+
+        const draftId = window.draftPreviewManager?.getDraftId();
+        if (!draftId) {
+          showImportStatus('Please fill in some basic info first to create a draft character.', 'warning');
+          return;
+        }
+
+        processImportBtn.disabled = true;
+        processImportBtn.innerHTML = '<span class="loading loading-spinner loading-sm mr-1"></span>Importing...';
+        showImportStatus('Processing package...', 'info');
+
+        try {
+          const formData = new FormData();
+          formData.append('content_package', file);
+          const csrfToken =
+            document.querySelector('meta[name="csrf-token"]')?.content ||
+            document.querySelector('input[name="_csrf"]')?.value ||
+            '';
+          if (csrfToken) formData.append('_csrf', csrfToken);
+
+          const response = await fetch(`/characters/draft/${draftId}/import`, {
+            method: 'POST',
+            body: formData
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            showImportStatus(
+              `Imported: ${result.descriptions_count || 0} descriptions, ${result.items_count || 0} item patterns`,
+              'success'
+            );
+            // Refresh the description manager and preview
+            if (window.descriptionManager) {
+              window.descriptionManager.loadDescriptions();
+            }
+            if (window.draftPreviewManager) {
+              window.draftPreviewManager.refreshPreview();
+            }
+          } else {
+            showImportStatus(result.error || 'Import failed', 'error');
+          }
+        } catch (err) {
+          showImportStatus('Import failed: ' + err.message, 'error');
+        } finally {
+          processImportBtn.disabled = false;
+          processImportBtn.innerHTML = '<i class="bi bi-arrow-right mr-1"></i>Import';
+          importFile.value = '';
+        }
+      });
+    }
+
+    function showImportStatus(message, type) {
+      if (!importStatus) return;
+      importStatus.className = `text-sm mt-2 text-${type}`;
+      importStatus.textContent = message;
+      importStatus.classList.remove('hidden');
+    }
+  });
+</script>

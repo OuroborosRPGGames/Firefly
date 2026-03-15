@@ -1,0 +1,316 @@
+<% @page_title = @stat_block.new? ? 'New Stat Block - Admin' : "Edit #{@stat_block.name} - Admin" %>
+<% @breadcrumbs = [
+  { label: 'Admin', path: '/admin' },
+  { label: 'Stat Blocks', path: '/admin/stat_blocks' },
+  { label: @stat_block.new? ? 'New' : @stat_block.name }
+] %>
+
+<%= admin_content_start %>
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h2 class="text-2xl font-bold flex items-center gap-2">
+          <i class="bi bi-bar-chart"></i>
+          <%= @stat_block.new? ? 'New Stat Block' : "Edit: #{h @stat_block.name}" %>
+        </h2>
+        <a href="/admin/stat_blocks" class="btn btn-outline btn-neutral">
+          <i class="bi bi-arrow-left"></i>Back to List
+        </a>
+      </div>
+
+      <!-- Tabs -->
+      <div role="tablist" class="tabs tabs-boxed mb-6">
+        <button type="button" role="tab" class="tab tab-active" data-target="general">
+          <i class="bi bi-sliders mr-1"></i>General
+        </button>
+        <% unless @stat_block.new? %>
+        <button type="button" role="tab" class="tab" data-target="stats">
+          <i class="bi bi-list-ul mr-1"></i>Stats (<%= @stat_block.stats.count %>)
+        </button>
+        <% end %>
+      </div>
+
+      <div>
+        <!-- General Settings Tab -->
+        <div class="tab-panel" id="general">
+          <form action="<%= @stat_block.new? ? '/admin/stat_blocks' : "/admin/stat_blocks/#{@stat_block.id}" %>" method="post">
+            <%= csrf_tag %>
+
+            <div class="card bg-base-200 mb-6">
+              <div class="p-4 border-b border-base-content/10">
+                <h5 class="font-semibold">Basic Information</h5>
+              </div>
+              <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label class="label">
+                      <span class="label-text">Name <span class="text-error">*</span></span>
+                    </label>
+                    <input type="text" class="input input-bordered w-full" id="name" name="name"
+                           value="<%= h @stat_block.name %>" required maxlength="100"
+                           placeholder="e.g., Basic Attributes, Combat Skills">
+                  </div>
+                  <div>
+                    <label class="label">
+                      <span class="label-text">Type <span class="text-error">*</span></span>
+                    </label>
+                    <select class="select select-bordered w-full" id="block_type" name="block_type" onchange="togglePairedFields()">
+                      <option value="single" <%= @stat_block.block_type == 'single' ? 'selected' : '' %>>
+                        Single (one pool of stats)
+                      </option>
+                      <option value="paired" <%= @stat_block.block_type == 'paired' ? 'selected' : '' %>>
+                        Paired (two categories)
+                      </option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="mb-4">
+                  <label class="label">
+                    <span class="label-text">Description</span>
+                  </label>
+                  <textarea class="textarea textarea-bordered w-full" id="description" name="description" rows="2"
+                            placeholder="Optional description of this stat block"><%= @stat_block.description %></textarea>
+                </div>
+
+                <div class="form-control">
+                  <label class="label cursor-pointer justify-start gap-3">
+                    <input type="checkbox" class="checkbox" id="is_active" name="is_active" value="1"
+                           <%= @stat_block.is_active ? 'checked' : '' %>>
+                    <span class="label-text">Active (available for character creation)</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="card bg-base-200 mb-6">
+              <div class="p-4 border-b border-base-content/10">
+                <h5 class="font-semibold">Point Configuration</h5>
+              </div>
+              <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <label class="label">
+                      <span class="label-text" id="points_label">Total Points</span>
+                    </label>
+                    <input type="number" class="input input-bordered w-full" id="total_points" name="total_points"
+                           value="<%= @stat_block.total_points || 50 %>" min="1" max="1000">
+                    <label class="label">
+                      <span class="label-text-alt" id="points_help">Points to distribute among stats</span>
+                    </label>
+                  </div>
+                  <div id="secondary_points_group" class="<%= @stat_block.paired? ? '' : 'hidden' %>">
+                    <label class="label">
+                      <span class="label-text">Secondary Points</span>
+                    </label>
+                    <input type="number" class="input input-bordered w-full" id="secondary_points" name="secondary_points"
+                           value="<%= @stat_block.secondary_points || 25 %>" min="1" max="1000">
+                    <label class="label">
+                      <span class="label-text-alt">Points for second category</span>
+                    </label>
+                  </div>
+                  <div>
+                    <label class="label">
+                      <span class="label-text">Cost Formula</span>
+                    </label>
+                    <select class="select select-bordered w-full" id="cost_formula" name="cost_formula">
+                      <option value="doubling_every_other" <%= @stat_block.cost_formula == 'doubling_every_other' ? 'selected' : '' %>>
+                        Doubling Every Other (1,1,2,2,3,3...)
+                      </option>
+                      <option value="linear_increasing" <%= @stat_block.cost_formula == 'linear_increasing' ? 'selected' : '' %>>
+                        Linear Increasing (1,2,3,4,5...)
+                      </option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="label">
+                      <span class="label-text">Min Stat Value</span>
+                    </label>
+                    <input type="number" class="input input-bordered w-full" id="min_stat_value" name="min_stat_value"
+                           value="<%= @stat_block.min_stat_value || 1 %>" min="0" max="100">
+                  </div>
+                  <div>
+                    <label class="label">
+                      <span class="label-text">Max Stat Value</span>
+                    </label>
+                    <input type="number" class="input input-bordered w-full" id="max_stat_value" name="max_stat_value"
+                           value="<%= @stat_block.max_stat_value || 10 %>" min="1" max="100">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Paired-specific labels -->
+            <div class="card bg-base-200 mb-6 <%= @stat_block.paired? ? '' : 'hidden' %>" id="labels_card">
+              <div class="p-4 border-b border-base-content/10">
+                <h5 class="font-semibold">Category Labels</h5>
+              </div>
+              <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="label">
+                      <span class="label-text">Primary Category Label</span>
+                    </label>
+                    <input type="text" class="input input-bordered w-full" id="primary_label" name="primary_label"
+                           value="<%= @stat_block.primary_label || 'Stats' %>" placeholder="e.g., Stats, Attributes">
+                  </div>
+                  <div>
+                    <label class="label">
+                      <span class="label-text">Secondary Category Label</span>
+                    </label>
+                    <input type="text" class="input input-bordered w-full" id="secondary_label" name="secondary_label"
+                           value="<%= @stat_block.secondary_label || 'Skills' %>" placeholder="e.g., Skills, Proficiencies">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle"></i>
+                <%= @stat_block.new? ? 'Create Stat Block' : 'Save Changes' %>
+              </button>
+              <a href="/admin/stat_blocks" class="btn btn-outline btn-neutral">Cancel</a>
+            </div>
+          </form>
+        </div>
+
+        <!-- Stats Tab (only for existing stat blocks) -->
+        <% unless @stat_block.new? %>
+        <div class="tab-panel hidden" id="stats">
+          <!-- Add New Stat Form -->
+          <div class="card bg-base-200 mb-6">
+            <div class="p-4 border-b border-base-content/10">
+              <h5 class="font-semibold flex items-center gap-2">
+                <i class="bi bi-plus-circle"></i>Add New Stat
+              </h5>
+            </div>
+            <div class="card-body">
+              <form action="/admin/stat_blocks/<%= @stat_block.id %>/stats" method="post">
+                <%= csrf_tag %>
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                  <div class="md:col-span-3">
+                    <label class="label">
+                      <span class="label-text">Name <span class="text-error">*</span></span>
+                    </label>
+                    <input type="text" class="input input-bordered w-full" id="stat_name" name="name" required
+                           placeholder="e.g., Strength">
+                  </div>
+                  <div class="md:col-span-2">
+                    <label class="label">
+                      <span class="label-text">Abbrev <span class="text-error">*</span></span>
+                    </label>
+                    <input type="text" class="input input-bordered w-full" id="stat_abbreviation" name="abbreviation" required
+                           maxlength="10" placeholder="e.g., STR">
+                  </div>
+                  <div class="md:col-span-2">
+                    <label class="label">
+                      <span class="label-text">Category</span>
+                    </label>
+                    <select class="select select-bordered w-full" id="stat_category" name="stat_category">
+                      <option value="primary">Primary</option>
+                      <% if @stat_block.paired? %>
+                        <option value="secondary">Secondary</option>
+                      <% end %>
+                    </select>
+                  </div>
+                  <div class="md:col-span-3">
+                    <label class="label">
+                      <span class="label-text">Description</span>
+                    </label>
+                    <input type="text" class="input input-bordered w-full" id="stat_description" name="description"
+                           placeholder="Optional">
+                  </div>
+                  <div class="md:col-span-2 flex items-end">
+                    <button type="submit" class="btn btn-success w-full">
+                      <i class="bi bi-plus"></i>Add
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Existing Stats -->
+          <% if @stat_block.paired? %>
+            <!-- Primary Stats -->
+            <div class="card bg-base-200 mb-6">
+              <div class="p-4 border-b border-base-content/10">
+                <h5 class="font-semibold flex items-center gap-2">
+                  <i class="bi bi-list-ul"></i><%= @stat_block.primary_label %> (Primary)
+                </h5>
+              </div>
+              <%= render_stats_table(@stat_block.primary_stats.order(:display_order).all, @stat_block) %>
+            </div>
+
+            <!-- Secondary Stats -->
+            <div class="card bg-base-200 mb-6">
+              <div class="p-4 border-b border-base-content/10">
+                <h5 class="font-semibold flex items-center gap-2">
+                  <i class="bi bi-list-ul"></i><%= @stat_block.secondary_label %> (Secondary)
+                </h5>
+              </div>
+              <%= render_stats_table(@stat_block.secondary_stats.order(:display_order).all, @stat_block) %>
+            </div>
+          <% else %>
+            <div class="card bg-base-200 mb-6">
+              <div class="p-4 border-b border-base-content/10">
+                <h5 class="font-semibold flex items-center gap-2">
+                  <i class="bi bi-list-ul"></i>Stats
+                </h5>
+              </div>
+              <%= render_stats_table(@stat_block.stats_dataset.order(:display_order).all, @stat_block) %>
+            </div>
+          <% end %>
+        </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function togglePairedFields() {
+  const blockType = document.getElementById('block_type').value;
+  const isPaired = blockType === 'paired';
+
+  document.getElementById('secondary_points_group').classList.toggle('hidden', !isPaired);
+  document.getElementById('labels_card').classList.toggle('hidden', !isPaired);
+
+  // Update labels
+  const pointsLabel = document.getElementById('points_label');
+  const pointsHelp = document.getElementById('points_help');
+  if (isPaired) {
+    pointsLabel.textContent = 'Primary Points';
+    pointsHelp.textContent = 'Points for primary category';
+  } else {
+    pointsLabel.textContent = 'Total Points';
+    pointsHelp.textContent = 'Points to distribute among stats';
+  }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', togglePairedFields);
+
+// Tab switching
+document.querySelectorAll('[role="tablist"] .tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    const targetId = this.dataset.target;
+    const tablist = this.closest('[role="tablist"]');
+
+    // Update tab states
+    tablist.querySelectorAll('.tab').forEach(t => t.classList.remove('tab-active'));
+    this.classList.add('tab-active');
+
+    // Find sibling panels (next siblings until next tablist)
+    let panel = tablist.nextElementSibling;
+    while (panel && !panel.matches('[role="tablist"]')) {
+      if (panel.classList.contains('tab-panel')) {
+        panel.classList.toggle('hidden', panel.id !== targetId);
+      }
+      panel = panel.nextElementSibling;
+    }
+  });
+});
+</script>

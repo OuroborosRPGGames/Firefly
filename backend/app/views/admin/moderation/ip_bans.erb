@@ -1,0 +1,125 @@
+<% @page_title = 'IP Bans' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Moderation', path: '/admin/moderation' }, { label: 'IP Bans', path: '/admin/moderation/ip-bans' }] %>
+
+<%= admin_content_start %>
+      <h2 class="text-2xl font-bold mb-4"><i class="bi bi-ban mr-2"></i>IP Bans</h2>
+
+      <!-- Add New Ban -->
+      <div class="card bg-base-200 shadow-lg mb-4">
+        <div class="p-4 border-b border-base-content/10">
+          <h5 class="font-semibold"><i class="bi bi-plus-circle mr-2"></i>Create IP Ban</h5>
+        </div>
+        <div class="card-body">
+          <form action="/admin/moderation/ip-bans" method="post">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+              <div class="md:col-span-4">
+                <label for="ip_pattern" class="label">
+                  <span class="label-text">IP Address or CIDR Range</span>
+                </label>
+                <input type="text" class="input input-bordered w-full" id="ip_pattern" name="ip_pattern" placeholder="192.168.1.100 or 10.0.0.0/8" required>
+                <label class="label">
+                  <span class="label-text-alt text-base-content/70">Single IP or CIDR notation (e.g., 192.168.1.0/24)</span>
+                </label>
+              </div>
+              <div class="md:col-span-4">
+                <label for="reason" class="label">
+                  <span class="label-text">Reason</span>
+                </label>
+                <input type="text" class="input input-bordered w-full" id="reason" name="reason" placeholder="Harassment, spam, etc.">
+              </div>
+              <div class="md:col-span-2">
+                <label for="duration" class="label">
+                  <span class="label-text">Duration</span>
+                </label>
+                <select class="select select-bordered w-full" id="duration" name="duration">
+                  <option value="permanent">Permanent</option>
+                  <option value="1h">1 Hour</option>
+                  <option value="24h">24 Hours</option>
+                  <option value="7d">7 Days</option>
+                  <option value="30d">30 Days</option>
+                </select>
+              </div>
+              <div class="md:col-span-2 flex items-end">
+                <button type="submit" class="btn btn-error w-full">
+                  <i class="bi bi-ban mr-1"></i>Ban IP
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Existing Bans -->
+      <div class="card bg-base-200 shadow-lg">
+        <div class="p-4 border-b border-base-content/10">
+          <h5 class="font-semibold"><i class="bi bi-list-ul mr-2"></i>Existing Bans</h5>
+        </div>
+        <div class="card-body">
+          <% if @ip_bans.empty? %>
+            <p class="text-base-content/70">No IP bans configured.</p>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra">
+                <thead>
+                  <tr>
+                    <th>IP Pattern</th>
+                    <th>Reason</th>
+                    <th>Type</th>
+                    <th>Expires</th>
+                    <th>Status</th>
+                    <th>Created By</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @ip_bans.each do |ban| %>
+                  <tr class="<%= ban.active ? '' : 'opacity-50' %>">
+                    <td><code class="bg-base-300 px-2 py-1 rounded"><%= ban.ip_pattern %></code></td>
+                    <td><%= h(ban.reason || '-') %></td>
+                    <td>
+                      <% if ban.permanent? %>
+                        <span class="badge badge-error">Permanent</span>
+                      <% else %>
+                        <span class="badge badge-warning">Temporary</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if ban.expires_at %>
+                        <%= ban.expires_at.strftime('%Y-%m-%d %H:%M') %>
+                      <% else %>
+                        <span class="text-base-content/70">Never</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if ban.active %>
+                        <% if ban.expired? %>
+                          <span class="badge badge-neutral">Expired</span>
+                        <% else %>
+                          <span class="badge badge-success">Active</span>
+                        <% end %>
+                      <% else %>
+                        <span class="badge badge-neutral">Inactive</span>
+                      <% end %>
+                    </td>
+                    <td><%= h(ban.created_by_user&.username || '-') %></td>
+                    <td>
+                      <div class="flex gap-1">
+                        <% if ban.active %>
+                          <form action="/admin/moderation/ip-bans/<%= ban.id %>/deactivate" method="post" class="inline">
+                            <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Deactivate this ban?')">
+                              <i class="bi bi-x-circle"></i>
+                            </button>
+                          </form>
+                        <% end %>
+                        <%= partial 'admin/delete_button', locals: { path: "/admin/moderation/ip-bans/#{ban.id}/delete", label: 'ban' } %>
+                      </div>
+                    </td>
+                  </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+      </div>
+<%= admin_content_end %>

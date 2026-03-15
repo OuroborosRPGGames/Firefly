@@ -1,0 +1,222 @@
+<%
+  selected_npc_id = request.params['npc']&.to_i
+  @selected_npc = selected_npc_id ? Character[selected_npc_id] : nil
+%>
+
+<!-- Create New NPC -->
+<div class="card bg-base-200 mb-4">
+  <div class="p-4 border-b border-base-content/10 flex items-center gap-2">
+    <i class="bi bi-plus-circle"></i>Create New NPC
+  </div>
+  <div class="card-body">
+    <form method="post" action="/admin/npcs/<%= @archetype.id %>/create_npc" class="grid grid-cols-1 md:grid-cols-12 gap-4">
+      <%= csrf_tag %>
+      <div class="md:col-span-4 form-control">
+        <label class="label">
+          <span class="label-text">First Name <span class="text-error">*</span></span>
+        </label>
+        <input type="text" class="input input-bordered w-full" name="forename" required
+               placeholder="e.g., Shadow, Grok, Martha">
+      </div>
+      <div class="md:col-span-3 form-control">
+        <label class="label">
+          <span class="label-text">Last Name</span>
+        </label>
+        <input type="text" class="input input-bordered w-full" name="surname"
+               placeholder="Optional">
+      </div>
+      <div class="md:col-span-3 form-control">
+        <label class="label">
+          <span class="label-text">Gender</span>
+        </label>
+        <select class="select select-bordered w-full" name="gender">
+          <option value="">Not specified</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="nonbinary">Nonbinary</option>
+        </select>
+      </div>
+      <div class="md:col-span-2 flex items-end">
+        <button type="submit" class="btn btn-success w-full">
+          <i class="bi bi-plus-lg mr-1"></i>Create
+        </button>
+      </div>
+      <div class="md:col-span-12 form-control">
+        <label class="label">
+          <span class="label-text">Short Description</span>
+        </label>
+        <input type="text" class="input input-bordered w-full" name="short_desc"
+               placeholder="e.g., a menacing wolf, a gruff blacksmith">
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <!-- NPC List -->
+  <div class="md:col-span-1">
+    <div class="card bg-base-200">
+      <div class="p-4 border-b border-base-content/10 flex items-center gap-2">
+        <i class="bi bi-people"></i>NPCs (<%= @npcs.count %>)
+      </div>
+      <div class="max-h-96 overflow-y-auto">
+        <% if @npcs.empty? %>
+          <div class="p-4 text-base-content/70">
+            No NPCs created yet
+          </div>
+        <% else %>
+          <ul class="menu p-0">
+            <% @npcs.each do |npc| %>
+              <li>
+                <a href="/admin/npcs/<%= @archetype.id %>?tab=instances&npc=<%= npc.id %>"
+                   class="<%= @selected_npc&.id == npc.id ? 'active' : '' %>">
+                  <div class="flex justify-between items-center w-full">
+                    <div>
+                      <strong><%= h(npc.full_name) %></strong>
+                      <% if npc.short_desc %>
+                        <br><small class="text-base-content/70"><%= h(npc.short_desc) %></small>
+                      <% end %>
+                    </div>
+                    <span class="badge badge-secondary badge-sm">
+                      <%= npc.npc_schedules_dataset.count %> schedules
+                    </span>
+                  </div>
+                </a>
+              </li>
+            <% end %>
+          </ul>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Selected NPC Details -->
+  <div class="md:col-span-2">
+    <% if @selected_npc %>
+      <div class="card bg-base-200 mb-4">
+        <div class="p-4 border-b border-base-content/10 flex justify-between items-center">
+          <span class="flex items-center gap-2">
+            <i class="bi bi-person"></i>
+            <%= h(@selected_npc.full_name) %>
+          </span>
+          <%= partial 'admin/delete_button', locals: { path: "/admin/npcs/#{@archetype.id}/npc/#{@selected_npc.id}/delete", label: 'NPC' } %>
+        </div>
+        <div class="card-body">
+          <p class="text-base-content/70 mb-3"><%= h(@selected_npc.short_desc) %></p>
+
+          <!-- Schedules -->
+          <h6 class="font-bold mt-4 mb-3 flex items-center gap-2">
+            <i class="bi bi-calendar-event"></i>Schedules
+          </h6>
+
+          <% schedules = @selected_npc.npc_schedules_dataset.eager(:room).all %>
+          <% if schedules.empty? %>
+            <p class="text-base-content/70">No schedules configured.</p>
+          <% else %>
+            <% schedules.each do |schedule| %>
+              <div class="card bg-base-300 mb-2">
+                <div class="card-body py-3">
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <strong><%= h(schedule.room&.name || 'Unknown Room') %></strong>
+                      <br>
+                      <small class="text-base-content/70">
+                        <i class="bi bi-clock mr-1"></i>
+                        <%= '%02d:00' % schedule.start_hour %> - <%= '%02d:00' % schedule.end_hour %>
+                        (<%= schedule.weekdays %>)
+                      </small>
+                      <br>
+                      <small class="text-base-content/70">
+                        <i class="bi bi-percent mr-1"></i>
+                        <%= schedule.probability %>% chance,
+                        max <%= schedule.max_npcs %>
+                        <% if schedule.activity %>
+                          - "<%= h(schedule.activity) %>"
+                        <% end %>
+                      </small>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="badge badge-<%= schedule.is_active ? 'success' : 'ghost' %>">
+                        <%= schedule.is_active ? 'Active' : 'Inactive' %>
+                      </span>
+                      <button type="button" class="btn btn-outline btn-primary btn-sm"
+                              onclick="document.getElementById('editSchedule<%= schedule.id %>').showModal()">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <%= partial 'admin/delete_button', locals: { path: "/admin/npcs/#{@archetype.id}/npc/#{@selected_npc.id}/schedule/#{schedule.id}/delete", label: 'schedule' } %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Edit Schedule Modal -->
+              <%
+                _edit_schedule_content = <<~HTML
+                  <form method="post" action="/admin/npcs/#{@archetype.id}/npc/#{@selected_npc.id}/schedule/#{schedule.id}/update">
+                    #{csrf_tag}
+                    <h3 class="font-bold text-lg mb-4">Edit Schedule</h3>
+                    #{partial('admin/npcs/schedule_form_fields', locals: { schedule: schedule, saved_locations: @saved_locations, locations: @locations })}
+                    <div class="modal-action">
+                      <button type="button" class="btn btn-ghost" onclick="document.getElementById('editSchedule#{schedule.id}').close()">Cancel</button>
+                      <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                  </form>
+                HTML
+              %>
+              <%= partial 'admin/modal', locals: {
+                id: 'editSchedule' + schedule.id.to_s,
+                title: 'Edit Schedule',
+                content: _edit_schedule_content,
+                auto_actions: false
+              } %>
+            <% end %>
+          <% end %>
+
+          <!-- Add Schedule Button -->
+          <button type="button" class="btn btn-outline btn-success mt-3"
+                  onclick="document.getElementById('addScheduleModal').showModal()">
+            <i class="bi bi-plus-lg mr-1"></i>Add Schedule
+          </button>
+        </div>
+      </div>
+
+      <!-- Add Schedule Modal -->
+      <%
+        _add_schedule_content =
+          '<form method="post" action="/admin/npcs/' + @archetype.id.to_s + '/npc/' + @selected_npc.id.to_s + '/schedules">' +
+          csrf_tag +
+          '<h3 class="font-bold text-lg mb-4">Add Schedule</h3>' +
+          partial('admin/npcs/schedule_form_fields', locals: { schedule: nil, saved_locations: @saved_locations, locations: @locations }) +
+          '<div class="divider"></div>' +
+          '<div class="form-control">' +
+            '<label class="label cursor-pointer justify-start gap-3">' +
+              '<input type="checkbox" class="checkbox" name="save_location" value="1" id="saveLocation">' +
+              '<span class="label-text">Save this location to my library</span>' +
+            '</label>' +
+          '</div>' +
+          '<div class="mt-2" id="locationNameField" style="display: none;">' +
+            '<input type="text" class="input input-bordered w-full" name="location_name" placeholder="Name for saved location">' +
+          '</div>' +
+          '<script>document.getElementById("saveLocation").addEventListener("change", function() { document.getElementById("locationNameField").style.display = this.checked ? "block" : "none"; });</script>' +
+          '<div class="modal-action">' +
+            '<button type="button" class="btn btn-ghost" onclick="document.getElementById(\'addScheduleModal\').close()">Cancel</button>' +
+            '<button type="submit" class="btn btn-success">Add Schedule</button>' +
+          '</div>' +
+          '</form>'
+      %>
+      <%= partial 'admin/modal', locals: {
+        id: 'addScheduleModal',
+        title: 'Add Schedule',
+        content: _add_schedule_content,
+        auto_actions: false
+      } %>
+    <% else %>
+      <div class="card bg-base-200">
+        <div class="card-body text-center text-base-content/70 py-12">
+          <i class="bi bi-arrow-left-circle text-4xl mb-3 block"></i>
+          Select an NPC from the list to view and manage its schedules
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

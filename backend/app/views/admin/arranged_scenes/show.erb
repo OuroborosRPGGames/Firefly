@@ -1,0 +1,183 @@
+<% @page_title = 'Scene Details - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Arranged Scenes', path: '/admin/arranged_scenes' }, { label: @scene.display_name }] %>
+
+<%= admin_content_start %>
+      <h2 class="mb-4 text-2xl font-bold">Scene Details: <%= @scene.display_name %></h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <div class="card bg-base-200 shadow-lg mb-4">
+            <div class="p-4 border-b border-base-content/10">
+              <h5 class="font-semibold">Scene Information</h5>
+            </div>
+            <div class="card-body">
+              <div class="grid grid-cols-3 gap-2 text-sm">
+                <div class="font-semibold">Status</div>
+                <div class="col-span-2">
+                  <% case @scene.status %>
+                  <% when 'pending' %>
+                    <span class="badge badge-warning">Pending</span>
+                    <% if @scene.available? %>
+                      <span class="badge badge-success">Ready to trigger</span>
+                    <% elsif @scene.expires_at && Time.now >= @scene.expires_at %>
+                      <span class="badge badge-error">Expired</span>
+                    <% elsif @scene.available_from && Time.now < @scene.available_from %>
+                      <span class="badge badge-info">Not yet available</span>
+                    <% end %>
+                  <% when 'active' %>
+                    <span class="badge badge-primary">Active</span>
+                  <% when 'completed' %>
+                    <span class="badge badge-success">Completed</span>
+                  <% when 'cancelled' %>
+                    <span class="badge badge-neutral">Cancelled</span>
+                  <% else %>
+                    <span class="badge"><%= @scene.status %></span>
+                  <% end %>
+                </div>
+
+                <div class="font-semibold">NPC</div>
+                <div class="col-span-2"><%= h(@scene.npc_character&.full_name || 'Unknown') %></div>
+
+                <div class="font-semibold">PC</div>
+                <div class="col-span-2"><%= h(@scene.pc_character&.full_name || 'Unknown') %></div>
+
+                <div class="font-semibold">Meeting Room</div>
+                <div class="col-span-2"><%= h(@scene.meeting_room&.name || 'Unknown') %></div>
+
+                <div class="font-semibold">RP Room</div>
+                <div class="col-span-2"><%= h(@scene.rp_room&.name || 'Unknown') %></div>
+
+                <div class="font-semibold">Created By</div>
+                <div class="col-span-2"><%= h(@scene.created_by&.full_name || 'Unknown') %></div>
+
+                <div class="font-semibold">Created At</div>
+                <div class="col-span-2"><%= @scene.created_at&.strftime('%Y-%m-%d %H:%M') %></div>
+
+                <% if @scene.available_from %>
+                  <div class="font-semibold">Available From</div>
+                  <div class="col-span-2"><%= @scene.available_from.strftime('%Y-%m-%d %H:%M') %></div>
+                <% end %>
+
+                <% if @scene.expires_at %>
+                  <div class="font-semibold">Expires At</div>
+                  <div class="col-span-2"><%= @scene.expires_at.strftime('%Y-%m-%d %H:%M') %></div>
+                <% end %>
+
+                <% if @scene.started_at %>
+                  <div class="font-semibold">Started At</div>
+                  <div class="col-span-2"><%= @scene.started_at.strftime('%Y-%m-%d %H:%M') %></div>
+                <% end %>
+
+                <% if @scene.ended_at %>
+                  <div class="font-semibold">Ended At</div>
+                  <div class="col-span-2"><%= @scene.ended_at.strftime('%Y-%m-%d %H:%M') %></div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <% if @scene.npc_instructions && !@scene.npc_instructions.empty? %>
+            <div class="card bg-base-200 shadow-lg mb-4">
+              <div class="p-4 border-b border-base-content/10">
+                <h5 class="font-semibold">NPC Instructions</h5>
+              </div>
+              <div class="card-body">
+                <p><%= @scene.npc_instructions %></p>
+              </div>
+            </div>
+          <% end %>
+
+          <% if @scene.invitation_message && !@scene.invitation_message.empty? %>
+            <div class="card bg-base-200 shadow-lg mb-4">
+              <div class="p-4 border-b border-base-content/10">
+                <h5 class="font-semibold">Invitation Message</h5>
+              </div>
+              <div class="card-body">
+                <p><%= @scene.invitation_message %></p>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <div>
+          <% if @scene.completed? && @scene.world_memory %>
+            <div class="card bg-base-200 shadow-lg mb-4">
+              <div class="p-4 border-b border-base-content/10">
+                <h5 class="font-semibold">Scene Summary</h5>
+              </div>
+              <div class="card-body">
+                <p><%= h @scene.world_memory.summary %></p>
+                <p class="text-sm text-base-content/60 mt-2">Generated from <%= @scene.world_memory.message_count %> messages</p>
+              </div>
+            </div>
+          <% end %>
+
+          <div class="card bg-base-200 shadow-lg mb-4">
+            <div class="p-4 border-b border-base-content/10">
+              <h5 class="font-semibold">Actions</h5>
+            </div>
+            <div class="card-body">
+              <div class="flex flex-col gap-2">
+                <a href="/admin/arranged_scenes/<%= @scene.id %>" class="btn btn-outline btn-primary">
+                  <i class="bi bi-pencil mr-1"></i>Edit Scene
+                </a>
+
+                <% if @scene.pending? %>
+                  <form action="/admin/arranged_scenes/<%= @scene.id %>/resend_invitation" method="POST">
+                    <button type="submit" class="btn btn-outline btn-info w-full">
+                      <i class="bi bi-envelope mr-1"></i>Resend Invitation
+                    </button>
+                  </form>
+
+                  <form action="/admin/arranged_scenes/<%= @scene.id %>/cancel" method="POST">
+                    <button type="submit" class="btn btn-outline btn-warning w-full" onclick="return confirm('Cancel this scene?')">
+                      <i class="bi bi-x-circle mr-1"></i>Cancel Scene
+                    </button>
+                  </form>
+                <% end %>
+
+                <%= partial 'admin/delete_button', locals: { path: "/admin/arranged_scenes/#{@scene.id}/delete", label: 'scene' } %>
+              </div>
+            </div>
+          </div>
+
+          <% if @scene.triggers.any? || @scene.clues.any? %>
+            <div class="card bg-base-200 shadow-lg mb-4">
+              <div class="p-4 border-b border-base-content/10">
+                <h5 class="font-semibold">Scene-Specific Triggers & Clues</h5>
+              </div>
+              <div class="card-body">
+                <% if @scene.triggers.any? %>
+                  <h6 class="font-semibold mb-2">Triggers</h6>
+                  <ul class="list-none mb-4">
+                    <% @scene.triggers.each do |trigger| %>
+                      <li class="mb-1">
+                        <a href="/admin/triggers/<%= trigger.id %>" class="link link-primary"><%= trigger.name %></a>
+                        <span class="text-base-content/60">(<%= trigger.trigger_type %>)</span>
+                      </li>
+                    <% end %>
+                  </ul>
+                <% end %>
+
+                <% if @scene.clues.any? %>
+                  <h6 class="font-semibold mb-2">Clues</h6>
+                  <ul class="list-none">
+                    <% @scene.clues.each do |clue| %>
+                      <li class="mb-1">
+                        <a href="/admin/clues/<%= clue.id %>" class="link link-primary"><%= clue.name %></a>
+                      </li>
+                    <% end %>
+                  </ul>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <a href="/admin/arranged_scenes" class="btn btn-outline btn-ghost">
+          <i class="bi bi-arrow-left mr-1"></i>Back to List
+        </a>
+      </div>
+<%= admin_content_end %>

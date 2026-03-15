@@ -1,0 +1,105 @@
+<%= admin_content_start %>
+<div class="breadcrumbs text-sm mb-4">
+  <ul>
+    <li><a href="/admin">Admin</a></li>
+    <li><a href="/admin/npcs">NPCs</a></li>
+    <li>Saved Locations</li>
+  </ul>
+</div>
+
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-2xl font-bold flex items-center gap-2">
+    <i class="bi bi-bookmark"></i>Saved Spawn Locations
+  </h2>
+  <a href="/admin/npcs" class="btn btn-outline btn-secondary">
+    <i class="bi bi-arrow-left mr-1"></i>Back to NPCs
+  </a>
+</div>
+
+<p class="text-base-content/70 mb-6">
+  Your personal library of saved room locations for quick access when configuring NPC schedules.
+</p>
+
+<!-- Add New Location -->
+<div class="card bg-base-200 mb-6">
+  <div class="p-4 border-b border-base-content/10 flex items-center gap-2">
+    <i class="bi bi-plus-circle"></i>Add Location
+  </div>
+  <div class="card-body">
+    <form method="post" action="/admin/npcs/locations/create" class="grid grid-cols-1 md:grid-cols-12 gap-4">
+      <%= csrf_tag %>
+      <div class="md:col-span-4 form-control">
+        <label class="label">
+          <span class="label-text">Name <span class="text-error">*</span></span>
+        </label>
+        <input type="text" class="input input-bordered w-full" name="name" required
+               placeholder="e.g., Main Tavern, Guard Post #1">
+      </div>
+      <div class="md:col-span-4 form-control">
+        <label class="label">
+          <span class="label-text">Room <span class="text-error">*</span></span>
+        </label>
+        <select class="select select-bordered w-full" name="room_id" required>
+          <option value="">Select a room...</option>
+          <% Location.order(:name).each do |loc| %>
+            <optgroup label="<%= h(loc.name) %>">
+              <% loc.rooms_dataset.order(:name).each do |room| %>
+                <option value="<%= room.id %>"><%= h(room.name) %></option>
+              <% end %>
+            </optgroup>
+          <% end %>
+        </select>
+      </div>
+      <div class="md:col-span-3 form-control">
+        <label class="label">
+          <span class="label-text">Notes</span>
+        </label>
+        <input type="text" class="input input-bordered w-full" name="notes"
+               placeholder="Optional notes">
+      </div>
+      <div class="md:col-span-1 flex items-end">
+        <button type="submit" class="btn btn-success w-full">
+          <i class="bi bi-plus-lg"></i>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Location List -->
+<% if @locations.empty? %>
+  <%= partial 'shared/empty_state', locals: { message: 'No saved locations yet. Add rooms above to build your library.' } %>
+<% else %>
+  <div class="overflow-x-auto">
+    <table class="table table-zebra">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Room</th>
+          <th>Location</th>
+          <th>Notes</th>
+          <th class="w-20">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @locations.each do |loc| %>
+          <tr>
+            <td><strong><%= h(loc.name) %></strong></td>
+            <td><%= h(loc.room&.name || 'Unknown') %></td>
+            <td><span class="text-base-content/70"><%= h(loc.room&.location&.name || '-') %></span></td>
+            <td><small class="text-base-content/70"><%= h(loc.notes) %></small></td>
+            <td>
+              <%= partial 'admin/delete_button', locals: { path: "/admin/npcs/locations/#{loc.id}/delete", label: 'location' } %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="text-base-content/70 mt-4">
+    <i class="bi bi-info-circle mr-1"></i>
+    <%= @locations.count %> location(s) saved
+  </p>
+<% end %>
+<%= admin_content_end %>

@@ -1,0 +1,2 @@
+web: bundle exec puma -p 3000
+css: bin/tailwindcss -i app/assets/css/input.css -o public/css/tailwind.css --watch

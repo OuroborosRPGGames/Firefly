@@ -1,0 +1,134 @@
+# Firefly Theme Configuration
+# This file allows game operators to easily customize the site's appearance.
+# Changes here will be reflected in CSS variables on the site.
+
+# Site Identity
+site:
+  name: "Firefly"
+  tagline: "A World of Stories Awaits"
+  description: "A modern text-based RPG for collaborative storytelling"
+  logo_url: "/images/logo.png"  # Optional logo image
+  favicon_url: "/images/favicon.ico"
+
+# Bootstrap/Bootswatch Theme
+# Available themes: default, cerulean, cosmo, cyborg, darkly, flatly, journal,
+# litera, lumen, lux, materia, minty, morph, pulse, quartz, sandstone, simplex,
+# sketchy, slate, solar, spacelab, superhero, united, vapor, yeti, zephyr
+# Set to "default" for vanilla Bootstrap, or any Bootswatch theme name
+bootstrap:
+  theme: "slate"  # Bootswatch Slate theme - dark modern look
+  version: "5.3.2"
+
+# Background Images
+# Set paths relative to /public or use full URLs
+# Replace these with your own images to customize your game's look
+backgrounds:
+  hero: "/images/library.jpg"        # Homepage hero section
+  default: "/images/library.jpg"     # Default page background
+  login: "/images/library.jpg"       # Login page background
+  play: "/images/library.jpg"        # Play interface background
+
+# Typography
+# Google Fonts are automatically loaded. Use font family names.
+fonts:
+  heading: "Cinzel"                  # Elegant serif for headings (Cinzel, Playfair Display, Cormorant Garamond)
+  body: "Lato"                       # Clean sans-serif for body text (Lato, Open Sans, Raleway)
+  accent: "Cormorant Garamond"       # Literary accent font for quotes/special text
+  monospace: "Fira Code"             # For code/terminal displays
+
+# Color Palettes
+# Dark theme is default. Light theme auto-generates from these values.
+colors:
+  dark:
+    # Primary backgrounds
+    primary_bg: "#1a1a2e"            # Deep charcoal - main background
+    secondary_bg: "#16213e"          # Slightly lighter - cards/panels
+    tertiary_bg: "#0f0f1a"           # Darkest - footer/sections
+
+    # Accent colors
+    accent: "#c9a227"                # Warm gold - primary accent
+    accent_hover: "#d4b43a"          # Lighter gold - hover state
+    accent_secondary: "#00bcd4"      # Cyan - secondary accent (links)
+
+    # Text colors
+    text_primary: "#e8e8e8"          # Off-white - main text
+    text_secondary: "#a0a0a0"        # Muted - secondary text
+    text_muted: "#666666"            # Dimmed - hints/placeholders
+
+    # Functional colors
+    success: "#51cf66"               # Green - success states
+    warning: "#ffd43b"               # Yellow - warnings
+    error: "#ff6b6b"                 # Red - errors
+    info: "#74c0fc"                  # Blue - information
+
+    # Borders and shadows
+    border: "#333344"                # Subtle border color
+    shadow: "rgba(0, 0, 0, 0.5)"     # Shadow color
+
+    # Glass effect (for cards)
+    glass_bg: "rgba(26, 26, 46, 0.85)"
+    glass_border: "rgba(201, 162, 39, 0.2)"
+    glass_blur: "10px"
+
+  light:
+    # Primary backgrounds
+    primary_bg: "#f5f3ef"            # Warm off-white
+    secondary_bg: "#ffffff"          # Pure white - cards
+    tertiary_bg: "#e8e4dc"           # Parchment tone
+
+    # Accent colors
+    accent: "#8b6914"                # Darker gold for light theme
+    accent_hover: "#a07d1c"
+    accent_secondary: "#0097a7"      # Darker cyan
+
+    # Text colors
+    text_primary: "#1a1a2e"          # Dark charcoal
+    text_secondary: "#4a4a5a"        # Medium gray
+    text_muted: "#888888"
+
+    # Functional colors
+    success: "#2e8b57"
+    warning: "#cc9900"
+    error: "#cc3333"
+    info: "#0066cc"
+
+    # Borders and shadows
+    border: "#d4d0c4"
+    shadow: "rgba(0, 0, 0, 0.1)"
+
+    # Glass effect
+    glass_bg: "rgba(255, 255, 255, 0.9)"
+    glass_border: "rgba(139, 105, 20, 0.2)"
+    glass_blur: "10px"
+
+# Layout Settings
+layout:
+  max_width: "1200px"                # Maximum content width
+  content_width: "900px"             # Content area width
+  sidebar_width: "300px"             # Sidebar width
+  nav_height: "60px"                 # Navigation bar height
+  border_radius: "8px"               # Default border radius
+  border_radius_lg: "12px"           # Large border radius
+  border_radius_sm: "4px"            # Small border radius
+
+# Animation Settings
+animations:
+  enabled: true
+  duration_fast: "0.15s"
+  duration_normal: "0.3s"
+  duration_slow: "0.5s"
+  easing: "ease-out"
+
+# Feature Toggles
+features:
+  dark_mode_toggle: true             # Show dark/light toggle
+  background_images: true            # Enable background images
+  animations: true                   # Enable CSS animations
+  glass_effects: true                # Enable glassmorphism
+  small_caps_nav: true               # Small caps for navigation
+
+# Social/Contact Links (shown in footer)
+social:
+  discord: ""                        # Discord invite URL
+  wiki: ""                           # Wiki/documentation URL
+  github: ""                         # GitHub repository URL

@@ -1,0 +1,837 @@
+<% is_new = @activity.nil? %>
+<link rel="stylesheet" href="/css/activity-builder.css?v=6">
+<link rel="stylesheet" href="/css/descriptions.css">
+
+<div class="activity-builder-container">
+  <!-- LEFT PANEL: Activity Info & Round Palette -->
+  <div class="activity-panel left-panel">
+    <div class="panel-header">
+      <h5 class="mb-0 font-semibold">
+        <i class="bi bi-journal-text mr-2"></i>
+        <%= is_new ? 'New Activity' : h(@activity.aname) %>
+      </h5>
+    </div>
+
+    <div class="panel-content">
+      <!-- Activity Info Form -->
+      <div class="sidebar-section" id="section-info">
+        <div class="section-header" data-section="info">
+          <h6 class="font-semibold text-sm mb-0"><i class="bi bi-info-circle mr-2"></i>Activity Info</h6>
+          <i class="bi bi-chevron-down section-chevron"></i>
+        </div>
+        <div class="section-body mt-2">
+          <form id="activity-form">
+            <div class="form-control mb-2">
+              <label class="label py-1">
+                <span class="label-text text-sm">Name</span>
+              </label>
+              <input type="text" name="name" class="input input-bordered input-sm w-full"
+                     value="<%= h(@activity&.aname || '') %>" required>
+            </div>
+
+            <div class="form-control mb-2">
+              <label class="label py-1">
+                <span class="label-text text-sm">Type</span>
+              </label>
+              <select name="type" class="select select-bordered select-sm w-full" id="activity-type">
+                <% @activity_types.each do |t| %>
+                  <option value="<%= t %>" <%= 'selected' if @activity&.atype == t %>>
+                    <%= t.gsub('_', ' ').capitalize %>
+                  </option>
+                <% end %>
+              </select>
+            </div>
+
+            <div class="form-control mb-2">
+              <label class="label py-1">
+                <span class="label-text text-sm">Description</span>
+              </label>
+              <div id="activity-description-editor" data-initial="<%= h(@activity&.adesc || '') %>"></div>
+              <input type="hidden" name="description" id="description-html-value"
+                     value="<%= h(@activity&.adesc || '') %>">
+            </div>
+
+            <div class="form-control mb-2">
+              <label class="label py-1">
+                <span class="label-text text-sm">Universe</span>
+              </label>
+              <select class="select select-bordered select-sm w-full" id="universe-select">
+                <option value="">-- No Universe --</option>
+                <% @universes.each do |u| %>
+                  <option value="<%= u.id %>" <%= 'selected' if @activity&.universe_id == u.id %>>
+                    <%= h(u.name) %> (<%= u.theme %>)
+                  </option>
+                <% end %>
+              </select>
+            </div>
+
+            <div class="form-control mb-2" id="stat-block-section">
+              <label class="label py-1">
+                <span class="label-text text-sm">Stat Block</span>
+              </label>
+              <select class="select select-bordered select-sm w-full" id="stat-block-select">
+                <option value="">-- Select Universe First --</option>
+              </select>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Launch Mode -->
+      <div class="sidebar-section" id="launch-mode-section">
+        <div class="section-header" data-section="launch">
+          <h6 class="font-semibold text-sm mb-0"><i class="bi bi-rocket mr-2"></i>Launch Settings</h6>
+          <i class="bi bi-chevron-down section-chevron"></i>
+        </div>
+        <div class="section-body mt-2">
+          <div class="form-control mb-2">
+            <label class="label py-1">
+              <span class="label-text text-sm">Launch Mode</span>
+            </label>
+            <select name="launch_mode" class="select select-bordered select-sm w-full" id="launch-mode">
+              <option value="creator" <%= 'selected' if @activity&.launch_mode == 'creator' %>>Creator Only</option>
+              <option value="anyone" <%= 'selected' if @activity&.launch_mode == 'anyone' %>>Anyone (in room)</option>
+              <option value="anchor" <%= 'selected' if @activity&.launch_mode == 'anchor' %>>Anchor (item)</option>
+            </select>
+          </div>
+
+          <div class="form-control mb-2">
+            <label class="label py-1">
+              <span class="label-text text-sm">Location Room</span>
+            </label>
+            <div class="room-picker" data-current-value="<%= @activity&.location %>">
+              <select class="select select-bordered select-sm w-full saved-room-select" data-target="location-room-value">
+                <option value="">-- Saved Rooms --</option>
+              </select>
+              <button type="button" class="btn btn-xs btn-ghost mt-1 browse-rooms-toggle opacity-60">
+                <i class="bi bi-search mr-1"></i>or browse...
+              </button>
+              <div class="browse-rooms-panel" style="display:none;">
+                <select class="select select-bordered select-xs w-full mt-1 browse-world" data-target="location-room-value">
+                  <option value="">-- World --</option>
+                </select>
+                <select class="select select-bordered select-xs w-full mt-1 browse-location" data-target="location-room-value">
+                  <option value="">-- Location --</option>
+                </select>
+                <select class="select select-bordered select-xs w-full mt-1 browse-room" data-target="location-room-value">
+                  <option value="">-- Room --</option>
+                </select>
+              </div>
+              <input type="hidden" id="location-room-value">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Item Anchor (for competitions) -->
+      <div class="sidebar-section" id="anchor-section" style="display:none;">
+        <div class="section-header" data-section="anchor">
+          <h6 class="font-semibold text-sm mb-0"><i class="bi bi-pin-angle mr-2"></i>Item Anchor</h6>
+          <i class="bi bi-chevron-down section-chevron"></i>
+        </div>
+        <div class="section-body mt-2">
+          <p class="text-sm text-base-content/70 mb-2">Anchor this competition to an item type. Players use the item to launch.</p>
+          <select name="anchor_item_pattern_id" class="select select-bordered select-sm w-full" id="anchor-pattern">
+            <option value="">-- Select Item Pattern --</option>
+            <% @patterns.each do |p| %>
+              <option value="<%= p.id %>" <%= 'selected' if @activity&.anchor_item_pattern_id == p.id %>>
+                <%= h(p.description) %>
+              </option>
+            <% end %>
+          </select>
+        </div>
+      </div>
+
+      <!-- Task Trigger (for tasks) -->
+      <div class="sidebar-section" id="task-trigger-section" style="display:none;">
+        <div class="section-header" data-section="trigger">
+          <h6 class="font-semibold text-sm mb-0"><i class="bi bi-door-open mr-2"></i>Trigger Room</h6>
+          <i class="bi bi-chevron-down section-chevron"></i>
+        </div>
+        <div class="section-body mt-2">
+          <p class="text-sm text-base-content/70 mb-2">Task starts when player enters this room.</p>
+          <div class="room-picker" data-current-value="<%= @activity&.task_trigger_room_id %>">
+            <select class="select select-bordered select-sm w-full saved-room-select" data-target="trigger-room-value">
+              <option value="">-- Saved Rooms --</option>
+            </select>
+            <button type="button" class="btn btn-xs btn-ghost mt-1 browse-rooms-toggle opacity-60">
+              <i class="bi bi-search mr-1"></i>or browse...
+            </button>
+            <div class="browse-rooms-panel" style="display:none;">
+              <select class="select select-bordered select-xs w-full mt-1 browse-world" data-target="trigger-room-value">
+                <option value="">-- World --</option>
+              </select>
+              <select class="select select-bordered select-xs w-full mt-1 browse-location" data-target="trigger-room-value">
+                <option value="">-- Location --</option>
+              </select>
+              <select class="select select-bordered select-xs w-full mt-1 browse-room" data-target="trigger-room-value">
+                <option value="">-- Room --</option>
+              </select>
+            </div>
+            <input type="hidden" id="trigger-room-value">
+          </div>
+          <label class="label cursor-pointer justify-start gap-2 mt-2">
+            <input type="checkbox" name="task_auto_start" class="checkbox checkbox-sm" id="task_auto_start"
+                   <%= 'checked' if @activity.nil? || @activity.task_auto_start != false %>>
+            <span class="label-text text-sm">Auto-start on entry</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Team Names (for team competitions) -->
+      <div class="sidebar-section" id="teams-section" style="display:none;">
+        <div class="section-header" data-section="teams">
+          <h6 class="font-semibold text-sm mb-0"><i class="bi bi-people mr-2"></i>Team Names</h6>
+          <i class="bi bi-chevron-down section-chevron"></i>
+        </div>
+        <div class="section-body mt-2">
+          <div class="grid grid-cols-2 gap-2">
+            <input type="text" name="team_name_one" class="input input-bordered input-sm w-full"
+                   placeholder="Team 1" value="<%= h(@activity&.team_name_one || 'Team Alpha') %>">
+            <input type="text" name="team_name_two" class="input input-bordered input-sm w-full"
+                   placeholder="Team 2" value="<%= h(@activity&.team_name_two || 'Team Beta') %>">
+          </div>
+        </div>
+      </div>
+
+      <!-- Round Palette -->
+      <div class="sidebar-section" id="section-palette">
+        <div class="section-header" data-section="palette">
+          <h6 class="font-semibold text-sm mb-0"><i class="bi bi-collection mr-2"></i>Add Round</h6>
+          <i class="bi bi-chevron-down section-chevron"></i>
+        </div>
+        <div class="section-body mt-2">
+          <div class="round-palette">
+            <% @round_types.each do |rt| %>
+              <button type="button" class="btn btn-sm btn-outline btn-<%= round_type_color(rt) %> palette-item"
+                      data-round-type="<%= rt %>"
+                      title="<%= rt.gsub('_', ' ').capitalize %>">
+                <i class="bi bi-<%= round_type_icon(rt) %>"></i>
+                <span class="hidden xl:inline ml-1"><%= rt.gsub('_', ' ').capitalize %></span>
+              </button>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-footer">
+      <% if is_new %>
+        <button type="button" class="btn btn-success w-full" id="create-activity-btn">
+          <i class="bi bi-plus-lg mr-1"></i>Create Activity
+        </button>
+      <% else %>
+        <button type="button" class="btn btn-primary w-full" id="save-activity-btn">
+          <i class="bi bi-save mr-1"></i>Save Changes
+        </button>
+      <% end %>
+      <a href="/admin/activity_builder" class="btn btn-outline btn-ghost w-full mt-2">
+        <i class="bi bi-arrow-left mr-1"></i>Back to List
+      </a>
+    </div>
+  </div>
+
+  <!-- CENTER PANEL: SVG Canvas -->
+  <div class="activity-panel center-panel">
+    <div class="panel-header flex justify-between items-center">
+      <span>
+        <i class="bi bi-diagram-3 mr-2"></i>Round Flow
+        <span class="badge badge-neutral ml-2" id="round-count">0 rounds</span>
+      </span>
+      <div class="join">
+        <button type="button" class="btn btn-sm btn-outline btn-ghost join-item" id="zoom-out" title="Zoom Out">
+          <i class="bi bi-zoom-out"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-outline btn-ghost join-item" id="zoom-reset" title="Reset Zoom">
+          <i class="bi bi-aspect-ratio"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-outline btn-ghost join-item" id="zoom-in" title="Zoom In">
+          <i class="bi bi-zoom-in"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="canvas-container" id="canvas-container">
+      <svg id="round-canvas" width="100%" height="100%">
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#6c757d"/>
+          </marker>
+          <marker id="arrowhead-success" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#198754"/>
+          </marker>
+          <marker id="arrowhead-fail" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#dc3545"/>
+          </marker>
+        </defs>
+        <g id="connections-layer"></g>
+        <g id="nodes-layer"></g>
+      </svg>
+
+      <!-- Round context menu -->
+      <div class="round-context-menu hidden" id="round-context-menu">
+        <button class="round-context-btn" id="ctx-edit-round">
+          <i class="bi bi-pencil"></i> Edit Round
+        </button>
+        <button class="round-context-btn round-context-btn-danger" id="ctx-delete-round">
+          <i class="bi bi-trash"></i> Delete Round
+        </button>
+      </div>
+
+      <!-- Empty state -->
+      <div class="canvas-empty" id="canvas-empty">
+        <i class="bi bi-diagram-3 text-4xl mb-3"></i>
+        <h5 class="font-semibold">No rounds yet</h5>
+        <p class="text-base-content/70">Click a round type in the palette to add your first round</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     Round Config Modal
+     ============================================ -->
+<dialog class="modal round-config-modal" id="roundConfigModal">
+  <div class="modal-box bg-base-200">
+    <!-- Header -->
+    <div class="round-modal-header">
+      <div class="round-type-icon" id="modal-type-icon">
+        <i class="bi bi-play-circle"></i>
+      </div>
+      <div class="flex-1">
+        <h3 class="font-bold text-lg mb-0">Round Config</h3>
+      </div>
+      <form method="dialog">
+        <button class="btn btn-sm btn-circle btn-ghost">✕</button>
+      </form>
+    </div>
+
+    <input type="hidden" id="modal-round-id">
+
+    <!-- Name & Type -->
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div class="form-control">
+        <label class="label py-1"><span class="label-text text-sm">Name</span></label>
+        <input type="text" id="modal-round-name" class="input input-bordered input-sm w-full"
+               placeholder="Custom round name (optional)">
+      </div>
+      <div class="form-control">
+        <label class="label py-1"><span class="label-text text-sm">Type</span></label>
+        <select id="modal-round-type" class="select select-bordered select-sm w-full">
+          <% @round_types.each do |rt| %>
+            <option value="<%= rt %>"><%= rt.gsub('_', ' ').capitalize %></option>
+          <% end %>
+        </select>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div role="tablist" class="tabs tabs-bordered round-modal-tabs">
+      <a role="tab" class="tab tab-active round-modal-tab" data-tab="messages">Messages</a>
+      <a role="tab" class="tab round-modal-tab" data-tab="type-config">Type Config</a>
+      <a role="tab" class="tab round-modal-tab" data-tab="failure">Failure</a>
+      <a role="tab" class="tab round-modal-tab" data-tab="room-media">Room & Media</a>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="modal-body">
+      <!-- Messages Tab -->
+      <div class="round-modal-tab-panel" data-tab-panel="messages">
+        <div class="form-control mb-4">
+          <label class="label py-1"><span class="label-text text-sm font-semibold">Transition Message</span></label>
+          <div id="modal-emit-editor"></div>
+        </div>
+        <div class="form-control mb-4" id="modal-success-section">
+          <label class="label py-1"><span class="label-text text-sm font-semibold text-success">Success Text</span></label>
+          <div id="modal-success-editor"></div>
+        </div>
+        <div class="form-control mb-4" id="modal-failure-section">
+          <label class="label py-1"><span class="label-text text-sm font-semibold text-error">Failure Text</span></label>
+          <div id="modal-failure-editor"></div>
+        </div>
+      </div>
+
+      <!-- Type Config Tab -->
+      <div class="round-modal-tab-panel" data-tab-panel="type-config" style="display:none;">
+        <!-- Standard Config -->
+        <div class="type-config-section" id="type-config-standard">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="label-text text-sm" title="Each participant picks independently and gets their own result">Individual</span>
+            <input type="checkbox" class="toggle toggle-sm toggle-primary" id="modal-std-group-actions"
+                   title="Individual: each player chooses and resolves alone. Group: all players share one action pool and resolve together.">
+            <span class="label-text text-sm" title="All participants share one action pool and resolve as a group">Group</span>
+            <input type="hidden" id="modal-std-single-solution" value="false">
+          </div>
+
+          <!-- Stat Sets -->
+          <div class="mb-3">
+            <div class="flex justify-between items-center mb-2">
+              <h6 class="font-semibold text-sm" title="Stats used for skill checks in this round. Set A is the default; Set B is an alternative that actions can reference."><i class="bi bi-bar-chart mr-2"></i>Stat Sets</h6>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="label py-0"><span class="label-text text-xs font-semibold">Set A</span></label>
+                <div id="round-stat-set-a" class="flex flex-wrap gap-1 mt-1"></div>
+              </div>
+              <div>
+                <label class="label py-0"><span class="label-text text-xs font-semibold">Set B</span></label>
+                <div id="round-stat-set-b" class="flex flex-wrap gap-1 mt-1"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider my-2"></div>
+
+          <!-- Task Management -->
+          <div class="mb-3">
+            <div class="flex justify-between items-center mb-2">
+              <h6 class="font-semibold text-sm" title="Tasks split a round into sub-objectives. Players choose which task to work on. Each task can have its own stat sets."><i class="bi bi-diagram-2 mr-2"></i>Tasks</h6>
+              <button type="button" class="btn btn-xs btn-outline btn-secondary" id="modal-add-task-btn"
+                      title="Add a sub-objective to this round (max 2)">
+                <i class="bi bi-plus-lg mr-1"></i>Add Task
+              </button>
+            </div>
+            <div id="tasks-container">
+              <p class="text-sm opacity-60" id="no-tasks-msg">No tasks (actions use round-level stats)</p>
+            </div>
+          </div>
+
+          <div class="divider my-2"></div>
+
+          <!-- Actions -->
+          <div class="flex justify-between items-center mb-2">
+            <h6 class="font-semibold text-sm" title="Actions are the choices players pick each round. Each action can have different risk levels and role restrictions."><i class="bi bi-list-check mr-2"></i>Actions</h6>
+            <button type="button" class="btn btn-xs btn-outline btn-primary" id="modal-add-action-btn"
+                    title="Add a new action choice for players">
+              <i class="bi bi-plus-lg mr-1"></i>Add Action
+            </button>
+          </div>
+          <div id="actions-list">
+            <p class="text-sm opacity-60" id="no-actions-msg">No actions yet</p>
+          </div>
+        </div>
+
+        <!-- Combat Config -->
+        <div class="type-config-section" id="type-config-combat" style="display:none;">
+          <h6 class="font-semibold text-sm mb-3"><i class="bi bi-sword mr-2"></i>Combat Setup</h6>
+          <button type="button" class="btn btn-outline btn-error btn-sm w-full mb-2" id="modal-select-npcs-btn">
+            <i class="bi bi-robot mr-1"></i>Select Enemies
+          </button>
+          <div id="modal-npc-preview" class="mb-3">
+            <small class="text-base-content/60">No enemies selected</small>
+          </div>
+          <div class="mb-3">
+            <div class="form-control mb-2">
+              <div class="flex justify-between items-center mb-1">
+                <label class="label-text text-sm">Difficulty</label>
+                <span id="modal-combat-difficulty-label" class="font-semibold text-sm text-info">Normal</span>
+              </div>
+              <input type="range" id="modal-combat-difficulty" class="range range-sm" min="0" max="100" value="50" step="1"
+                     title="Controls enemy stat scaling. Higher difficulty = stronger enemies."
+                     oninput="window.activityEditor?.updateDifficultyLabel(this.value)">
+            </div>
+            <label class="label cursor-pointer justify-start gap-2">
+              <input type="checkbox" class="checkbox checkbox-sm" id="modal-combat-finale"
+                     title="Mark as the climactic final battle. Enables finale modifiers accumulated from earlier rounds.">
+              <span class="label-text text-sm">Finale</span>
+            </label>
+          </div>
+          <div class="form-control">
+            <label class="label py-1"><span class="label-text text-sm">Battle Map Room</span></label>
+            <div class="room-picker" id="modal-battle-map-room-picker">
+              <select class="select select-bordered select-sm w-full saved-room-select" data-target="modal-battle-map-room-value">
+                <option value="">-- Saved Rooms --</option>
+              </select>
+              <button type="button" class="btn btn-xs btn-ghost mt-1 browse-rooms-toggle opacity-60">
+                <i class="bi bi-search mr-1"></i>or browse...
+              </button>
+              <div class="browse-rooms-panel" style="display:none;">
+                <select class="select select-bordered select-xs w-full mt-1 browse-world" data-target="modal-battle-map-room-value">
+                  <option value="">-- World --</option>
+                </select>
+                <select class="select select-bordered select-xs w-full mt-1 browse-location" data-target="modal-battle-map-room-value">
+                  <option value="">-- Location --</option>
+                </select>
+                <select class="select select-bordered select-xs w-full mt-1 browse-room" data-target="modal-battle-map-room-value">
+                  <option value="">-- Room --</option>
+                </select>
+              </div>
+              <input type="hidden" id="modal-battle-map-room-value">
+            </div>
+          </div>
+        </div>
+
+        <!-- Branch Config -->
+        <div class="type-config-section" id="type-config-branch" style="display:none;">
+          <h6 class="font-semibold text-sm mb-3"><i class="bi bi-signpost-split mr-2"></i>Branch Choices</h6>
+          <div id="branch-choices-list"></div>
+          <button type="button" class="btn btn-sm btn-outline btn-primary mt-2" id="modal-add-branch-btn">
+            <i class="bi bi-plus-lg mr-1"></i>Add Choice
+          </button>
+        </div>
+
+        <!-- Mysterybranch uses same config as branch -->
+        <div class="type-config-section" id="type-config-mysterybranch" style="display:none;">
+          <!-- Shares branch-choices-list -->
+        </div>
+
+        <!-- Reflex Config -->
+        <div class="type-config-section" id="type-config-reflex" style="display:none;">
+          <h6 class="font-semibold text-sm mb-3"><i class="bi bi-lightning mr-2"></i>Reflex Config</h6>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="form-control">
+              <label class="label py-1"><span class="label-text text-sm">Stat</span></label>
+              <select id="modal-reflex-stat" class="select select-bordered select-sm w-full">
+                <option value="">-- Select Stat --</option>
+              </select>
+            </div>
+            <div class="form-control">
+              <label class="label py-1"><span class="label-text text-sm">Timeout (seconds)</span></label>
+              <input type="number" id="modal-timeout-seconds" class="input input-bordered input-sm w-full"
+                     value="120" min="10" max="600"
+                     title="How long players have to react. After this, the round auto-resolves.">
+            </div>
+          </div>
+        </div>
+
+        <!-- Persuade Config -->
+        <div class="type-config-section" id="type-config-persuade" style="display:none;">
+          <h6 class="font-semibold text-sm mb-3"><i class="bi bi-chat-heart mr-2"></i>Persuade Config</h6>
+          <div class="mb-3">
+            <label class="label py-1"><span class="label-text text-sm">Stats (select 1+)</span></label>
+            <div id="persuade-stat-chips" class="flex flex-wrap gap-1 mb-2"></div>
+          </div>
+          <div class="form-control mb-3">
+            <label class="label py-1"><span class="label-text text-sm">Base DC</span></label>
+            <input type="number" id="modal-persuade-dc" class="input input-bordered input-sm w-full"
+                   value="15" min="1" max="50">
+          </div>
+          <div class="form-control mb-3">
+            <label class="label py-1"><span class="label-text text-sm">NPC Name</span></label>
+            <input type="text" id="modal-persuade-npc-name" class="input input-bordered input-sm w-full"
+                   placeholder="NPC character name">
+          </div>
+          <div class="form-control mb-3">
+            <label class="label py-1"><span class="label-text text-sm">NPC Personality</span></label>
+            <textarea id="modal-persuade-personality" class="textarea textarea-bordered textarea-sm w-full" rows="2"
+                      placeholder="Describe the NPC's personality and demeanor..."></textarea>
+          </div>
+          <div class="form-control">
+            <label class="label py-1"><span class="label-text text-sm">Persuade Goal</span></label>
+            <textarea id="modal-persuade-goal" class="textarea textarea-bordered textarea-sm w-full" rows="2"
+                      placeholder="What the player is trying to achieve..."></textarea>
+          </div>
+        </div>
+
+        <!-- Free Roll Config -->
+        <div class="type-config-section" id="type-config-free_roll" style="display:none;">
+          <h6 class="font-semibold text-sm mb-3"><i class="bi bi-dice-6 mr-2"></i>Free Roll Context</h6>
+          <div id="modal-free-roll-editor"></div>
+        </div>
+
+        <!-- Group Check Config -->
+        <div class="type-config-section" id="type-config-group_check" style="display:none;">
+          <h6 class="font-semibold text-sm mb-3"><i class="bi bi-people mr-2"></i>Group Check Config</h6>
+          <div class="grid grid-cols-2 gap-2 mb-3">
+            <label class="label cursor-pointer justify-start gap-2"
+                   title="If checked, failing this check knocks out the participant.">
+              <input type="checkbox" class="checkbox checkbox-sm" id="modal-gc-knockout">
+              <span class="label-text text-sm">KO on Fail</span>
+            </label>
+            <div class="flex items-center gap-2">
+              <span class="label-text text-sm" title="Each participant resolves individually">Individual</span>
+              <input type="checkbox" class="toggle toggle-sm toggle-primary" id="modal-gc-group-actions"
+                     title="Individual: each player rolls separately. Group: the group resolves as one.">
+              <span class="label-text text-sm" title="The group resolves as one unit">Group</span>
+              <input type="hidden" id="modal-gc-single-solution" value="false">
+            </div>
+          </div>
+
+          <div class="divider my-2"></div>
+
+          <!-- Stat Sets -->
+          <h6 class="font-semibold text-xs mb-2">Stat Set A <span class="opacity-50">(default)</span></h6>
+          <div id="gc-stat-set-a" class="flex flex-wrap gap-1 mb-3"></div>
+          <h6 class="font-semibold text-xs mb-2">Stat Set B <span class="opacity-50">(alternative)</span></h6>
+          <div id="gc-stat-set-b" class="flex flex-wrap gap-1 mb-3"></div>
+
+          <div class="divider my-2"></div>
+
+          <!-- Tasks -->
+          <div class="mb-3">
+            <div class="flex justify-between items-center mb-2">
+              <h6 class="font-semibold text-sm" title="Tasks divide the round into sub-objectives."><i class="bi bi-list-task mr-2"></i>Tasks</h6>
+              <button type="button" class="btn btn-xs btn-outline btn-secondary"
+                      title="Add a task sub-objective" onclick="window.activityEditor?.addTask()">
+                <i class="bi bi-plus-lg mr-1"></i>Add Task
+              </button>
+            </div>
+            <div id="gc-tasks-container">
+              <p class="text-sm opacity-60">No tasks (actions use round-level stats)</p>
+            </div>
+          </div>
+
+          <div class="divider my-2"></div>
+
+          <!-- Actions -->
+          <div class="flex justify-between items-center mb-2">
+            <h6 class="font-semibold text-sm" title="Actions are the choices players pick each round."><i class="bi bi-list-check mr-2"></i>Actions</h6>
+            <button type="button" class="btn btn-xs btn-outline btn-primary"
+                    title="Add a new action choice" onclick="window.activityEditor?.addAction()">
+              <i class="bi bi-plus-lg mr-1"></i>Add Action
+            </button>
+          </div>
+          <div id="gc-actions-list">
+            <p class="text-sm opacity-60">No actions yet</p>
+          </div>
+        </div>
+
+        <!-- Rest Config -->
+        <div class="type-config-section" id="type-config-rest" style="display:none;">
+          <p class="text-sm text-base-content/70">Rest rounds use the Messages tab for configuration. No additional settings needed.</p>
+        </div>
+
+      </div>
+
+      <!-- Failure Tab -->
+      <div class="round-modal-tab-panel" data-tab-panel="failure" style="display:none;">
+        <h6 class="font-semibold text-sm mb-3"><i class="bi bi-exclamation-triangle mr-2"></i>Failure Options</h6>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <label class="label cursor-pointer justify-start gap-2">
+            <input type="checkbox" class="checkbox checkbox-sm" id="modal-fail-repeat">
+            <span class="label-text text-sm">Can Retry</span>
+          </label>
+          <label class="label cursor-pointer justify-start gap-2">
+            <input type="checkbox" class="checkbox checkbox-sm" id="modal-knockout">
+            <span class="label-text text-sm">KO on Fail</span>
+          </label>
+        </div>
+        <div class="form-control mb-3">
+          <label class="label py-1"><span class="label-text text-sm">Failure Consequence</span></label>
+          <select id="modal-fail-con" class="select select-bordered select-sm w-full">
+            <option value="none">None</option>
+            <option value="difficulty">Increase Difficulty</option>
+            <option value="injury">Injury</option>
+            <option value="harder_finale">Harder Finale</option>
+            <option value="branch">Branch to Round</option>
+          </select>
+        </div>
+        <div class="form-control" id="modal-fail-branch-container" style="display:none;">
+          <label class="label py-1"><span class="label-text text-sm">Branch on Failure To</span></label>
+          <select id="modal-fail-branch-to" class="select select-bordered select-sm w-full">
+            <option value="">-- Select Round --</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Room & Media Tab -->
+      <div class="round-modal-tab-panel" data-tab-panel="room-media" style="display:none;">
+        <h6 class="font-semibold text-sm mb-3"><i class="bi bi-door-open mr-2"></i>Room</h6>
+        <label class="label cursor-pointer justify-start gap-2 mb-2"
+               title="When checked, this round takes place in the activity's main location. Uncheck to move players to a different room.">
+          <input type="checkbox" class="checkbox checkbox-sm" id="modal-use-activity-room" checked>
+          <span class="label-text text-sm">Use Activity Location</span>
+        </label>
+        <div id="modal-custom-room-container" style="display:none;">
+          <!-- Exits from current room -->
+          <div class="mb-3" id="modal-room-exits-container">
+            <label class="label py-1"><span class="label-text text-xs font-semibold">Move to adjacent room</span></label>
+            <select id="modal-room-exit-select" class="select select-bordered select-sm w-full"
+                    title="Rooms reachable from the activity's location room">
+              <option value="">-- Choose an exit --</option>
+            </select>
+          </div>
+          <div class="divider my-1 text-xs opacity-40">or pick any room</div>
+          <div class="room-picker" id="modal-custom-room-picker">
+            <select class="select select-bordered select-sm w-full saved-room-select" data-target="modal-custom-room-value">
+              <option value="">-- Saved Rooms --</option>
+            </select>
+            <button type="button" class="btn btn-xs btn-ghost mt-1 browse-rooms-toggle opacity-60">
+              <i class="bi bi-search mr-1"></i>or browse...
+            </button>
+            <div class="browse-rooms-panel" style="display:none;">
+              <select class="select select-bordered select-xs w-full mt-1 browse-world" data-target="modal-custom-room-value">
+                <option value="">-- World --</option>
+              </select>
+              <select class="select select-bordered select-xs w-full mt-1 browse-location" data-target="modal-custom-room-value">
+                <option value="">-- Location --</option>
+              </select>
+              <select class="select select-bordered select-xs w-full mt-1 browse-room" data-target="modal-custom-room-value">
+                <option value="">-- Room --</option>
+              </select>
+            </div>
+            <input type="hidden" id="modal-custom-room-value">
+          </div>
+        </div>
+
+        <div class="divider my-3"></div>
+
+        <h6 class="font-semibold text-sm mb-3"><i class="bi bi-play-circle mr-2"></i>Media</h6>
+        <div class="form-control mb-3">
+          <label class="label py-1"><span class="label-text text-sm">Media URL</span></label>
+          <input type="text" id="modal-media-url" class="input input-bordered input-sm w-full"
+                 placeholder="YouTube or MP3 URL">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-control">
+            <label class="label py-1"><span class="label-text text-sm">Display</span></label>
+            <select id="modal-media-display" class="select select-bordered select-sm w-full">
+              <option value="thin">Audio Strip</option>
+              <option value="box">Video Box</option>
+            </select>
+          </div>
+          <div class="form-control">
+            <label class="label py-1"><span class="label-text text-sm">Duration</span></label>
+            <select id="modal-media-duration" class="select select-bordered select-sm w-full">
+              <option value="round">Round Only</option>
+              <option value="activity">Until End</option>
+              <option value="until_replaced">Until Replaced</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-action">
+      <button type="button" class="btn btn-outline btn-error" id="modal-delete-round-btn">
+        <i class="bi bi-trash mr-1"></i>Delete
+      </button>
+      <button type="button" class="btn btn-primary" id="modal-save-round-btn">
+        <i class="bi bi-save mr-1"></i>Save Round
+      </button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<!-- NPC Selector Modal -->
+<dialog class="modal" id="npcModal">
+  <div class="modal-box max-w-4xl bg-base-200">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-bold text-lg"><i class="bi bi-robot mr-2"></i>Select Enemies</h3>
+      <form method="dialog">
+        <button class="btn btn-sm btn-circle btn-ghost">✕</button>
+      </form>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+      <% @npc_archetypes.each do |npc| %>
+        <div class="form-control">
+          <label class="label cursor-pointer justify-start gap-2">
+            <input type="checkbox" class="checkbox npc-checkbox"
+                   value="<%= npc.id %>" id="npc-<%= npc.id %>">
+            <span class="label-text">
+              <strong><%= h(npc.name) %></strong>
+              <br><small class="text-base-content/70">
+                HP <%= npc.combat_max_hp || 5 %>,
+                DMG +<%= npc.combat_damage_bonus || 0 %>
+              </small>
+            </span>
+          </label>
+        </div>
+      <% end %>
+    </div>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn btn-ghost">Cancel</button>
+      </form>
+      <button type="button" class="btn btn-primary" id="confirm-npcs-btn">Confirm Selection</button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<!-- Action Editor Modal -->
+<dialog class="modal" id="actionEditorModal">
+  <div class="modal-box bg-base-200 max-w-2xl">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-bold text-lg"><i class="bi bi-pencil-square mr-2"></i>Edit Action</h3>
+      <form method="dialog">
+        <button class="btn btn-sm btn-circle btn-ghost">✕</button>
+      </form>
+    </div>
+    <input type="hidden" id="action-editor-id">
+
+    <div class="grid grid-cols-4 gap-3 mb-3">
+      <div class="form-control">
+        <label class="label py-1"><span class="label-text text-xs">Task</span></label>
+        <select id="action-editor-task" class="select select-bordered select-sm w-full"
+                title="Which task this action belongs to (leave blank for standalone actions)">
+          <option value="">--</option>
+        </select>
+      </div>
+      <div class="form-control">
+        <label class="label py-1"><span class="label-text text-xs">Stat Set</span></label>
+        <select id="action-editor-stat-set" class="select select-bordered select-sm w-full"
+                title="Which stat set (A or B) from the task to use for skill checks">
+          <option value="a">A</option>
+          <option value="b">B</option>
+        </select>
+      </div>
+      <div class="form-control">
+        <label class="label py-1"><span class="label-text text-xs">Risk Sides</span></label>
+        <input type="number" id="action-editor-risk-sides" class="input input-bordered input-sm w-full"
+               placeholder="e.g. 3" min="0" max="20"
+               title="Number of sides on the risk die (e.g. 3 = d3 rolling -3 to +3). Leave empty for no risk.">
+      </div>
+      <div class="form-control">
+        <label class="label py-1"><span class="label-text text-xs">Roles</span></label>
+        <input type="text" id="action-editor-roles" class="input input-bordered input-sm w-full"
+               placeholder="All"
+               title="Comma-separated list of roles that can use this action. Leave blank for all roles.">
+      </div>
+    </div>
+
+    <div class="form-control mb-3">
+      <label class="label py-1"><span class="label-text text-sm font-semibold">Choice Text</span></label>
+      <p class="text-xs opacity-60 mb-1">What players see when choosing this action</p>
+      <div id="action-editor-choice"></div>
+    </div>
+
+    <div class="form-control mb-3">
+      <label class="label py-1"><span class="label-text text-sm font-semibold text-success">Success Text</span></label>
+      <p class="text-xs opacity-60 mb-1">Displayed when the action succeeds</p>
+      <div id="action-editor-success"></div>
+    </div>
+
+    <div class="form-control mb-3">
+      <label class="label py-1"><span class="label-text text-sm font-semibold text-error">Failure Text</span></label>
+      <p class="text-xs opacity-60 mb-1">Displayed when the action fails</p>
+      <div id="action-editor-failure"></div>
+    </div>
+
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn btn-ghost">Cancel</button>
+      </form>
+      <button type="button" class="btn btn-primary" id="action-editor-save-btn">
+        <i class="bi bi-save mr-1"></i>Save Action
+      </button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<!-- Pass data to JS -->
+<script>
+  window.activityBuilderConfig = {
+    activityId: <%= @activity&.id || 'null' %>,
+    isNew: <%= is_new %>,
+    roundTypes: <%= @round_types.to_json %>,
+    activityTypes: <%= @activity_types.to_json %>
+  };
+</script>
+
+<script src="/js/gradient-ciede2000.js"></script>
+<script src="/js/gradient-creator.js"></script>
+<script src="/js/gradient-picker.js"></script>
+<script src="/js/description-editor.js"></script>
+<script src="/js/activity-builder/api-client.js?v=6"></script>
+<script src="/js/activity-builder/round-nodes.js?v=8"></script>
+<script src="/js/activity-builder/activity-editor.js?v=7"></script>

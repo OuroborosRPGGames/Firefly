@@ -1,0 +1,584 @@
+/**
+ * Gradient Components Styling
+ * Styles for gradient creator modal and picker dropdown
+ */
+
+/* =========================================
+   Gradient Picker Button
+   ========================================= */
+
+/* Match .desc-editor-btn styling for consistency */
+.gradient-picker-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #1a1a1a;
+  color: #d0d0d0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 14px;
+}
+
+.gradient-picker-btn:hover {
+  background: #2a2a2a;
+  border-color: #00bcd4;
+  color: #00bcd4;
+}
+
+.gradient-picker-btn.active {
+  background: #333;
+  border-color: #00bcd4;
+}
+
+.gradient-picker-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* =========================================
+   Gradient Picker Popup
+   ========================================= */
+
+.gradient-picker-popup {
+  position: fixed;
+  z-index: 10000;
+  width: 280px;
+  background: #1e1e1e;
+  border: 1px solid #444;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.gradient-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #252525;
+  border-bottom: 1px solid #333;
+  font-weight: 600;
+  font-size: 13px;
+  color: #ddd;
+}
+
+.gradient-picker-create-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  background: #4a9eff;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.gradient-picker-create-btn:hover {
+  background: #3a8eef;
+}
+
+.gradient-picker-section {
+  padding: 8px 0;
+}
+
+.gradient-picker-section-title {
+  padding: 4px 12px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #888;
+}
+
+.gradient-picker-list {
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.gradient-picker-all {
+  max-height: 200px;
+}
+
+.gradient-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.gradient-picker-item:hover {
+  background: #2a2a2a;
+}
+
+.gradient-picker-preview {
+  width: 60px;
+  height: 20px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.gradient-picker-name {
+  flex: 1;
+  font-size: 13px;
+  color: #ccc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gradient-picker-edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: #666;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.15s ease;
+}
+
+.gradient-picker-item:hover .gradient-picker-edit-btn {
+  opacity: 1;
+}
+
+.gradient-picker-edit-btn:hover {
+  background: #333;
+  color: #aaa;
+}
+
+.gradient-picker-empty {
+  padding: 16px 12px;
+  text-align: center;
+  font-size: 13px;
+  color: #666;
+}
+
+/* =========================================
+   Gradient Creator Modal
+   ========================================= */
+
+.gradient-creator-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10001;
+}
+
+.gradient-creator-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.gradient-creator-dialog {
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  background: #1e1e1e;
+  border: 1px solid #444;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.gradient-creator-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #252525;
+  border-bottom: 1px solid #333;
+}
+
+.gradient-creator-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #eee;
+}
+
+.gradient-creator-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #888;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gradient-creator-close:hover {
+  background: #333;
+  color: #ccc;
+}
+
+.gradient-creator-body {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.gradient-creator-section {
+  margin-bottom: 20px;
+}
+
+.gradient-creator-section:last-child {
+  margin-bottom: 0;
+}
+
+.gradient-creator-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #aaa;
+}
+
+.gradient-creator-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #333;
+  color: #888;
+  font-size: 11px;
+  cursor: help;
+}
+
+.gradient-creator-name-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #2a2a2a;
+  color: #eee;
+  font-size: 14px;
+}
+
+.gradient-creator-name-input:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+/* Color Stops */
+.gradient-creator-stops {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.gradient-color-stop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gradient-color-stop-num {
+  width: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  text-align: center;
+}
+
+.gradient-color-picker {
+  width: 40px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #2a2a2a;
+  cursor: pointer;
+}
+
+.gradient-color-picker::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.gradient-color-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 2px;
+}
+
+.gradient-color-hex {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #2a2a2a;
+  color: #eee;
+  font-size: 13px;
+  font-family: monospace;
+}
+
+.gradient-color-hex:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+.gradient-easing-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  background: #4a9eff33;
+  color: #4a9eff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.gradient-color-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #666;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gradient-color-remove:hover:not(:disabled) {
+  background: #3a2020;
+  color: #ff6b6b;
+}
+
+.gradient-color-remove:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.gradient-creator-add-stop {
+  width: 100%;
+  padding: 8px;
+  border: 1px dashed #444;
+  border-radius: 6px;
+  background: transparent;
+  color: #888;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gradient-creator-add-stop:hover:not(:disabled) {
+  border-color: #4a9eff;
+  color: #4a9eff;
+  background: #4a9eff11;
+}
+
+.gradient-creator-add-stop:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Easing Controls */
+.gradient-easings-section {
+  padding-top: 16px;
+  border-top: 1px solid #333;
+}
+
+.gradient-easing-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gradient-easing-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gradient-easing-control label {
+  width: 90px;
+  font-size: 12px;
+  color: #888;
+}
+
+.gradient-easing-slider {
+  flex: 1;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 3px;
+  background: #333;
+}
+
+.gradient-easing-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #4a9eff;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.gradient-easing-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.gradient-easing-value {
+  width: 60px;
+  padding: 6px 8px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #2a2a2a;
+  color: #eee;
+  font-size: 12px;
+  text-align: center;
+}
+
+.gradient-easing-value:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+/* Preview */
+.gradient-creator-preview-bar {
+  height: 24px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  background: linear-gradient(90deg, #ff0000, #0000ff);
+}
+
+.gradient-creator-preview-text {
+  padding: 12px;
+  border-radius: 6px;
+  background: #1a1a1a;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+/* Footer */
+.gradient-creator-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 20px;
+  background: #252525;
+  border-top: 1px solid #333;
+}
+
+.gradient-creator-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gradient-creator-btn-cancel {
+  background: #333;
+  color: #ccc;
+}
+
+.gradient-creator-btn-cancel:hover {
+  background: #444;
+}
+
+.gradient-creator-btn-save {
+  background: #4a9eff;
+  color: white;
+}
+
+.gradient-creator-btn-save:hover {
+  background: #3a8eef;
+}
+
+/* Error Message */
+.gradient-creator-error {
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  border-radius: 6px;
+  background: #3a202055;
+  border: 1px solid #ff6b6b33;
+  color: #ff8888;
+  font-size: 13px;
+}
+
+/* =========================================
+   Scrollbar Styling
+   ========================================= */
+
+.gradient-picker-list::-webkit-scrollbar,
+.gradient-creator-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.gradient-picker-list::-webkit-scrollbar-track,
+.gradient-creator-body::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.gradient-picker-list::-webkit-scrollbar-thumb,
+.gradient-creator-body::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+.gradient-picker-list::-webkit-scrollbar-thumb:hover,
+.gradient-creator-body::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* =========================================
+   Responsive Adjustments
+   ========================================= */
+
+@media (max-width: 600px) {
+  .gradient-creator-dialog {
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .gradient-picker-popup {
+    width: calc(100% - 20px);
+    left: 10px !important;
+  }
+}

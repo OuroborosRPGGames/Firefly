@@ -1,0 +1,539 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Firefly CLI Tool
+#
+# Usage:
+#   bin/firefly generate plugin <name>     - Create a new plugin
+#   bin/firefly generate command <plugin> <name> - Create a new command
+#   bin/firefly console                     - Start interactive console
+#   bin/firefly plugins                     - List plugin status
+#   bin/firefly routes                      - List all routes
+
+require 'fileutils'
+require 'erb'
+
+class FireflyCLI
+  BACKEND_ROOT = File.expand_path('..', __dir__)
+  PLUGINS_DIR = File.join(BACKEND_ROOT, 'plugins')
+
+  def initialize(args)
+    @args = args
+    @command = args.shift
+    @subcommand = args.shift
+  end
+
+  def run
+    case @command
+    when 'generate', 'g'
+      handle_generate
+    when 'console', 'c'
+      handle_console
+    when 'plugins', 'p'
+      handle_plugins
+    when 'routes', 'r'
+      handle_routes
+    when 'help', '-h', '--help', nil
+      show_help
+    else
+      puts "Unknown command: #{@command}"
+      show_help
+      exit 1
+    end
+  end
+
+  private
+
+  def handle_generate
+    case @subcommand
+    when 'plugin'
+      generate_plugin
+    when 'command'
+      generate_command
+    when 'model'
+      generate_model
+    else
+      puts "Unknown generator: #{@subcommand}"
+      puts "\nAvailable generators:"
+      puts "  plugin  - Create a new plugin"
+      puts "  command - Create a new command in a plugin"
+      puts "  model   - Create a model extension for a plugin"
+      exit 1
+    end
+  end
+
+  def generate_plugin
+    name = @args.shift
+    unless name
+      puts "Usage: bin/firefly generate plugin <name>"
+      puts "\nExample: bin/firefly generate plugin magic"
+      exit 1
+    end
+
+    # Normalize name (snake_case)
+    plugin_name = name.downcase.gsub(/[^a-z0-9]/, '_').gsub(/_+/, '_')
+    module_name = plugin_name.split('_').map(&:capitalize).join
+
+    # Default to optional plugins
+    category = @args.include?('--core') ? 'core' : 'optional'
+    plugin_dir = File.join(PLUGINS_DIR, category, plugin_name)
+
+    if File.exist?(plugin_dir)
+      puts "Plugin already exists: #{plugin_dir}"
+      exit 1
+    end
+
+    puts "Creating plugin: #{plugin_name}"
+    puts "Location: #{plugin_dir}"
+
+    # Create directory structure
+    FileUtils.mkdir_p(File.join(plugin_dir, 'commands'))
+    FileUtils.mkdir_p(File.join(plugin_dir, 'models'))
+    FileUtils.mkdir_p(File.join(plugin_dir, 'spec', 'commands'))
+
+    # Create plugin.rb
+    plugin_content = <<~RUBY
+      # frozen_string_literal: true
+
+      require_relative '../../../lib/firefly/plugin'
+
+      module Plugins
+        module #{module_name}
+          # #{module_name} plugin
+          #
+          # Add your plugin description here.
+          #
+          class Plugin < Firefly::Plugin
+            name :#{plugin_name}
+            version "1.0.0"
+            description "Description of #{plugin_name} plugin"
+
+            # Uncomment to declare dependencies
+            # depends_on :navigation, :communication
+
+            commands_path "commands"
+            models_path "models"
+
+            def self.on_enable
+              puts "[#{module_name}] Plugin enabled"
+            end
+
+            def self.on_disable
+              puts "[#{module_name}] Plugin disabled"
+            end
+
+            # Event handlers
+            # on_event :some_event do |arg1, arg2|
+            #   # Handle the event
+            # end
+          end
+        end
+      end
+    RUBY
+
+    File.write(File.join(plugin_dir, 'plugin.rb'), plugin_content)
+
+    # Create README.md
+    readme_content = <<~MARKDOWN
+      # #{module_name} Plugin
+
+      Description of #{plugin_name} plugin.
+
+      ## Commands
+
+      | Command | Aliases | Description |
+      |---------|---------|-------------|
+      | `example` | - | Example command |
+
+      ## Usage
+
+      ```
+      example arg1 arg2
+      ```
+
+      ## Events
+
+      This plugin emits the following events:
+      - None yet
+
+      ## Configuration
+
+      No configuration required.
+
+      ## Dependencies
+
+      None.
+    MARKDOWN
+
+    File.write(File.join(plugin_dir, 'README.md'), readme_content)
+
+    puts "\nPlugin created successfully!"
+    puts "\nNext steps:"
+    puts "  1. Edit #{plugin_dir}/plugin.rb to add description and dependencies"
+    puts "  2. Create commands: bin/firefly generate command #{plugin_name} <command_name>"
+    puts "  3. Add tests in #{plugin_dir}/spec/"
+  end
+
+  def generate_command
+    plugin_name = @args.shift
+    command_name = @args.shift
+
+    unless plugin_name && command_name
+      puts "Usage: bin/firefly generate command <plugin> <command_name>"
+      puts "\nExample: bin/firefly generate command magic fireball"
+      exit 1
+    end
+
+    # Find the plugin directory
+    plugin_dir = find_plugin_dir(plugin_name)
+    unless plugin_dir
+      puts "Plugin not found: #{plugin_name}"
+      puts "Available plugins:"
+      list_available_plugins
+      exit 1
+    end
+
+    # Normalize names
+    command_name = command_name.downcase.gsub(/[^a-z0-9]/, '_')
+    class_name = command_name.split('_').map(&:capitalize).join
+    module_name = File.basename(plugin_dir).split('_').map(&:capitalize).join
+
+    commands_dir = File.join(plugin_dir, 'commands')
+    command_file = File.join(commands_dir, "#{command_name}.rb")
+
+    if File.exist?(command_file)
+      puts "Command already exists: #{command_file}"
+      exit 1
+    end
+
+    FileUtils.mkdir_p(commands_dir)
+
+    # Generate command file
+    command_content = <<~RUBY
+      # frozen_string_literal: true
+
+      module Commands
+        module #{module_name}
+          class #{class_name} < Commands::Base::Command
+            command_name '#{command_name}'
+
+            # Define aliases (shortcuts for this command)
+            # aliases 'shortcut', 'another'
+
+            category :#{plugin_name}
+            help_text 'Description of #{command_name} command'
+            usage '#{command_name} [arguments]'
+            examples '#{command_name}', '#{command_name} target'
+
+            # Conditional requirements (uncomment as needed)
+            # requires_alive
+            # requires_standing
+            # requires_combat
+            # requires_room_type :water, :lake
+            # requires_mana 10
+
+            protected
+
+            def perform_command(parsed_input)
+              args = parsed_input[:args]
+              text = parsed_input[:text]
+
+              # TODO: Implement command logic here
+
+              success_result(
+                "You performed #{command_name}!",
+                type: :action,
+                data: {
+                  action: :#{command_name},
+                  character: character.full_name
+                }
+              )
+            end
+          end
+        end
+      end
+
+      Commands::Base::Registry.register(Commands::#{module_name}::#{class_name})
+    RUBY
+
+    File.write(command_file, command_content)
+
+    # Generate spec file
+    spec_dir = File.join(plugin_dir, 'spec', 'commands')
+    FileUtils.mkdir_p(spec_dir)
+    spec_file = File.join(spec_dir, "#{command_name}_spec.rb")
+
+    spec_content = <<~RUBY
+      # frozen_string_literal: true
+
+      require 'spec_helper'
+
+      RSpec.describe Commands::#{module_name}::#{class_name}, type: :command do
+        let(:room) { create(:room) }
+        let(:reality) { create(:reality) }
+        let(:character) { create(:character) }
+        let(:character_instance) do
+          create(:character_instance, character: character, current_room: room, reality: reality, status: 'alive')
+        end
+
+        describe 'command metadata' do
+          it 'has correct command name' do
+            expect(described_class.command_name).to eq('#{command_name}')
+          end
+
+          it 'has correct category' do
+            expect(described_class.category).to eq(:#{plugin_name})
+          end
+
+          it 'has help text' do
+            expect(described_class.help_text).to be_a(String)
+          end
+        end
+
+        describe '#execute' do
+          subject(:command) { described_class.new(character_instance) }
+
+          context 'with valid input' do
+            it 'executes successfully' do
+              result = command.execute('#{command_name}')
+              expect(result[:success]).to be true
+            end
+          end
+        end
+      end
+    RUBY
+
+    File.write(spec_file, spec_content)
+
+    puts "Command created: #{command_file}"
+    puts "Spec created: #{spec_file}"
+    puts "\nNext steps:"
+    puts "  1. Edit #{command_file} to implement command logic"
+    puts "  2. Update the spec in #{spec_file}"
+    puts "  3. Run tests: bundle exec rspec #{spec_file}"
+  end
+
+  def generate_model
+    plugin_name = @args.shift
+    model_name = @args.shift
+
+    unless plugin_name && model_name
+      puts "Usage: bin/firefly generate model <plugin> <model_name>"
+      puts "\nExample: bin/firefly generate model magic spell"
+      exit 1
+    end
+
+    plugin_dir = find_plugin_dir(plugin_name)
+    unless plugin_dir
+      puts "Plugin not found: #{plugin_name}"
+      exit 1
+    end
+
+    model_name = model_name.downcase
+    class_name = model_name.split('_').map(&:capitalize).join
+    module_name = File.basename(plugin_dir).split('_').map(&:capitalize).join
+
+    models_dir = File.join(plugin_dir, 'models')
+    model_file = File.join(models_dir, "#{model_name}.rb")
+
+    FileUtils.mkdir_p(models_dir)
+
+    model_content = <<~RUBY
+      # frozen_string_literal: true
+
+      # #{class_name} model for #{module_name} plugin
+      #
+      # This model can either be a standalone Sequel model or
+      # an extension to an existing core model.
+      #
+      # For a standalone model:
+      #   class #{class_name} < Sequel::Model
+      #     plugin :validation_helpers
+      #     plugin :timestamps
+      #
+      #     # Associations
+      #     many_to_one :character
+      #
+      #     def validate
+      #       super
+      #       validates_presence [:name]
+      #     end
+      #   end
+      #
+      # For a model extension (add methods to existing models):
+      #   module Plugins::#{module_name}::CharacterExtensions
+      #     def self.included(base)
+      #       base.one_to_many :#{model_name}s
+      #     end
+      #
+      #     def #{model_name}_related_method
+      #       # Custom method added to Character
+      #     end
+      #   end
+      #
+      #   # Then in plugin.rb:
+      #   extend_model Character, CharacterExtensions
+      #
+
+      class #{class_name} < Sequel::Model
+        plugin :validation_helpers
+        plugin :timestamps
+
+        # Define associations
+        # many_to_one :character
+
+        def validate
+          super
+          # Add validations
+          # validates_presence [:name]
+        end
+      end
+    RUBY
+
+    File.write(model_file, model_content)
+
+    puts "Model created: #{model_file}"
+    puts "\nNote: You may need to create a database migration for this model."
+    puts "See Sequel documentation for migration syntax."
+  end
+
+  def handle_console
+    puts "Starting Firefly console..."
+    exec "bundle exec irb -r #{File.join(BACKEND_ROOT, 'app.rb')}"
+  end
+
+  def handle_plugins
+    # Load the app to get plugin status
+    require File.join(BACKEND_ROOT, 'app.rb')
+
+    puts "\n=== Firefly Plugins ==="
+    PLUGIN_MANAGER.status.each do |info|
+      status = info[:loaded] ? "\e[32m[LOADED]\e[0m" : "\e[33m[      ]\e[0m"
+      deps = info[:dependencies]&.any? ? " (deps: #{info[:dependencies].join(', ')})" : ""
+      puts "#{status} #{info[:name]} v#{info[:version]}#{deps}"
+      puts "         #{info[:description]}" if info[:description]
+    end
+    puts "=======================\n"
+  end
+
+  def handle_routes
+    puts "\n=== Firefly Routes ==="
+
+    # Parse routes from app.rb
+    app_file = File.join(BACKEND_ROOT, 'app.rb')
+    routes = extract_routes(app_file)
+
+    # Group by section
+    current_section = "Other"
+    routes.each do |route|
+      if route[:section] != current_section
+        current_section = route[:section]
+        puts "\n## #{current_section}"
+      end
+      puts "  #{route[:method].ljust(6)} #{route[:path]}"
+    end
+
+    puts "\n=====================\n"
+    puts "Total: #{routes.count} routes"
+  end
+
+  def extract_routes(file_path)
+    routes = []
+    current_section = "Root"
+    in_route_block = false
+    current_prefix = ""
+
+    File.readlines(file_path).each do |line|
+      # Detect section comments
+      if line =~ /^\s*#\s*={3,}\s*(.+?)\s*={3,}/
+        current_section = $1.strip
+      elsif line =~ /^\s*#\s*-{3,}\s*(.+?)\s*-{3,}/
+        current_section = $1.strip
+      end
+
+      # Detect route prefixes
+      if line =~ /r\.on\s+['"]([^'"]+)['"]/
+        current_prefix = "/#{$1}"
+      end
+
+      # Detect HTTP methods
+      if line =~ /r\.(get|post|put|patch|delete|root)\s*(?:\(?['"]([^'"]*)['"]\)?)?/
+        method = $1.upcase
+        path = $2 || ""
+
+        if method == "ROOT"
+          method = "GET"
+          full_path = current_prefix.empty? ? "/" : current_prefix
+        else
+          full_path = current_prefix + (path.empty? ? "" : "/#{path}")
+          full_path = "/" if full_path.empty?
+        end
+
+        # Clean up path
+        full_path = full_path.gsub(/\/+/, '/').sub(/\/$/, '')
+        full_path = "/" if full_path.empty?
+
+        routes << { method: method, path: full_path, section: current_section }
+      end
+    end
+
+    routes.uniq { |r| [r[:method], r[:path]] }
+  end
+
+  def show_help
+    puts <<~HELP
+      Firefly CLI - Development tools for Firefly MUD Engine
+
+      Usage: bin/firefly <command> [options]
+
+      Commands:
+        generate, g    Generate new components
+          plugin <name>                    Create a new plugin
+          command <plugin> <name>          Create a command in a plugin
+          model <plugin> <name>            Create a model for a plugin
+
+        console, c     Start interactive Ruby console with models loaded
+        plugins, p     List all plugins and their status
+        routes, r      List all HTTP routes
+        help, -h       Show this help message
+
+      Examples:
+        bin/firefly generate plugin magic
+        bin/firefly generate command magic fireball
+        bin/firefly generate model magic spell
+        bin/firefly plugins
+        bin/firefly console
+
+      Plugin locations:
+        plugins/core/      - Core system plugins (required)
+        plugins/optional/  - Optional feature plugins
+        plugins/custom/    - User-created plugins (gitignored)
+    HELP
+  end
+
+  def find_plugin_dir(name)
+    name = name.downcase.gsub(/[^a-z0-9]/, '_')
+
+    ['core', 'optional', 'custom'].each do |category|
+      dir = File.join(PLUGINS_DIR, category, name)
+      return dir if File.exist?(File.join(dir, 'plugin.rb'))
+    end
+
+    nil
+  end
+
+  def list_available_plugins
+    ['core', 'optional', 'custom'].each do |category|
+      category_dir = File.join(PLUGINS_DIR, category)
+      next unless File.directory?(category_dir)
+
+      Dir.glob(File.join(category_dir, '*', 'plugin.rb')).each do |plugin_file|
+        plugin_name = File.basename(File.dirname(plugin_file))
+        puts "  #{category}/#{plugin_name}"
+      end
+    end
+  end
+end
+
+# Run the CLI
+FireflyCLI.new(ARGV).run

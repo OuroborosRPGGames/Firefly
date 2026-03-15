@@ -1,0 +1,1794 @@
+{
+  "total_workflows": 76,
+  "passed": 76,
+  "failed": 0,
+  "errors": 0,
+  "duration_seconds": 79.6,
+  "results": {
+    "posture_cycle": {
+      "name": "posture_cycle",
+      "status": "pass",
+      "steps": 6,
+      "duration_ms": 869,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "stand",
+          "output": "You're already standing.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 85
+        },
+        {
+          "status": "pass",
+          "command": "sit",
+          "output": "You sit down.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 116
+        },
+        {
+          "status": "pass",
+          "command": "lie",
+          "output": "You lie down.",
+          "step": 3,
+          "action": "execute",
+          "duration_ms": 114
+        },
+        {
+          "status": "pass",
+          "command": "stand",
+          "output": "You stand up.",
+          "step": 4,
+          "action": "execute",
+          "duration_ms": 116
+        },
+        {
+          "status": "pass",
+          "command": "sit",
+          "output": "You sit down.",
+          "step": 5,
+          "action": "execute",
+          "duration_ms": 106
+        },
+        {
+          "status": "pass",
+          "command": "stand",
+          "output": "You stand up.",
+          "step": 6,
+          "action": "execute",
+          "duration_ms": 110
+        }
+      ]
+    },
+    "afk_toggle": {
+      "name": "afk_toggle",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 417,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "afk",
+          "output": "You are now AFK.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 108
+        },
+        {
+          "status": "pass",
+          "command": "afk",
+          "output": "You are no longer AFK.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 103
+        }
+      ]
+    },
+    "semiafk_toggle": {
+      "name": "semiafk_toggle",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 430,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "semiafk",
+          "output": "You are now semi-AFK.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 102
+        },
+        {
+          "status": "pass",
+          "command": "semiafk",
+          "output": "You are no longer semi-AFK.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 112
+        }
+      ]
+    },
+    "quiet_toggle": {
+      "name": "quiet_toggle",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 428,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "quiet",
+          "output": "Quiet mode disabled. No missed messages.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 112
+        },
+        {
+          "status": "pass",
+          "command": "quiet",
+          "output": "Quiet mode enabled. Channel messages will be hidden until you type \"quiet\" again.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 113
+        }
+      ]
+    },
+    "accessibility_toggle": {
+      "name": "accessibility_toggle",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 293,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "accessibility",
+          "output": "",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 52
+        }
+      ]
+    },
+    "gtg_toggle": {
+      "name": "gtg_toggle",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 435,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "gtg 10",
+          "output": "GTG status set for 10 minutes.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 109
+        },
+        {
+          "status": "pass",
+          "command": "gtg",
+          "output": "GTG status cleared.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 108
+        }
+      ]
+    },
+    "narrate_toggle": {
+      "name": "narrate_toggle",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 438,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "narrate",
+          "output": "Text-to-speech narration is now OFF.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 110
+        },
+        {
+          "status": "pass",
+          "command": "narrate",
+          "output": "Text-to-speech narration is now ON.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 96
+        }
+      ]
+    },
+    "private_mode_toggle": {
+      "name": "private_mode_toggle",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 649,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "private",
+          "output": "You are now in private mode. Adult content is now visible when viewing others who are also in private mode.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 182
+        },
+        {
+          "status": "pass",
+          "command": "private",
+          "output": "You have left private mode. Adult content is now hidden.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 117
+        }
+      ]
+    },
+    "walk_round_trip": {
+      "name": "walk_round_trip",
+      "status": "pass",
+      "steps": 3,
+      "duration_ms": 595,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "snapshot": "before",
+          "step": 1,
+          "action": "snapshot_room",
+          "duration_ms": 15
+        },
+        {
+          "status": "pass",
+          "command": "exits",
+          "output": "Market Street Exits: \u2193 South (Town Square)",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 93
+        },
+        {
+          "status": "pass",
+          "command": "look",
+          "output": "**Market Street**\nColorful stalls line both sides of this cobblestone street. Merchants call out their wares while shoppers browse the goods.\n\nExits: Town Square (far)",
+          "step": 3,
+          "action": "execute",
+          "duration_ms": 196
+        }
+      ]
+    },
+    "exits_accuracy": {
+      "name": "exits_accuracy",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 447,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "exits",
+          "output": "Market Street Exits: \u2193 South (Town Square)",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 120
+        }
+      ]
+    },
+    "look_basic": {
+      "name": "look_basic",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 425,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "look",
+          "output": "**Command Test Chamber**\nA featureless white chamber used for automated command testing. The walls are smooth and unmarked.\n\nCharacters: Test agent Bravo for multi-agent testing",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 207
+        }
+      ]
+    },
+    "look_at_character": {
+      "name": "look_at_character",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 359,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "look Bravo",
+          "output": "You look at Test agent Bravo for multi-agent testing:\nTest agent Bravo for multi-agent testing",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 126
+        }
+      ]
+    },
+    "places_and_map": {
+      "name": "places_and_map",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 480,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "places",
+          "output": "There are no notable places here.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 90
+        },
+        {
+          "status": "pass",
+          "command": "map",
+          "output": "",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 74
+        }
+      ]
+    },
+    "observe_room": {
+      "name": "observe_room",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 396,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "observe",
+          "output": "**Command Test Chamber**\nA featureless white chamber used for automated command testing. The walls are smooth and unmarked.\n\nCharacters: Test agent Bravo for multi-agent testing",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 196
+        }
+      ]
+    },
+    "say_visible": {
+      "name": "say_visible",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 398,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "say testing the say command",
+          "output": "Testbot Agent says, \"testing the say command\"",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 178
+        }
+      ]
+    },
+    "emote_visible": {
+      "name": "emote_visible",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 385,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "emote waves wildly",
+          "output": "Testbot Test agent Bravo for multi-agent testing waves wildly.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 165
+        }
+      ]
+    },
+    "whisper_private": {
+      "name": "whisper_private",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 409,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "whisper Bravo secretword456",
+          "output": "You recently whispered something similar.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 106
+        }
+      ]
+    },
+    "ooc_message": {
+      "name": "ooc_message",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 329,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "ooc Bravo testing ooc channel",
+          "output": "Could not find anyone named 'Bravo'.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 108
+        }
+      ]
+    },
+    "think_private": {
+      "name": "think_private",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 308,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "think deep thoughts",
+          "output": "",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 105
+        }
+      ]
+    },
+    "dm_system": {
+      "name": "dm_system",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 390,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "ooc",
+          "output": "Recent OOC contacts:\n  1. Agent Alpha\n\nUsage: ooc",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 95
+        },
+        {
+          "status": "pass",
+          "command": "reply",
+          "output": "No one has messaged you recently.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 90
+        }
+      ]
+    },
+    "fight_full_cycle": {
+      "name": "fight_full_cycle",
+      "status": "pass",
+      "steps": 3,
+      "duration_ms": 4769,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "fight Bravo",
+          "output": "You attack Test agent Bravo for multi-agent testing! Choose your action.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 4228
+        },
+        {
+          "status": "pass",
+          "command": "attack Bravo",
+          "output": "You target Agent Bravo.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 152
+        },
+        {
+          "status": "pass",
+          "command": "combat",
+          "output": "Combat Status\n\nRound: 1\nPhase: Input Phase - Choose your actions\n\nYour Status:\n  HP: 6/6\n  Willpower: 1.0 dice\n  Weapon: Unarmed\n\nEnemies: 1\n\nYour turn &mdash; choose your actions\n\nMain actions:\n  att",
+          "step": 3,
+          "action": "execute",
+          "duration_ms": 163
+        }
+      ]
+    },
+    "spar_cycle": {
+      "name": "spar_cycle",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 4928,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "spar Bravo",
+          "output": "You challenge Test agent Bravo for multi-agent testing to a sparring match!",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 4724
+        }
+      ]
+    },
+    "combat_info_accuracy": {
+      "name": "combat_info_accuracy",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 4625,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "fight Bravo",
+          "output": "You attack Test agent Bravo for multi-agent testing! Choose your action.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 4229
+        },
+        {
+          "status": "pass",
+          "command": "combat",
+          "output": "Combat Status\n\nRound: 1\nPhase: Input Phase - Choose your actions\n\nYour Status:\n  HP: 6/6\n  Willpower: 1.0 dice\n  Weapon: Unarmed\n\nEnemies: 1\n\nYour turn &mdash; choose your actions\n\nMain actions:\n  att",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 155
+        }
+      ]
+    },
+    "combat_multiple_attacks": {
+      "name": "combat_multiple_attacks",
+      "status": "pass",
+      "steps": 4,
+      "duration_ms": 5588,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "fight Bravo",
+          "output": "You attack Test agent Bravo for multi-agent testing! Choose your action.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 4079
+        },
+        {
+          "status": "pass",
+          "command": "attack Bravo",
+          "output": "You target Agent Bravo.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 146
+        },
+        {
+          "status": "pass",
+          "waited": 1,
+          "step": 3,
+          "action": "wait",
+          "duration_ms": 1001
+        },
+        {
+          "status": "pass",
+          "command": "attack Bravo",
+          "output": "You target Agent Bravo.",
+          "step": 4,
+          "action": "execute",
+          "duration_ms": 145
+        }
+      ]
+    },
+    "combat_quickmenu": {
+      "name": "combat_quickmenu",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 4666,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "fight Bravo",
+          "output": "You attack Test agent Bravo for multi-agent testing! Choose your action.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 4281
+        },
+        {
+          "status": "pass",
+          "command": "attack Bravo",
+          "output": "You target Agent Bravo.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 148
+        }
+      ]
+    },
+    "get_drop_cycle": {
+      "name": "get_drop_cycle",
+      "status": "pass",
+      "steps": 4,
+      "duration_ms": 556,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "path": "/api/test/grant_item",
+          "step": 1,
+          "action": "api_call",
+          "duration_ms": 12
+        },
+        {
+          "status": "pass",
+          "command": "inventory",
+          "step": 2,
+          "action": "verify_command",
+          "duration_ms": 100
+        },
+        {
+          "status": "pass",
+          "command": "drop blade",
+          "output": "You drop Workflow Test Blade.",
+          "step": 3,
+          "action": "execute",
+          "duration_ms": 113
+        },
+        {
+          "status": "pass",
+          "command": "inventory",
+          "step": 4,
+          "action": "verify_command",
+          "duration_ms": 99
+        }
+      ]
+    },
+    "hold_pocket_cycle": {
+      "name": "hold_pocket_cycle",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 373,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "hold",
+          "output": "",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 50
+        },
+        {
+          "status": "pass",
+          "command": "pocket",
+          "output": "You aren't holding anything.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 114
+        }
+      ]
+    },
+    "give_item": {
+      "name": "give_item",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 362,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "path": "/api/test/grant_item",
+          "step": 1,
+          "action": "api_call",
+          "duration_ms": 11
+        },
+        {
+          "status": "pass",
+          "command": "give pendant to Bravo",
+          "output": "You give Workflow Pendant to Agent Bravo.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 120
+        }
+      ]
+    },
+    "wear_remove_cycle": {
+      "name": "wear_remove_cycle",
+      "status": "pass",
+      "steps": 3,
+      "duration_ms": 441,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "path": "/api/test/grant_item",
+          "step": 1,
+          "action": "api_call",
+          "duration_ms": 12
+        },
+        {
+          "status": "pass",
+          "command": "wear hat",
+          "output": "You don't have anything to wear.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 97
+        },
+        {
+          "status": "pass",
+          "command": "equipment",
+          "output": "You aren't wearing or holding anything.",
+          "step": 3,
+          "action": "execute",
+          "duration_ms": 103
+        }
+      ]
+    },
+    "outfit_management": {
+      "name": "outfit_management",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 322,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "outfit",
+          "output": "You have no saved outfits.\nUse 'outfit save ' to save your current look.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 102
+        }
+      ]
+    },
+    "inventory_listing": {
+      "name": "inventory_listing",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 326,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "path": "/api/test/grant_item",
+          "step": 1,
+          "action": "api_call",
+          "duration_ms": 11
+        },
+        {
+          "status": "pass",
+          "command": "inventory",
+          "step": 2,
+          "action": "verify_command",
+          "duration_ms": 96
+        }
+      ]
+    },
+    "equipment_display": {
+      "name": "equipment_display",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 416,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "equipment",
+          "output": "You aren't wearing or holding anything.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 111
+        },
+        {
+          "status": "pass",
+          "command": "worn",
+          "output": "You aren't wearing or holding anything.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 89
+        }
+      ]
+    },
+    "balance_check": {
+      "name": "balance_check",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 331,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "path": "/api/test/grant_currency",
+          "step": 1,
+          "action": "api_call",
+          "duration_ms": 13
+        },
+        {
+          "status": "pass",
+          "command": "balance",
+          "step": 2,
+          "action": "verify_command",
+          "duration_ms": 92
+        }
+      ]
+    },
+    "shop_browse": {
+      "name": "shop_browse",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 197,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "shop",
+          "output": "There's no shop here.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 102
+        }
+      ]
+    },
+    "buy_item": {
+      "name": "buy_item",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 221,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "shop",
+          "output": "There's no shop here.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 100
+        }
+      ]
+    },
+    "deposit_withdraw": {
+      "name": "deposit_withdraw",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 390,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "path": "/api/test/grant_currency",
+          "step": 1,
+          "action": "api_call",
+          "duration_ms": 13
+        },
+        {
+          "status": "pass",
+          "command": "balance",
+          "step": 2,
+          "action": "verify_command",
+          "duration_ms": 100
+        }
+      ]
+    },
+    "score_accuracy": {
+      "name": "score_accuracy",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 336,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "score",
+          "step": 1,
+          "action": "verify_command",
+          "duration_ms": 101
+        }
+      ]
+    },
+    "stats_display": {
+      "name": "stats_display",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 330,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "stats",
+          "step": 1,
+          "action": "verify_command",
+          "duration_ms": 109
+        }
+      ]
+    },
+    "who_listing": {
+      "name": "who_listing",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 347,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "who",
+          "output": "Test Environment\n  \n  \n    \n  Command Test Chamber\n  \n  &#x2022;\n  Test agent Bravo for multi-agent testing",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 131
+        }
+      ]
+    },
+    "help_system": {
+      "name": "help_system",
+      "status": "pass",
+      "steps": 3,
+      "duration_ms": 529,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "help",
+          "step": 1,
+          "action": "verify_command",
+          "duration_ms": 95
+        },
+        {
+          "status": "pass",
+          "command": "help look",
+          "output": "Help: LOOK\nLook at your surroundings, an object, or another character\n\nUsage: look [target] or look [character] [item] or look [character]'s [item]\n\nAliases: l, examine, ex, look at\n\nExamples:\n  look\n",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 103
+        },
+        {
+          "status": "pass",
+          "command": "help say",
+          "output": "Help: SAY\nSpeak to everyone present\n\nUsage: say [adverb]  | say to   | say through , \n\nAliases: \", ', yell, shout, mutter, grumble, scream, moan, gasp, sob, stutter, murmur, flirt, lecture, argue, con",
+          "step": 3,
+          "action": "execute",
+          "duration_ms": 103
+        }
+      ]
+    },
+    "finger_profile": {
+      "name": "finger_profile",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 452,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "finger Agent Bravo",
+          "output": "Agent Bravo\n\nFull Name: Agent Bravo\nhuman | adventurer\nLevel: 1\n\nStatus: Online\nLocation: Command Test Chamber\nLast Activity: just now\n\nKnown to you: No",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 99
+        },
+        {
+          "status": "pass",
+          "command": "profile",
+          "output": "Your Profile\n\nName: Testbot Agent\nRace: human | Class: adventurer\n\nShort Description: An automated testing agent\n\nCurrent Status\nCurrently: standing in Command Test Chamber\nStatus: Online\nLevel: 1",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 100
+        }
+      ]
+    },
+    "commands_listing": {
+      "name": "commands_listing",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 1218,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "commands",
+          "step": 1,
+          "action": "verify_command",
+          "duration_ms": 963
+        }
+      ]
+    },
+    "helpless_tie_untie": {
+      "name": "helpless_tie_untie",
+      "status": "pass",
+      "steps": 4,
+      "duration_ms": 692,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "helpless",
+          "agent": 2,
+          "step": 1,
+          "action": "agent2_execute",
+          "duration_ms": 112
+        },
+        {
+          "status": "pass",
+          "command": "tie Bravo",
+          "output": "You bind Agent Bravo's hands.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 123
+        },
+        {
+          "status": "pass",
+          "command": "untie Bravo",
+          "output": "You remove Agent Bravo's hands.",
+          "step": 3,
+          "action": "execute",
+          "duration_ms": 116
+        },
+        {
+          "status": "pass",
+          "command": "helpless",
+          "agent": 2,
+          "step": 4,
+          "action": "agent2_execute",
+          "duration_ms": 112
+        }
+      ]
+    },
+    "helpless_blindfold_gag": {
+      "name": "helpless_blindfold_gag",
+      "status": "pass",
+      "steps": 3,
+      "duration_ms": 568,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "helpless",
+          "agent": 2,
+          "step": 1,
+          "action": "agent2_execute",
+          "duration_ms": 106
+        },
+        {
+          "status": "pass",
+          "command": "blindfold Bravo",
+          "output": "You blindfold Agent Bravo.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 116
+        },
+        {
+          "status": "pass",
+          "command": "gag Bravo",
+          "output": "You gag Agent Bravo.",
+          "step": 3,
+          "action": "execute",
+          "duration_ms": 116
+        }
+      ]
+    },
+    "helpless_search": {
+      "name": "helpless_search",
+      "status": "pass",
+      "steps": 3,
+      "duration_ms": 577,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "helpless",
+          "agent": 2,
+          "step": 1,
+          "action": "agent2_execute",
+          "duration_ms": 112
+        },
+        {
+          "status": "pass",
+          "command": "search Bravo",
+          "output": "You search Agent Bravo:\n\n  Nothing of interest.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 122
+        },
+        {
+          "status": "pass",
+          "command": "helpless",
+          "agent": 2,
+          "step": 3,
+          "action": "agent2_execute",
+          "duration_ms": 108
+        }
+      ]
+    },
+    "helpless_toggle": {
+      "name": "helpless_toggle",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 445,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "helpless",
+          "output": "You make yourself helpless and vulnerable. Others can now restrain you, search you, or move you.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 108
+        },
+        {
+          "status": "pass",
+          "command": "helpless",
+          "output": "You are no longer helpless.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 106
+        }
+      ]
+    },
+    "event_lifecycle": {
+      "name": "event_lifecycle",
+      "status": "pass",
+      "steps": 3,
+      "duration_ms": 551,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "create event Lifecycle Test",
+          "output": "Event 'Lifecycle Test' created! It will start in 1 hour at Command Test Chamber. Use 'event info Lifecycle Test' to see details or 'start event' when ready.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 105
+        },
+        {
+          "status": "pass",
+          "command": "start event",
+          "output": "Lifecycle Test has started! You are now hosting the event.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 126
+        },
+        {
+          "status": "pass",
+          "command": "end event",
+          "output": "You have ended Lifecycle Test. All attendees have been notified.",
+          "step": 3,
+          "action": "execute",
+          "duration_ms": 114
+        }
+      ]
+    },
+    "event_join_leave": {
+      "name": "event_join_leave",
+      "status": "pass",
+      "steps": 6,
+      "duration_ms": 1827,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "create event Agent Join Test",
+          "output": "Event 'Agent Join Test' created! It will start in 1 hour at Command Test Chamber. Use 'event info Agent Join Test' to see details or 'start event' when ready.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 97
+        },
+        {
+          "status": "pass",
+          "command": "start event",
+          "output": "Agent Join Test has started! You are now hosting the event.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 115
+        },
+        {
+          "status": "pass",
+          "waited": 1,
+          "step": 3,
+          "action": "wait",
+          "duration_ms": 1001
+        },
+        {
+          "status": "pass",
+          "command": "enter event",
+          "agent": 2,
+          "step": 4,
+          "action": "agent2_execute",
+          "duration_ms": 133
+        },
+        {
+          "status": "pass",
+          "command": "leave event",
+          "agent": 2,
+          "step": 5,
+          "action": "agent2_execute",
+          "duration_ms": 113
+        },
+        {
+          "status": "pass",
+          "command": "end event",
+          "output": "You have ended Agent Join Test. All attendees have been notified.",
+          "step": 6,
+          "action": "execute",
+          "duration_ms": 128
+        }
+      ]
+    },
+    "event_listing": {
+      "name": "event_listing",
+      "status": "pass",
+      "steps": 4,
+      "duration_ms": 631,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "create event Listing Test",
+          "output": "Event 'Listing Test' created! It will start in 1 hour at Command Test Chamber. Use 'event info Listing Test' to see details or 'start event' when ready.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 107
+        },
+        {
+          "status": "pass",
+          "command": "events",
+          "output": "",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 56
+        },
+        {
+          "status": "pass",
+          "command": "start event",
+          "output": "Listing Test has started! You are now hosting the event.",
+          "step": 3,
+          "action": "execute",
+          "duration_ms": 124
+        },
+        {
+          "status": "pass",
+          "command": "end event",
+          "output": "You have ended Listing Test. All attendees have been notified.",
+          "step": 4,
+          "action": "execute",
+          "duration_ms": 115
+        }
+      ]
+    },
+    "event_info": {
+      "name": "event_info",
+      "status": "pass",
+      "steps": 4,
+      "duration_ms": 667,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "create event Info Test Event",
+          "output": "Event 'Info Test Event' created! It will start in 1 hour at Command Test Chamber. Use 'event info Info Test Event' to see details or 'start event' when ready.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 100
+        },
+        {
+          "status": "pass",
+          "command": "event info Info Test Event",
+          "output": "Info Test Event\n\nStatus: Completed\nType: Party\nPublic: Yes\n\nHost: Testbot Agent\nLocation: Command Test Chamber\n\nStarts: March 14, 2026 at 07:12 PM\nEnds: Open-ended\n\nAttendees: 1",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 110
+        },
+        {
+          "status": "pass",
+          "command": "start event",
+          "output": "Info Test Event has started! You are now hosting the event.",
+          "step": 3,
+          "action": "execute",
+          "duration_ms": 117
+        },
+        {
+          "status": "pass",
+          "command": "end event",
+          "output": "You have ended Info Test Event. All attendees have been notified.",
+          "step": 4,
+          "action": "execute",
+          "duration_ms": 118
+        }
+      ]
+    },
+    "dress_strip": {
+      "name": "dress_strip",
+      "status": "pass",
+      "steps": 4,
+      "duration_ms": 543,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "path": "/api/test/grant_item",
+          "step": 1,
+          "action": "api_call",
+          "duration_ms": 11
+        },
+        {
+          "status": "pass",
+          "command": "wear coat",
+          "output": "You don't have anything to wear.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 109
+        },
+        {
+          "status": "pass",
+          "command": "strip all",
+          "output": "You aren't wearing anything.",
+          "step": 3,
+          "action": "execute",
+          "duration_ms": 95
+        },
+        {
+          "status": "pass",
+          "command": "equipment",
+          "output": "You aren't wearing or holding anything.",
+          "step": 4,
+          "action": "execute",
+          "duration_ms": 98
+        }
+      ]
+    },
+    "cover_expose": {
+      "name": "cover_expose",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 424,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "cover",
+          "output": "Cover what?",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 92
+        },
+        {
+          "status": "pass",
+          "command": "expose",
+          "output": "Expose what?",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 109
+        }
+      ]
+    },
+    "unzip_zipup": {
+      "name": "unzip_zipup",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 407,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "unzip",
+          "output": "Unzip what?",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 95
+        },
+        {
+          "status": "pass",
+          "command": "zipup",
+          "output": "Zip up what?",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 97
+        }
+      ]
+    },
+    "dice_basic": {
+      "name": "dice_basic",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 330,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "roll 2d6",
+          "step": 1,
+          "action": "verify_command",
+          "duration_ms": 113
+        }
+      ]
+    },
+    "diceroll_2d6": {
+      "name": "diceroll_2d6",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 329,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "diceroll 2d6",
+          "step": 1,
+          "action": "verify_command",
+          "duration_ms": 111
+        }
+      ]
+    },
+    "diceroll_1d20": {
+      "name": "diceroll_1d20",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 349,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "diceroll 1d20",
+          "step": 1,
+          "action": "verify_command",
+          "duration_ms": 108
+        }
+      ]
+    },
+    "stat_roll_str": {
+      "name": "stat_roll_str",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 320,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "roll str",
+          "step": 1,
+          "action": "verify_command",
+          "duration_ms": 113
+        }
+      ]
+    },
+    "stat_roll_dex": {
+      "name": "stat_roll_dex",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 376,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "roll dex",
+          "step": 1,
+          "action": "verify_command",
+          "duration_ms": 123
+        }
+      ]
+    },
+    "time_weather": {
+      "name": "time_weather",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 442,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "time",
+          "output": "It is 6:17 PM on Saturday, March 14, 2026 (Dusk)\n\nThe last quarter \ud83c\udf17 hides behind the clouds.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 106
+        },
+        {
+          "status": "pass",
+          "command": "weather",
+          "output": "You cannot see the sky from here.",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 96
+        }
+      ]
+    },
+    "channel_listing": {
+      "name": "channel_listing",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 310,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "channels",
+          "output": "No channels available.\nAsk an admin to create channels for this game.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 94
+        }
+      ]
+    },
+    "customization_describe": {
+      "name": "customization_describe",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 310,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "describe",
+          "output": "Opening description editor...",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 100
+        }
+      ]
+    },
+    "customization_profile": {
+      "name": "customization_profile",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 295,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "profile",
+          "step": 1,
+          "action": "verify_command",
+          "duration_ms": 85
+        }
+      ]
+    },
+    "crafting_fabricate": {
+      "name": "crafting_fabricate",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 290,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "fabricate",
+          "output": "You have no pending fabrication orders.",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 92
+        }
+      ]
+    },
+    "crafting_make": {
+      "name": "crafting_make",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 304,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "make",
+          "step": 1,
+          "action": "verify_command",
+          "duration_ms": 95
+        }
+      ]
+    },
+    "delve_commands": {
+      "name": "delve_commands",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 334,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "delve",
+          "step": 1,
+          "action": "verify_command",
+          "duration_ms": 98
+        }
+      ]
+    },
+    "clan_system": {
+      "name": "clan_system",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 354,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "clan",
+          "step": 1,
+          "action": "verify_command",
+          "duration_ms": 99
+        }
+      ]
+    },
+    "group_system": {
+      "name": "group_system",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 333,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "group",
+          "output": "Clan Commands:\n  clan list              - List all public clans and your clans\n  clan create      - Create a new clan (add --secret for secret clan)\n  clan invite    - Invite a player (leader/officer ",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 113
+        }
+      ]
+    },
+    "snapshot_system": {
+      "name": "snapshot_system",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 302,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "snapshot",
+          "output": "",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 56
+        }
+      ]
+    },
+    "building_room_info": {
+      "name": "building_room_info",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 319,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "room",
+          "output": "Your current room title: A friendly visitor",
+          "step": 1,
+          "action": "execute",
+          "duration_ms": 93
+        }
+      ]
+    },
+    "building_npc_info": {
+      "name": "building_npc_info",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 293,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "command": "npc",
+          "step": 1,
+          "action": "verify_command",
+          "duration_ms": 93
+        }
+      ]
+    },
+    "api_status_endpoint": {
+      "name": "api_status_endpoint",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 238,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "field": "instance.status",
+          "value": "alive",
+          "step": 1,
+          "action": "verify_status",
+          "duration_ms": 7
+        }
+      ]
+    },
+    "api_room_endpoint": {
+      "name": "api_room_endpoint",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 231,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "field": "room.name",
+          "value": "Command Test Chamber",
+          "step": 1,
+          "action": "verify_room",
+          "duration_ms": 14
+        }
+      ]
+    },
+    "api_test_state": {
+      "name": "api_test_state",
+      "status": "pass",
+      "steps": 1,
+      "duration_ms": 260,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "path": "/api/test/get_state",
+          "step": 1,
+          "action": "api_call",
+          "duration_ms": 39
+        }
+      ]
+    },
+    "api_grant_and_verify": {
+      "name": "api_grant_and_verify",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 369,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "path": "/api/test/grant_item",
+          "step": 1,
+          "action": "api_call",
+          "duration_ms": 11
+        },
+        {
+          "status": "pass",
+          "command": "inventory",
+          "step": 2,
+          "action": "verify_command",
+          "duration_ms": 116
+        }
+      ]
+    },
+    "api_currency_and_verify": {
+      "name": "api_currency_and_verify",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 366,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "path": "/api/test/grant_currency",
+          "step": 1,
+          "action": "api_call",
+          "duration_ms": 12
+        },
+        {
+          "status": "pass",
+          "command": "balance",
+          "step": 2,
+          "action": "verify_command",
+          "duration_ms": 100
+        }
+      ]
+    },
+    "api_reset_character": {
+      "name": "api_reset_character",
+      "status": "pass",
+      "steps": 2,
+      "duration_ms": 367,
+      "errors": [],
+      "step_log": [
+        {
+          "status": "pass",
+          "path": "/api/test/reset_character",
+          "step": 1,
+          "action": "api_call",
+          "duration_ms": 39
+        },
+        {
+          "status": "pass",
+          "command": "score",
+          "output": "Testbot Agent\n  \n  \n    \n      HP\n      6 / 6\n    \n    \n\n\n\n\n\n  \n  \n  Attributes\n  \n  STR\n  \n    \n  \n  1\n\n\n\n  DEX\n  \n    \n  \n  1\n\n\n\n  CON\n  \n    \n  \n  1\n\n\n\n  INT\n  \n    \n  \n  1\n\n\n\n  WIS\n  \n    \n  \n  1",
+          "step": 2,
+          "action": "execute",
+          "duration_ms": 102
+        }
+      ]
+    }
+  }
+}

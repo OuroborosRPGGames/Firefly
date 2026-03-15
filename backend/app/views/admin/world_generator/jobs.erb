@@ -1,0 +1,97 @@
+<% @page_title = 'Generation Jobs - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'World Generator', path: '/admin/world_generator' }, { label: 'Jobs' }] %>
+
+<%= admin_content_start %>
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h1 class="text-2xl font-bold"><i class="bi bi-list-task mr-2"></i>Generation Jobs</h1>
+          <p class="text-base-content/70">View and manage LLM generation jobs</p>
+        </div>
+        <div>
+          <a href="/admin/world_generator" class="btn btn-ghost">
+            <i class="bi bi-arrow-left mr-1"></i>Back to Generator
+          </a>
+        </div>
+      </div>
+
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <% if @jobs && @jobs.any? %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Progress</th>
+                    <th>Duration</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @jobs.each do |job| %>
+                    <tr>
+                      <td><a href="/admin/world_generator/jobs/<%= job[:id] %>" class="link">#<%= job[:id] %></a></td>
+                      <td><%= job[:type] %></td>
+                      <td>
+                        <% if job[:status] == 'pending' %>
+                          <span class="badge badge-neutral">Pending</span>
+                        <% elsif job[:status] == 'running' %>
+                          <span class="badge badge-primary">Running</span>
+                        <% elsif job[:status] == 'completed' %>
+                          <span class="badge badge-success">Completed</span>
+                        <% elsif job[:status] == 'failed' %>
+                          <span class="badge badge-error">Failed</span>
+                        <% elsif job[:status] == 'cancelled' %>
+                          <span class="badge badge-warning">Cancelled</span>
+                        <% end %>
+                      </td>
+                      <td>
+                        <% if job[:status] == 'running' %>
+                          <div class="flex items-center gap-2">
+                            <progress class="progress progress-primary w-24" value="<%= job[:percent] || 0 %>" max="100"></progress>
+                            <span class="text-sm"><%= (job[:percent] || 0).round(0) %>%</span>
+                          </div>
+                        <% elsif job[:status] == 'completed' %>
+                          <span class="text-success">100%</span>
+                        <% elsif job[:status] == 'failed' %>
+                          <span class="text-error text-sm"><%= truncate_text(job[:error], 40) %></span>
+                        <% else %>
+                          -
+                        <% end %>
+                      </td>
+                      <td><%= job[:duration] || '-' %></td>
+                      <td>
+                        <% if job[:created_at] %>
+                          <%= Time.parse(job[:created_at]).strftime('%m/%d %H:%M') %>
+                        <% else %>
+                          -
+                        <% end %>
+                      </td>
+                      <td>
+                        <a href="/admin/world_generator/jobs/<%= job[:id] %>" class="btn btn-sm btn-ghost">
+                          <i class="bi bi-eye"></i>
+                        </a>
+                        <% if %w[pending running].include?(job[:status]) %>
+                          <form action="/admin/world_generator/jobs/<%= job[:id] %>/cancel" method="post" class="inline">
+                            <button type="submit" class="btn btn-sm btn-ghost text-error" onclick="return confirm('Cancel this job?')">
+                              <i class="bi bi-x"></i>
+                            </button>
+                          </form>
+                        <% end %>
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% else %>
+            <p class="text-base-content/70 text-center py-8">
+              No generation jobs found. <a href="/admin/world_generator" class="link link-primary">Start generating content!</a>
+            </p>
+          <% end %>
+        </div>
+      </div>
+<%= admin_content_end %>

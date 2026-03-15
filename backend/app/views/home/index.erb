@@ -1,0 +1,183 @@
+<!-- Hero Section -->
+<section class="hero-section" style="background-image: url('/images/library.jpg');">
+  <div class="hero-content flex flex-col items-center">
+    <h1 class="hero-title">Welcome to <span class="text-primary"><%= game_name %></span></h1>
+    <p class="hero-subtitle">
+      Step into a world of collaborative storytelling where your imagination shapes reality.
+      Create unique characters, forge lasting connections, and write your own legend.
+    </p>
+    <div class="hero-actions flex gap-4">
+      <% if @current_user %>
+        <a href="/webclient" class="btn btn-primary btn-lg" target="_blank">
+          <i class="bi bi-play-circle mr-2"></i>Enter the World
+        </a>
+        <a href="/dashboard" class="btn btn-ghost btn-lg border-2 border-white/70 bg-white/10">
+          <i class="bi bi-speedometer2 mr-2"></i>Dashboard
+        </a>
+      <% else %>
+        <a href="/register" class="btn btn-primary btn-lg">
+          <i class="bi bi-rocket-takeoff mr-2"></i>Begin Your Journey
+        </a>
+        <a href="/login" class="btn btn-ghost btn-lg border-2 border-white/70 bg-white/10">
+          <i class="bi bi-box-arrow-in-right mr-2"></i>Sign In
+        </a>
+      <% end %>
+    </div>
+  </div>
+</section>
+
+<!-- Main Content with Sidebar -->
+<section class="py-12">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <!-- Main Content Column -->
+      <div class="lg:col-span-8">
+        <!-- Features Section -->
+        <div class="mb-10">
+          <h2 class="text-2xl font-bold mb-3">Why <span class="text-primary"><%= game_name %></span>?</h2>
+          <p class="text-base-content/70 mb-6 text-lg">
+            A modern approach to collaborative storytelling, built for the next generation of roleplayers.
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="card bg-base-200 h-full">
+              <div class="card-body">
+                <div class="text-primary text-3xl mb-2">
+                  <i class="bi bi-person-badge"></i>
+                </div>
+                <h5 class="card-title text-lg">Deep Character Creation</h5>
+                <p class="text-base-content/70">
+                  Build unique characters with rich backstories, detailed appearances, and evolving personalities. Every character tells a story.
+                </p>
+              </div>
+            </div>
+
+            <div class="card bg-base-200 h-full">
+              <div class="card-body">
+                <div class="text-primary text-3xl mb-2">
+                  <i class="bi bi-globe-americas"></i>
+                </div>
+                <h5 class="card-title text-lg">Vast Worlds to Explore</h5>
+                <p class="text-base-content/70">
+                  Traverse multiple realities, each with unique locations, histories, and mysteries waiting to be uncovered.
+                </p>
+              </div>
+            </div>
+
+            <div class="card bg-base-200 h-full">
+              <div class="card-body">
+                <div class="text-primary text-3xl mb-2">
+                  <i class="bi bi-chat-dots"></i>
+                </div>
+                <h5 class="card-title text-lg">Real-Time Interaction</h5>
+                <p class="text-base-content/70">
+                  Seamless WebSocket-powered gameplay ensures instant communication with other players. Every moment matters.
+                </p>
+              </div>
+            </div>
+
+            <div class="card bg-base-200 h-full">
+              <div class="card-body">
+                <div class="text-primary text-3xl mb-2">
+                  <i class="bi bi-book"></i>
+                </div>
+                <h5 class="card-title text-lg">Collaborative Storytelling</h5>
+                <p class="text-base-content/70">
+                  Write scenes together, create lasting narratives, and watch your stories interweave into something greater.
+                </p>
+              </div>
+            </div>
+
+            <div class="card bg-base-200 h-full">
+              <div class="card-body">
+                <div class="text-primary text-3xl mb-2">
+                  <i class="bi bi-cpu"></i>
+                </div>
+                <h5 class="card-title text-lg">AI-Enhanced NPCs</h5>
+                <p class="text-base-content/70">
+                  Intelligent non-player characters bring the world to life with dynamic responses and memorable interactions.
+                </p>
+              </div>
+            </div>
+
+            <div class="card bg-base-200 h-full">
+              <div class="card-body">
+                <div class="text-primary text-3xl mb-2">
+                  <i class="bi bi-sliders"></i>
+                </div>
+                <h5 class="card-title text-lg">Fully Customizable</h5>
+                <p class="text-base-content/70">
+                  Game operators can easily customize themes, rules, and mechanics to create their perfect world.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Sidebar Column -->
+      <div class="lg:col-span-4">
+        <!-- Search Box -->
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body">
+            <h3 class="card-title text-base">
+              <i class="bi bi-search mr-2"></i>Search
+            </h3>
+            <form action="/search" method="get">
+              <div class="join w-full">
+                <input type="text" class="input input-bordered join-item flex-1" name="q" placeholder="Search the wiki...">
+                <button class="btn btn-primary join-item" type="submit">
+                  <i class="bi bi-search"></i>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Upcoming Events -->
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body">
+            <h3 class="card-title text-base">
+              <i class="bi bi-calendar-event mr-2"></i>Upcoming Events
+            </h3>
+            <% if @upcoming_events && @upcoming_events.any? %>
+              <% @upcoming_events.first(3).each do |event| %>
+                <div class="py-2 border-b border-base-300 last:border-0">
+                  <div class="font-medium"><%= event[:title] %></div>
+                  <div class="text-sm text-base-content/50"><i class="bi bi-clock mr-1"></i><%= event[:date] %></div>
+                </div>
+              <% end %>
+            <% else %>
+              <div class="text-center py-4">
+                <i class="bi bi-calendar-x text-base-content/40 text-3xl mb-2 block"></i>
+                <p class="text-base-content/50 text-sm">No upcoming events scheduled</p>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Call to Action -->
+<section class="bg-base-300 py-12 text-center border-t border-base-content/10">
+  <div class="container mx-auto px-4">
+    <div class="max-w-2xl mx-auto">
+      <h2 class="text-2xl font-bold mb-3">Ready to Write Your Story?</h2>
+      <p class="text-base-content/70 mb-6">
+        Join a community of storytellers and create something unforgettable.
+      </p>
+      <% if @current_user %>
+        <a href="/characters/new" class="btn btn-primary btn-lg">
+          <i class="bi bi-person-plus mr-2"></i>Create a Character
+        </a>
+      <% else %>
+        <a href="/register" class="btn btn-primary btn-lg">
+          <i class="bi bi-person-plus mr-2"></i>Create Free Account
+        </a>
+      <% end %>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,80 @@
+<%#
+  Pagination component
+
+  Usage:
+    <%= partial 'shared/pagination', locals: {
+      current_page: @page,
+      total_pages: @total_pages,
+      base_path: '/missions'  # will append ?page=N
+    } %>
+%>
+<% if total_pages > 1 %>
+  <nav class="mt-4" aria-label="Pagination">
+    <ul class="pagination justify-center">
+      <% if current_page > 1 %>
+        <li class="page-item">
+          <a class="page-link bg-base-200 border-secondary" href="<%= base_path %>?page=<%= current_page - 1 %>">
+            <i class="bi bi-chevron-left"></i>
+          </a>
+        </li>
+      <% else %>
+        <li class="page-item disabled">
+          <span class="page-link bg-base-200 border-secondary text-base-content/60">
+            <i class="bi bi-chevron-left"></i>
+          </span>
+        </li>
+      <% end %>
+
+      <%
+        # Show up to 5 page numbers centered around current page
+        start_page = [1, current_page - 2].max
+        end_page = [total_pages, current_page + 2].min
+      %>
+
+      <% if start_page > 1 %>
+        <li class="page-item">
+          <a class="page-link bg-base-200 border-secondary" href="<%= base_path %>?page=1">1</a>
+        </li>
+        <% if start_page > 2 %>
+          <li class="page-item disabled">
+            <span class="page-link bg-base-200 border-secondary text-base-content/60">...</span>
+          </li>
+        <% end %>
+      <% end %>
+
+      <% (start_page..end_page).each do |page_num| %>
+        <li class="page-item <%= 'active' if page_num == current_page %>">
+          <a class="page-link bg-<%= page_num == current_page ? 'primary' : 'dark' %> border-secondary"
+             href="<%= base_path %>?page=<%= page_num %>">
+            <%= page_num %>
+          </a>
+        </li>
+      <% end %>
+
+      <% if end_page < total_pages %>
+        <% if end_page < total_pages - 1 %>
+          <li class="page-item disabled">
+            <span class="page-link bg-base-200 border-secondary text-base-content/60">...</span>
+          </li>
+        <% end %>
+        <li class="page-item">
+          <a class="page-link bg-base-200 border-secondary" href="<%= base_path %>?page=<%= total_pages %>"><%= total_pages %></a>
+        </li>
+      <% end %>
+
+      <% if current_page < total_pages %>
+        <li class="page-item">
+          <a class="page-link bg-base-200 border-secondary" href="<%= base_path %>?page=<%= current_page + 1 %>">
+            <i class="bi bi-chevron-right"></i>
+          </a>
+        </li>
+      <% else %>
+        <li class="page-item disabled">
+          <span class="page-link bg-base-200 border-secondary text-base-content/60">
+            <i class="bi bi-chevron-right"></i>
+          </span>
+        </li>
+      <% end %>
+    </ul>
+  </nav>
+<% end %>

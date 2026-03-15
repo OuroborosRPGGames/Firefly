@@ -1,0 +1,110 @@
+<% @page_title = 'Vehicle Types - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Vehicle Types' }] %>
+
+<%
+  # Category icon and badge color mappings
+  category_icons = {
+    'ground' => 'car-front',
+    'water' => 'water',
+    'air' => 'airplane',
+    'space' => 'rocket',
+    'mount' => 'emoji-sunglasses'
+  }
+  category_colors = {
+    'ground' => 'primary',
+    'water' => 'info',
+    'air' => 'warning',
+    'space' => 'error',
+    'mount' => 'success'
+  }
+%>
+
+<%= admin_content_start %>
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold"><i class="bi bi-truck mr-2"></i>Vehicle Types</h2>
+        <a href="/admin/vehicle_types/new" class="btn btn-success">
+          <i class="bi bi-plus-lg mr-2"></i>New Vehicle Type
+        </a>
+      </div>
+
+      <!-- Category Filter -->
+      <div class="join mb-6">
+        <a href="/admin/vehicle_types" class="btn join-item <%= @category.nil? || @category == 'all' ? 'btn-active' : 'btn-outline' %>">
+          All
+        </a>
+        <% VehicleType::CATEGORIES.each do |cat| %>
+          <a href="/admin/vehicle_types?category=<%= cat %>" class="btn join-item <%= @category == cat ? 'btn-active' : 'btn-outline' %>">
+            <i class="bi bi-<%= category_icons[cat] || 'truck' %> mr-1"></i><%= cat.capitalize %>
+          </a>
+        <% end %>
+      </div>
+
+      <% if @vehicle_types.empty? %>
+        <%= partial 'shared/empty_state', locals: { message: 'No vehicle types found. Create your first vehicle type to get started.' } %>
+      <% else %>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th class="w-16">ID</th>
+                <th>Name</th>
+                <th class="w-24">Category</th>
+                <th class="w-24">Passengers</th>
+                <th class="w-20">Speed</th>
+                <th class="w-20">Fuel?</th>
+                <th class="w-24">Vehicles</th>
+                <th class="w-24">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @vehicle_types.each do |vt| %>
+                <tr>
+                  <td><code><%= vt.id %></code></td>
+                  <td>
+                    <strong><%= h vt.name %></strong>
+                    <% if vt.description %>
+                      <br><span class="text-sm text-base-content/70"><%= h vt.description.to_s[0..60] %><%= '...' if vt.description.to_s.length > 60 %></span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <span class="badge badge-<%= category_colors[vt.category] || 'neutral' %>">
+                      <i class="bi bi-<%= category_icons[vt.category] || 'truck' %> mr-1"></i><%= vt.category %>
+                    </span>
+                  </td>
+                  <td class="text-center"><%= vt.max_passengers || 4 %></td>
+                  <td class="text-center"><%= '%.1fx' % (vt.base_speed || 1.0) %></td>
+                  <td class="text-center">
+                    <% if vt.requires_fuel %>
+                      <i class="bi bi-fuel-pump text-warning"></i>
+                    <% else %>
+                      <i class="bi bi-dash text-base-content/50"></i>
+                    <% end %>
+                  </td>
+                  <td class="text-center">
+                    <span class="badge badge-neutral"><%= vt.vehicles_dataset.count %></span>
+                  </td>
+                  <td>
+                    <a href="/admin/vehicle_types/<%= vt.id %>" class="btn btn-outline btn-primary btn-sm">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+
+      <!-- Stats cards -->
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
+        <% VehicleType::CATEGORIES.each do |cat| %>
+          <div class="card bg-base-200">
+            <div class="card-body items-center text-center p-4">
+              <i class="bi bi-<%= category_icons[cat] || 'truck' %> text-3xl mb-2 text-<%= category_colors[cat] || 'neutral' %>"></i>
+              <h4 class="text-2xl font-bold"><%= VehicleType.where(category: cat).count %></h4>
+              <span class="text-base-content/70 text-sm"><%= cat.capitalize %></span>
+            </div>
+          </div>
+        <% end %>
+      </div>
+<%= admin_content_end %>

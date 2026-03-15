@@ -1,0 +1,75 @@
+<%# Description Creator/Editor Modal %>
+<%# This partial provides the modal for creating and editing character descriptions %>
+<%# The modal is dynamically populated by description-modal.js %>
+
+<dialog class="modal" id="descriptionModal">
+  <div class="modal-box max-w-4xl bg-base-200">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-bold text-lg" id="descriptionModalLabel">Add Description</h3>
+      <form method="dialog">
+        <button class="btn btn-sm btn-circle btn-ghost">✕</button>
+      </form>
+    </div>
+
+    <form id="descriptionForm">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div class="md:col-span-2">
+          <label class="label"><span class="label-text">Body Position <span class="text-error">*</span></span></label>
+          <select class="select select-bordered w-full h-48" id="bodyPositionSelect" required multiple size="10">
+            <option value="">Select a body position...</option>
+            <!-- Options populated dynamically by JS -->
+          </select>
+          <label class="label"><span class="label-text-alt">Choose where on the body this description applies</span></label>
+          <div class="alert alert-info py-2 px-3 mt-2 text-sm" id="multiSelectHint">
+            <i class="bi bi-info-circle mr-1"></i>
+            <strong>Tip:</strong> Hold <kbd class="kbd kbd-sm">Ctrl</kbd> (or <kbd class="kbd kbd-sm">Cmd</kbd> on Mac) to select multiple positions
+          </div>
+        </div>
+        <div>
+          <label class="label"><span class="label-text">Options</span></label>
+          <label class="label cursor-pointer justify-start gap-2 mt-2">
+            <input type="checkbox" class="checkbox" id="concealedCheck">
+            <span class="label-text"><i class="bi bi-eye-slash mr-1"></i>Concealed by clothing</span>
+          </label>
+          <label class="label"><span class="label-text-alt">If checked, this description is hidden when wearing clothes over this area</span></label>
+        </div>
+      </div>
+
+      <div class="form-control mb-4">
+        <label class="label"><span class="label-text">Description <span class="text-error">*</span></span></label>
+        <div id="descEditorContainer">
+          <!-- Rich text editor inserted by JS -->
+        </div>
+        <label class="label">
+          <span class="label-text-alt">Use the toolbar for formatting: <strong>bold</strong>, <em>italic</em>, <u>underline</u>, <span style="color:#ff6b6b">colors</span></span>
+        </label>
+      </div>
+
+      <div class="form-control mb-4">
+        <label class="label"><span class="label-text">Image (optional)</span></label>
+        <div class="desc-image-upload">
+          <input type="file" id="descImageInput" accept="image/*" class="file-input file-input-bordered w-full">
+          <label class="label"><span class="label-text-alt">Upload an image to accompany this description (max 5MB)</span></label>
+          <div id="descImagePreview" class="desc-image-preview mt-2 hidden">
+            <img src="" alt="Preview" class="rounded-lg border border-base-300" style="max-height: 200px;">
+            <button type="button" class="btn btn-sm btn-outline btn-error remove-image ml-2">
+              <i class="bi bi-trash"></i> Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn btn-ghost"><i class="bi bi-x-lg mr-1"></i>Cancel</button>
+      </form>
+      <button type="button" class="btn btn-primary" id="saveDescBtn">
+        <i class="bi bi-check-lg mr-1"></i>Save Description
+      </button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>

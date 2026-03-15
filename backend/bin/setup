@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+set -e
+
+cd "$(dirname "$0")/.."
+
+echo "=== Firefly MUD Engine — First-Time Setup ==="
+echo
+
+# 1. Copy .env.example → .env if not present
+if [ ! -f .env ]; then
+  if [ -f .env.example ]; then
+    cp .env.example .env
+    echo "✓ Created .env from .env.example"
+  else
+    echo "✗ .env.example not found — cannot create .env"
+    exit 1
+  fi
+else
+  echo "• .env already exists, skipping copy"
+fi
+
+# 2. Install Ruby dependencies
+echo
+echo "--- Installing dependencies ---"
+bundle install
+
+# 3. Parse DATABASE_URL from .env and create the database if needed
+DATABASE_URL=$(grep -E '^DATABASE_URL=' .env | head -1 | cut -d= -f2-)
+DATABASE_URL=${DATABASE_URL:-postgres://prom_user:prom_password@localhost/firefly}
+
+# Extract components: postgres://user:password@host[:port]/dbname
+DB_USER_PASS_HOST=${DATABASE_URL#*://}   # user:password@host/dbname
+DB_USER=${DB_USER_PASS_HOST%%:*}         # user
+DB_REST=${DB_USER_PASS_HOST#*:}          # password@host/dbname
+DB_PASSWORD=${DB_REST%%@*}               # password
+DB_HOST_DB=${DB_REST#*@}                 # host[:port]/dbname
+DB_HOST_PORT=${DB_HOST_DB%%/*}           # host[:port]
+DB_HOST=${DB_HOST_PORT%%:*}              # host
+DB_NAME=${DB_HOST_DB#*/}                 # dbname
+
+echo
+echo "--- Creating database (if it doesn't exist) ---"
+if PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -U "$DB_USER" -lqt 2>/dev/null | cut -d\| -f1 | grep -qw "$DB_NAME"; then
+  echo "• Database '$DB_NAME' already exists, skipping"
+else
+  PGPASSWORD="$DB_PASSWORD" createdb -h "$DB_HOST" -U "$DB_USER" "$DB_NAME"
+  echo "✓ Created database '$DB_NAME'"
+fi
+
+# 4. Run migrations
+echo
+echo "--- Running migrations ---"
+bundle exec sequel -m db/migrations "$DATABASE_URL"
+echo "✓ Migrations complete"
+
+# 5. Run seeds
+echo
+echo "--- Seeding database ---"
+bundle exec ruby db/seeds.rb
+echo "✓ Seeds complete"
+
+# 6. Print login instructions
+echo
+echo "========================================"
+echo "  Setup complete!"
+echo "========================================"
+echo
+echo "Start the server:"
+echo "  cd backend && bin/dev"
+echo
+echo "Then visit: http://localhost:3000"
+echo
+echo "To create a test agent for MCP:"
+echo "  bundle exec ruby scripts/create_test_agent.rb"
+echo

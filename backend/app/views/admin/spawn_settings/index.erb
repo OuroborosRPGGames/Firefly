@@ -1,0 +1,112 @@
+<% @page_title = 'Spawn Settings - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'World Building' }, { label: 'Spawn Settings', path: '/admin/spawn_settings' }] %>
+
+<%= admin_content_start %>
+      <div class="card bg-base-200 shadow-lg">
+        <div class="card-body">
+          <div class="flex items-center gap-3 mb-4">
+            <i class="bi bi-geo-alt text-primary text-2xl"></i>
+            <div>
+              <h2 class="card-title text-lg">Spawn Settings</h2>
+              <p class="text-sm text-base-content/70">Configure where new players appear after completing the tutorial.</p>
+            </div>
+          </div>
+
+          <div class="divider mt-0"></div>
+
+          <form method="post" action="/admin/spawn_settings">
+            <!-- Tutorial Spawn Room -->
+            <h3 class="font-semibold text-base-content mb-2">
+              <i class="bi bi-mortarboard mr-1"></i>New Character Spawn
+            </h3>
+            <div class="alert alert-info mb-4">
+              <i class="bi bi-info-circle"></i>
+              <span>This is the room where brand new characters start when they first create a character. Should be the entrance to the newbie school / tutorial area.</span>
+            </div>
+
+            <div class="form-control mb-4">
+              <label for="tutorial_spawn_room_id" class="label">
+                <span class="label-text font-semibold">Tutorial Spawn Room</span>
+              </label>
+              <select class="select select-bordered" id="tutorial_spawn_room_id" name="tutorial_spawn_room_id">
+                <option value="">-- Not set (falls back to first safe room) --</option>
+                <% @all_rooms.each do |rm| %>
+                  <option value="<%= rm[:id] %>" <%= @tutorial_spawn_room_id == rm[:id] ? 'selected' : '' %>>
+                    <%= rm[:name] %><%= rm[:location_name] ? " (#{rm[:location_name]})" : '' %>
+                  </option>
+                <% end %>
+              </select>
+              <label class="label">
+                <span class="label-text-alt text-base-content/60">The room where new characters first appear (usually newbie school entrance).</span>
+              </label>
+            </div>
+
+            <% if @current_tutorial_room %>
+              <div class="alert alert-success mb-4">
+                <i class="bi bi-check-circle"></i>
+                <span>New characters spawn in: <strong><%= @current_tutorial_room[:name] %></strong> (<%= @current_tutorial_room[:location_name] %>)</span>
+              </div>
+            <% end %>
+
+            <div class="divider"></div>
+
+            <!-- Enter Game Destination -->
+            <h3 class="font-semibold text-base-content mb-2">
+              <i class="bi bi-door-open mr-1"></i>Enter Game Destination
+            </h3>
+            <div class="alert alert-info mb-4">
+              <i class="bi bi-info-circle"></i>
+              <span>This is where players go when they use <code>enter game</code> after completing the tutorial. If not configured, the system looks for "New Haven", then any village entrance, then any public intersection.</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div class="form-control">
+                <label for="spawn_location_id" class="label">
+                  <span class="label-text font-semibold">Destination City / Location</span>
+                </label>
+                <select class="select select-bordered" id="spawn_location_id" name="spawn_location_id">
+                  <option value="">-- Auto-detect (default) --</option>
+                  <% @spawn_locations.each do |loc| %>
+                    <option value="<%= loc[:id] %>" <%= @spawn_location_id == loc[:id] ? 'selected' : '' %>>
+                      <%= loc[:name] %><%= loc[:is_city] ? ' (City)' : '' %>
+                    </option>
+                  <% end %>
+                </select>
+                <label class="label">
+                  <span class="label-text-alt text-base-content/60">The city or location where players enter the game world.</span>
+                </label>
+              </div>
+
+              <div class="form-control">
+                <label for="spawn_room_id" class="label">
+                  <span class="label-text font-semibold">Destination Room</span>
+                </label>
+                <select class="select select-bordered" id="spawn_room_id" name="spawn_room_id">
+                  <option value="">-- Auto-detect (default) --</option>
+                  <% @spawn_rooms.each do |rm| %>
+                    <option value="<%= rm[:id] %>" <%= @spawn_room_id == rm[:id] ? 'selected' : '' %>>
+                      <%= rm[:name] %> (<%= rm[:room_type] %>)
+                    </option>
+                  <% end %>
+                </select>
+                <label class="label">
+                  <span class="label-text-alt text-base-content/60">The specific room within the location. Select a location first to populate this list.</span>
+                </label>
+              </div>
+            </div>
+
+            <% if @current_spawn_room %>
+              <div class="alert alert-success mb-4">
+                <i class="bi bi-check-circle"></i>
+                <span>Enter game destination: <strong><%= @current_spawn_room[:name] %></strong> (<%= @current_spawn_room[:location_name] %>)</span>
+              </div>
+            <% end %>
+
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-lg mr-1"></i>Save Spawn Settings
+            </button>
+          </form>
+        </div>
+      </div>
+    
+<%= admin_content_end %>

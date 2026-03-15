@@ -1,0 +1,242 @@
+<% chain = @ability.parsed_chain_config || {} %>
+<% execute = @ability.parsed_execute_effect || {} %>
+<% combo = @ability.parsed_combo_condition || {} %>
+<% movement = @ability.parsed_forced_movement || {} %>
+<% execute_threshold = @ability.execute_threshold.to_i %>
+
+<!-- Chain Lightning / Multi-Target -->
+<div class="card bg-base-200 mb-4">
+  <div class="card-body">
+    <div class="p-4 border-b border-base-content/10 -mx-4 -mt-4 mb-4">
+      <h3 class="font-semibold"><i class="bi bi-lightning mr-2"></i>Chain Effect</h3>
+    </div>
+    <p class="text-base-content/70 text-sm mb-3">
+      Ability chains to additional targets after hitting the primary target.
+    </p>
+
+    <div class="form-control mb-3">
+      <label class="label cursor-pointer justify-start gap-3">
+        <input type="checkbox" class="toggle toggle-primary" name="chain_enabled" value="1"
+               <%= chain['max_targets'].to_i > 0 ? 'checked' : '' %> id="chain_enabled">
+        <span class="label-text">Enable chain effect</span>
+      </label>
+    </div>
+
+    <div id="chain-config-fields" style="<%= chain['max_targets'].to_i > 0 ? '' : 'display:none;' %>">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div>
+          <label class="label"><span class="label-text">Max Targets</span></label>
+          <input type="number" class="input input-bordered w-full" name="chain_max_targets"
+                 value="<%= chain['max_targets'] || 3 %>" min="2" max="10">
+          <label class="label"><span class="label-text-alt text-base-content/70">Total targets including primary</span></label>
+        </div>
+
+        <div>
+          <label class="label"><span class="label-text">Range Per Jump (hexes)</span></label>
+          <input type="number" class="input input-bordered w-full" name="chain_range_per_jump"
+                 value="<%= chain['range_per_jump'] || 2 %>" min="1" max="10">
+        </div>
+
+        <div>
+          <label class="label"><span class="label-text">Damage Falloff</span></label>
+          <input type="number" class="input input-bordered w-full" name="chain_damage_falloff"
+                 value="<%= chain['damage_falloff'] || 0.8 %>" step="0.05" min="0.1" max="1.0">
+          <label class="label"><span class="label-text-alt text-base-content/70">Multiplier per jump (0.8 = 80%)</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Execute Effect -->
+<div class="card bg-base-200 mb-4">
+  <div class="card-body">
+    <div class="p-4 border-b border-base-content/10 -mx-4 -mt-4 mb-4">
+      <h3 class="font-semibold"><i class="bi bi-slash-circle mr-2"></i>Execute Effect</h3>
+    </div>
+    <p class="text-base-content/70 text-sm mb-3">
+      Bonus effect when target is below a health threshold.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div>
+        <label class="label"><span class="label-text">HP Threshold %</span></label>
+        <input type="number" class="input input-bordered w-full" name="execute_threshold" id="execute_threshold"
+               value="<%= execute_threshold %>" min="0" max="50">
+        <label class="label"><span class="label-text-alt text-base-content/70">0 = disabled. 25 = below 25% HP</span></label>
+      </div>
+
+      <div id="execute-effect-group" style="<%= execute_threshold > 0 ? '' : 'display:none;' %>">
+        <label class="label"><span class="label-text">Execute Effect</span></label>
+        <div class="form-control mt-2">
+          <label class="label cursor-pointer justify-start gap-3">
+            <input type="checkbox" class="checkbox checkbox-primary" name="execute_instant_kill" value="1"
+                   <%= execute['instant_kill'] ? 'checked' : '' %> id="execute_instant_kill">
+            <span class="label-text">Instant kill</span>
+          </label>
+        </div>
+      </div>
+
+      <div id="execute-multiplier-group" style="<%= execute_threshold > 0 && !execute['instant_kill'] ? '' : 'display:none;' %>">
+        <label class="label"><span class="label-text">Damage Multiplier</span></label>
+        <input type="number" class="input input-bordered w-full" name="execute_damage_multiplier"
+               value="<%= execute['damage_multiplier'] || 2.0 %>" step="0.5" min="1.5" max="5.0">
+        <label class="label"><span class="label-text-alt text-base-content/70">2.0 = double damage</span></label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Lifesteal -->
+<div class="card bg-base-200 mb-4">
+  <div class="card-body">
+    <div class="p-4 border-b border-base-content/10 -mx-4 -mt-4 mb-4">
+      <h3 class="font-semibold"><i class="bi bi-heart-pulse mr-2"></i>Lifesteal</h3>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-1 gap-3">
+      <div>
+        <label class="label"><span class="label-text">Lifesteal Cap (HP per hit)</span></label>
+        <input type="number" class="input input-bordered w-full" name="lifesteal_max"
+               value="<%= @ability.lifesteal_max || 0 %>" min="0" max="20">
+        <label class="label"><span class="label-text-alt text-base-content/70">0 = disabled. Heals up to this many HP per hit.</span></label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Combo Condition -->
+<div class="card bg-base-200 mb-4">
+  <div class="card-body">
+    <div class="p-4 border-b border-base-content/10 -mx-4 -mt-4 mb-4">
+      <h3 class="font-semibold"><i class="bi bi-arrow-repeat mr-2"></i>Combo Condition</h3>
+    </div>
+    <p class="text-base-content/70 text-sm mb-3">
+      Bonus effect when target has a specific status effect.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div>
+        <label class="label"><span class="label-text">Required Status</span></label>
+        <select class="select select-bordered w-full" name="combo_requires_status">
+          <option value="">-- None --</option>
+          <% (@status_effects || []).each do |se| %>
+            <option value="<%= se.name.downcase %>" <%= combo['requires_status']&.downcase == se.name.downcase ? 'selected' : '' %>><%= h se.name %></option>
+          <% end %>
+        </select>
+        <label class="label"><span class="label-text-alt text-base-content/70">Target must have this status</span></label>
+      </div>
+
+      <div>
+        <label class="label"><span class="label-text">Bonus Dice</span></label>
+        <input type="text" class="input input-bordered w-full" name="combo_bonus_dice"
+               value="<%= h(combo['bonus_dice'] || '') %>" placeholder="e.g., 2d6">
+      </div>
+
+      <div>
+        <label class="label"><span class="label-text">Options</span></label>
+        <div class="form-control mt-2">
+          <label class="label cursor-pointer justify-start gap-3">
+            <input type="checkbox" class="checkbox checkbox-primary" name="combo_consumes_status" value="1"
+                   <%= combo['consumes_status'] ? 'checked' : '' %> id="combo_consumes_status">
+            <span class="label-text">Consumes the status</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Forced Movement -->
+<div class="card bg-base-200 mb-4">
+  <div class="card-body">
+    <div class="p-4 border-b border-base-content/10 -mx-4 -mt-4 mb-4">
+      <h3 class="font-semibold"><i class="bi bi-arrows-move mr-2"></i>Forced Movement</h3>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div>
+        <label class="label"><span class="label-text">Direction</span></label>
+        <% move_direction = movement['direction'].to_s.downcase %>
+        <select class="select select-bordered w-full" name="forced_movement_direction">
+          <option value="">-- None --</option>
+          <option value="push" <%= %w[push away].include?(move_direction) ? 'selected' : '' %>>Push (away from caster)</option>
+          <option value="pull" <%= %w[pull toward towards].include?(move_direction) ? 'selected' : '' %>>Pull (toward caster)</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="label"><span class="label-text">Distance (hexes)</span></label>
+        <input type="number" class="input input-bordered w-full" name="forced_movement_distance"
+               value="<%= movement['distance'] || 0 %>" min="0" max="10">
+      </div>
+
+      <div>
+        <label class="label"><span class="label-text">Applies Prone</span></label>
+        <div class="form-control mt-2">
+          <label class="label cursor-pointer justify-start gap-3">
+            <input type="hidden" name="applies_prone" value="0">
+            <input type="checkbox" class="toggle toggle-primary" name="applies_prone" value="1"
+                   <%= @ability.applies_prone ? 'checked' : '' %> id="applies_prone">
+            <span class="label-text">Knockdown target</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Narrative Messages -->
+<div class="card bg-base-200 mb-4">
+  <div class="card-body">
+    <div class="p-4 border-b border-base-content/10 -mx-4 -mt-4 mb-4">
+      <h3 class="font-semibold"><i class="bi bi-chat-quote mr-2"></i>Narrative Messages</h3>
+    </div>
+    <p class="text-base-content/70 text-sm mb-3">
+      Custom verbs and descriptions for combat narration. One per line.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div>
+        <label class="label"><span class="label-text">Cast Verbs</span></label>
+        <textarea class="textarea textarea-bordered w-full" name="cast_verbs" rows="3" placeholder="conjures&#10;summons&#10;invokes"><%= (@ability.cast_verbs || []).join("\n") %></textarea>
+        <label class="label"><span class="label-text-alt text-base-content/70">e.g., "casts", "invokes"</span></label>
+      </div>
+
+      <div>
+        <label class="label"><span class="label-text">Hit Verbs</span></label>
+        <textarea class="textarea textarea-bordered w-full" name="hit_verbs" rows="3" placeholder="strikes&#10;blasts&#10;engulfs"><%= (@ability.hit_verbs || []).join("\n") %></textarea>
+        <label class="label"><span class="label-text-alt text-base-content/70">e.g., "strikes", "engulfs"</span></label>
+      </div>
+
+      <div>
+        <label class="label"><span class="label-text">AoE Descriptions</span></label>
+        <textarea class="textarea textarea-bordered w-full" name="aoe_descriptions" rows="3" placeholder="A wave of fire spreads outward&#10;Lightning arcs between targets"><%= (@ability.aoe_descriptions || []).join("\n") %></textarea>
+        <label class="label"><span class="label-text-alt text-base-content/70">Descriptions for area effects</span></label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JSON Debug (for admins) -->
+<% if @current_user&.admin? %>
+<div class="mb-4">
+  <div class="collapse collapse-arrow bg-base-200 rounded-lg">
+    <input type="checkbox" />
+    <div class="collapse-title flex justify-between items-center">
+      <span><i class="bi bi-code-slash mr-2"></i>Raw JSON Data</span>
+    </div>
+    <div class="collapse-content">
+      <pre class="text-base-content/70 text-sm mb-0"><code>costs: <%= JSON.pretty_generate(@ability.costs || {}) %>
+
+applied_status_effects: <%= JSON.pretty_generate(@ability.applied_status_effects || []) %>
+
+chain_config: <%= JSON.pretty_generate(@ability.chain_config || {}) %>
+
+execute_effect: <%= JSON.pretty_generate(@ability.execute_effect || {}) %>
+
+combo_condition: <%= JSON.pretty_generate(@ability.combo_condition || {}) %>
+
+forced_movement: <%= JSON.pretty_generate(@ability.forced_movement || {}) %></code></pre>
+    </div>
+  </div>
+</div>
+<% end %>

@@ -1,0 +1,64 @@
+<div class="card bg-base-200 mb-4">
+  <div class="p-4 border-b border-base-content/10 flex items-center gap-2">
+    <i class="bi bi-person"></i>Appearance (Humanoid)
+  </div>
+  <div class="card-body">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">Hair Description</span>
+        </label>
+        <textarea class="textarea textarea-bordered w-full" name="default_hair_desc" rows="2"
+                  placeholder="e.g., long black hair tied in a braid"><%= h(@archetype.default_hair_desc || '') %></textarea>
+      </div>
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">Eyes Description</span>
+        </label>
+        <textarea class="textarea textarea-bordered w-full" name="default_eyes_desc" rows="2"
+                  placeholder="e.g., piercing blue eyes"><%= h(@archetype.default_eyes_desc || '') %></textarea>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">Skin Tone</span>
+        </label>
+        <input type="text" class="input input-bordered w-full" name="default_skin_tone"
+               placeholder="e.g., olive" value="<%= h(@archetype.default_skin_tone || '') %>">
+      </div>
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">Body Description</span>
+        </label>
+        <textarea class="textarea textarea-bordered w-full" name="default_body_desc" rows="2"
+                  placeholder="e.g., a muscular build with broad shoulders"><%= h(@archetype.default_body_desc || '') %></textarea>
+      </div>
+    </div>
+    <div class="form-control mt-4">
+      <label class="label">
+        <span class="label-text">Default Clothing</span>
+      </label>
+      <textarea class="textarea textarea-bordered w-full" name="default_clothes_desc" rows="2"
+                placeholder="e.g., a worn leather apron over simple work clothes"><%= h(@archetype.default_clothes_desc || '') %></textarea>
+    </div>
+  </div>
+</div>
+
+<div class="card bg-base-200 mb-4">
+  <div class="p-4 border-b border-base-content/10 flex items-center gap-2">
+    <i class="bi bi-bug"></i>Appearance (Creature/Non-Humanoid)
+  </div>
+  <div class="card-body">
+    <div class="form-control">
+      <label class="label">
+        <span class="label-text">Creature Description</span>
+      </label>
+      <textarea class="textarea textarea-bordered w-full" name="default_creature_desc" rows="3"
+                placeholder="Full description for non-humanoid creatures"><%= h(@archetype.default_creature_desc || '') %></textarea>
+      <label class="label">
+        <span class="label-text-alt text-base-content/70">Used when "Humanoid" is unchecked. Describes the full creature appearance.</span>
+      </label>
+    </div>
+  </div>
+</div>

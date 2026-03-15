@@ -1,0 +1,299 @@
+<!-- Page Banner -->
+<section class="page-banner" style="background-image: url('/images/ballroom.jpg');">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <div class="breadcrumbs text-sm">
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li>Events Calendar</li>
+        </ul>
+      </div>
+      <h1>Upcoming <span class="text-primary">Events</span></h1>
+    </div>
+  </div>
+</section>
+
+<section class="py-12">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Main Content -->
+      <div class="lg:col-span-8">
+        <!-- Events List -->
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="card-title"><i class="bi bi-calendar-event mr-2"></i>Upcoming Events</h2>
+              <% if @current_user %>
+                <button class="btn btn-primary btn-sm" onclick="document.getElementById('createEventModal').showModal()">
+                  <i class="bi bi-plus-lg mr-1"></i>Create Event
+                </button>
+              <% end %>
+            </div>
+            <% if @events && @events.any? %>
+              <ul class="menu bg-base-200 rounded-box w-full p-0">
+                <% @events.each do |event| %>
+                  <li class="border-b border-base-content/10 mb-3 p-3 rounded-lg bg-base-300/50">
+                    <div class="flex w-full justify-between items-start hover:bg-transparent cursor-default">
+                      <div class="flex-grow">
+                        <div class="flex items-center mb-2">
+                          <h5 class="font-semibold mr-2"><%= h event[:name] %></h5>
+                          <span class="badge badge-<%= event[:status] == 'active' ? 'success' : 'ghost' %>">
+                            <%= event[:status].capitalize %>
+                          </span>
+                          <% unless event[:is_public] %>
+                            <span class="badge badge-warning ml-1">Private</span>
+                          <% end %>
+                        </div>
+                        <p class="text-base-content/70 mb-2">
+                          <i class="bi bi-geo-alt mr-1"></i><%= h(event[:room_name] || event[:location_name] || 'TBD') %>
+                          &nbsp;|&nbsp;
+                          <i class="bi bi-person mr-1"></i><%= h event[:organizer_name] %>
+                        </p>
+                        <% if event[:description] %>
+                          <p class="mb-2"><%= truncate_text(event[:description], 200) %></p>
+                        <% end %>
+                        <div class="flex items-center">
+                          <span class="badge badge-primary mr-2"><%= event[:event_type].capitalize %></span>
+                          <small class="text-base-content/70">
+                            <i class="bi bi-people mr-1"></i><%= event[:attendee_count] %> attending
+                            <% if event[:max_attendees] %>
+                              / <%= event[:max_attendees] %> max
+                            <% end %>
+                          </small>
+                        </div>
+                      </div>
+                      <div class="text-right ml-3">
+                        <div class="mb-2">
+                          <span class="event-date badge badge-neutral p-2" data-iso="<%= event[:starts_at] %>">
+                            Loading...
+                          </span>
+                        </div>
+                        <a href="/events/<%= event[:id] %>" class="btn btn-outline btn-primary btn-sm">
+                          <i class="bi bi-info-circle mr-1"></i>Details
+                        </a>
+                        <% if event[:status] == 'completed' %>
+                          <a href="/events/<%= event[:id] %>/logs" class="btn btn-outline btn-ghost btn-sm">
+                            <i class="bi bi-journal-text mr-1"></i>Logs
+                          </a>
+                        <% end %>
+                      </div>
+                    </div>
+                  </li>
+                <% end %>
+              </ul>
+            <% else %>
+              <div class="text-center py-12">
+                <i class="bi bi-calendar-x text-6xl text-base-content/70 mb-3 block"></i>
+                <h4 class="text-xl font-semibold">No Upcoming Events</h4>
+                <p class="text-base-content/70 mb-4">Be the first to host something!</p>
+                <% if @current_user %>
+                  <button class="btn btn-primary btn-lg" onclick="document.getElementById('createEventModal').showModal()">
+                    <i class="bi bi-plus-lg mr-2"></i>Create an Event
+                  </button>
+                <% else %>
+                  <a href="/login" class="btn btn-primary btn-lg">
+                    <i class="bi bi-box-arrow-in-right mr-2"></i>Log in to Create Events
+                  </a>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="lg:col-span-4">
+        <!-- Your Events (if logged in) -->
+        <% if @current_user && @my_events && @my_events.any? %>
+          <div class="card bg-base-200 mb-4">
+            <div class="card-body">
+              <h2 class="card-title"><i class="bi bi-star mr-2"></i>Your Events</h2>
+              <ul class="menu bg-base-200 rounded-box w-full p-0">
+                <% @my_events.each do |event| %>
+                  <li>
+                    <a href="/events/<%= event[:id] %>" class="flex justify-between border-b border-base-content/10">
+                      <span><%= h event[:name] %></span>
+                      <span class="badge badge-<%= event[:status] == 'active' ? 'success' : 'ghost' %>"><%= event[:status] %></span>
+                    </a>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Event Types Info -->
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body">
+            <h2 class="card-title"><i class="bi bi-info-circle mr-2"></i>Event Types</h2>
+            <dl class="grid grid-cols-3 gap-2 text-sm">
+              <dt class="text-primary font-semibold">Party</dt>
+              <dd class="col-span-2 text-base-content/70">Social gatherings and celebrations</dd>
+              <dt class="text-primary font-semibold">Meeting</dt>
+              <dd class="col-span-2 text-base-content/70">Business or planning sessions</dd>
+              <dt class="text-primary font-semibold">Concert</dt>
+              <dd class="col-span-2 text-base-content/70">Musical performances</dd>
+              <dt class="text-primary font-semibold">Competition</dt>
+              <dd class="col-span-2 text-base-content/70">Games, tournaments, contests</dd>
+              <dt class="text-primary font-semibold">Ceremony</dt>
+              <dd class="col-span-2 text-base-content/70">Formal occasions</dd>
+            </dl>
+          </div>
+        </div>
+
+        <!-- Timezone Info -->
+        <div class="card bg-base-200">
+          <div class="card-body">
+            <h2 class="card-title"><i class="bi bi-clock mr-2"></i>Your Timezone</h2>
+            <p class="mb-0" id="timezone-display">Detecting...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Create Event Modal -->
+<% if @current_user %>
+<dialog id="createEventModal" class="modal">
+  <div class="modal-box max-w-3xl bg-base-200">
+    <div class="flex justify-between items-center border-b border-base-content/10 pb-4 mb-4">
+      <h3 class="text-lg font-semibold">
+        <i class="bi bi-calendar-plus mr-2"></i>Create Event
+      </h3>
+      <form method="dialog">
+        <button class="btn btn-ghost btn-sm btn-circle">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </form>
+    </div>
+    <form id="createEventForm">
+      <div class="py-2">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="md:col-span-2">
+              <label for="eventName" class="label"><span class="label-text">Event Name *</span></label>
+              <input type="text" class="input input-bordered w-full" id="eventName" name="name" required>
+            </div>
+            <div>
+              <label for="eventType" class="label"><span class="label-text">Event Type</span></label>
+              <select class="select select-bordered w-full" id="eventType" name="event_type">
+                <option value="party">Party</option>
+                <option value="meeting">Meeting</option>
+                <option value="concert">Concert</option>
+                <option value="competition">Competition</option>
+                <option value="ceremony">Ceremony</option>
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+              </select>
+            </div>
+            <div>
+              <label class="label"><span class="label-text">Visibility</span></label>
+              <label class="label cursor-pointer justify-start gap-2">
+                <input class="checkbox checkbox-primary" type="checkbox" id="eventPublic" name="is_public" checked>
+                <span class="label-text">Public Event</span>
+              </label>
+            </div>
+            <div>
+              <label for="eventStart" class="label"><span class="label-text">Start Date/Time *</span></label>
+              <input type="datetime-local" class="input input-bordered w-full" id="eventStart" name="starts_at" required>
+            </div>
+            <div>
+              <label for="eventEnd" class="label"><span class="label-text">End Date/Time (optional)</span></label>
+              <input type="datetime-local" class="input input-bordered w-full" id="eventEnd" name="ends_at">
+            </div>
+            <div class="md:col-span-2">
+              <label for="eventDescription" class="label"><span class="label-text">Description</span></label>
+              <textarea class="textarea textarea-bordered w-full" id="eventDescription" name="description" rows="3"></textarea>
+            </div>
+            <div>
+              <label for="logsVisibility" class="label"><span class="label-text">Log Visibility</span></label>
+              <select class="select select-bordered w-full" id="logsVisibility" name="logs_visible_to">
+                <option value="public">Public (anyone can view)</option>
+                <option value="attendees">Attendees only</option>
+                <option value="organizer">Organizer only</option>
+              </select>
+            </div>
+            <div>
+              <label for="maxAttendees" class="label"><span class="label-text">Max Attendees (optional)</span></label>
+              <input type="number" class="input input-bordered w-full" id="maxAttendees" name="max_attendees" min="1">
+            </div>
+          </div>
+      </div>
+      <div class="modal-action border-t border-base-content/10 pt-4">
+        <form method="dialog">
+          <button class="btn btn-ghost">Cancel</button>
+        </form>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-calendar-plus mr-1"></i>Create Event
+        </button>
+      </div>
+    </form>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+<% end %>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Display user's timezone
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  document.getElementById('timezone-display').textContent = tz;
+
+  // Format all dates in user's local timezone
+  document.querySelectorAll('.event-date').forEach(function(el) {
+    const iso = el.dataset.iso;
+    if (iso) {
+      const date = new Date(iso);
+      el.textContent = date.toLocaleDateString(undefined, {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+    }
+  });
+
+  // Create event form submission
+  const form = document.getElementById('createEventForm');
+  if (form) {
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      const data = {
+        name: formData.get('name'),
+        event_type: formData.get('event_type'),
+        is_public: formData.get('is_public') === 'on',
+        starts_at: new Date(formData.get('starts_at')).toISOString(),
+        description: formData.get('description'),
+        logs_visible_to: formData.get('logs_visible_to'),
+        max_attendees: formData.get('max_attendees') ? parseInt(formData.get('max_attendees')) : null
+      };
+
+      if (formData.get('ends_at')) {
+        data.ends_at = new Date(formData.get('ends_at')).toISOString();
+      }
+
+      try {
+        const response = await fetch('/api/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          window.location.reload();
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (err) {
+        alert('Error creating event: ' + err.message);
+      }
+    });
+  }
+});
+</script>

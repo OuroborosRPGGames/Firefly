@@ -1,0 +1,113 @@
+<% @page_title = "#{@character.full_name} Reputation - Admin" %>
+<% @breadcrumbs = [
+  { label: 'Admin', path: '/admin' },
+  { label: 'PC Reputations', path: '/admin/reputations' },
+  { label: @character.full_name, path: "/admin/reputations/#{@character.id}" }
+] %>
+
+<%= admin_content_start %>
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h2 class="text-2xl font-bold flex items-center gap-2">
+          <i class="bi bi-person"></i><%= h @character.full_name %>
+        </h2>
+        <form method="post" action="/admin/reputations/<%= @character.id %>/regenerate">
+          <%= csrf_tag %>
+          <button type="submit" class="btn btn-warning">
+            <i class="bi bi-arrow-clockwise"></i>Regenerate from Memories
+          </button>
+        </form>
+      </div>
+
+      <% if @character.reputation_updated_at %>
+        <p class="text-base-content/70 mb-4">Last updated: <%= @character.reputation_updated_at.strftime('%Y-%m-%d %H:%M') %></p>
+      <% end %>
+
+      <form method="post" action="/admin/reputations/<%= @character.id %>">
+        <%= csrf_tag %>
+
+        <div class="card bg-base-200 mb-6">
+          <div class="p-4 border-b border-base-content/10">
+            <h5 class="font-semibold flex items-center gap-2">
+              <i class="bi bi-megaphone text-success"></i>Tier 1: Public Knowledge
+            </h5>
+          </div>
+          <div class="card-body">
+            <p class="text-base-content/70 text-sm mb-3">
+              What almost everyone might have heard. Reserved for remarkable deeds or public events.
+              Most characters have nothing notable here.
+            </p>
+            <textarea name="tier_1_reputation" class="textarea textarea-bordered w-full"
+                      rows="4" placeholder="Nothing notable publicly known."><%= @character.tier_1_reputation %></textarea>
+          </div>
+        </div>
+
+        <div class="card bg-base-200 mb-6">
+          <div class="p-4 border-b border-base-content/10">
+            <h5 class="font-semibold flex items-center gap-2">
+              <i class="bi bi-people text-info"></i>Tier 2: Social Circles
+            </h5>
+          </div>
+          <div class="card-body">
+            <p class="text-base-content/70 text-sm mb-3">
+              What someone in similar social circles would know - moderate accomplishments,
+              regular activities, and known associations.
+            </p>
+            <textarea name="tier_2_reputation" class="textarea textarea-bordered w-full"
+                      rows="4"><%= @character.tier_2_reputation %></textarea>
+          </div>
+        </div>
+
+        <div class="card bg-base-200 mb-6">
+          <div class="p-4 border-b border-base-content/10">
+            <h5 class="font-semibold flex items-center gap-2">
+              <i class="bi bi-person-badge text-warning"></i>Tier 3: Close Associates
+            </h5>
+          </div>
+          <div class="card-body">
+            <p class="text-base-content/70 text-sm mb-3">
+              What close associates or thorough investigators would know - personal details,
+              motivations, secrets, and detailed history.
+            </p>
+            <textarea name="tier_3_reputation" class="textarea textarea-bordered w-full"
+                      rows="4"><%= @character.tier_3_reputation %></textarea>
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save"></i>Save Changes
+          </button>
+          <a href="/admin/reputations" class="btn btn-outline btn-neutral">Cancel</a>
+        </div>
+      </form>
+
+      <% if @memories && @memories.any? %>
+        <div class="card bg-base-200 mt-6">
+          <div class="p-4 border-b border-base-content/10">
+            <h5 class="font-semibold flex items-center gap-2">
+              <i class="bi bi-journal-text"></i>Related World Memories
+            </h5>
+          </div>
+          <div class="card-body">
+            <p class="text-base-content/70 text-sm mb-4">
+              These memories are analyzed when regenerating reputation. Importance (1-10) and recency affect weight.
+            </p>
+            <ul class="space-y-2">
+              <% @memories.each do |memory| %>
+                <li class="p-3 rounded bg-base-300">
+                  <div class="flex flex-col sm:flex-row justify-between items-start gap-2">
+                    <div>
+                      <span class="text-base-content/70 text-sm">
+                        <%= memory.memory_at&.strftime('%Y-%m-%d') %> |
+                        Importance: <span class="badge <%= memory.importance >= 7 ? 'badge-warning' : 'badge-neutral' %>"><%= memory.importance %>/10</span>
+                      </span>
+                      <p class="mt-1"><%= h memory.summary %></p>
+                    </div>
+                  </div>
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      <% end %>
+<%= admin_content_end %>

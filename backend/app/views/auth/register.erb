@@ -1,0 +1,145 @@
+<!-- Page Banner -->
+<section class="page-banner" style="background-image: url('/images/library.jpg');">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <nav aria-label="breadcrumb">
+        <div class="breadcrumbs text-sm">
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li>Register</li>
+          </ul>
+        </div>
+      </nav>
+      <h1>Join <%= game_name %></h1>
+    </div>
+  </div>
+</section>
+
+<section class="py-12">
+  <div class="container mx-auto px-4">
+    <div class="flex justify-center">
+      <div class="w-full max-w-lg">
+        <div class="card bg-base-200">
+          <div class="card-body">
+            <div class="text-center mb-4">
+              <h2 class="text-xl font-bold mb-2">Create Your Account</h2>
+              <p class="text-base-content/70">Begin your journey into a world of stories</p>
+            </div>
+
+            <form action="/register" method="post">
+              <%= csrf_tag %>
+
+              <div class="form-control mb-4">
+                <label class="label" for="username">
+                  <span class="label-text">Username <span class="text-error">*</span></span>
+                </label>
+                <label class="input input-bordered flex items-center gap-2">
+                  <i class="bi bi-person text-base-content/50"></i>
+                  <input type="text" class="grow" id="username" name="username" required autofocus
+                         placeholder="Choose a unique username" minlength="3" maxlength="50"
+                         pattern="[A-Za-z0-9_-]+" autocomplete="username">
+                </label>
+                <label class="label">
+                  <span class="label-text-alt text-base-content/50">3-50 characters, letters, numbers, underscores, and hyphens only</span>
+                </label>
+              </div>
+
+              <div class="form-control mb-4">
+                <label class="label" for="email">
+                  <span class="label-text">Email Address <span class="text-error">*</span></span>
+                </label>
+                <label class="input input-bordered flex items-center gap-2">
+                  <i class="bi bi-envelope text-base-content/50"></i>
+                  <input type="email" class="grow" id="email" name="email" required
+                         placeholder="your@email.com" autocomplete="email">
+                </label>
+                <label class="label">
+                  <span class="label-text-alt text-base-content/50">Used for account recovery and important notifications</span>
+                </label>
+              </div>
+
+              <div class="form-control mb-4">
+                <label class="label" for="discord_handle">
+                  <span class="label-text">Discord Handle (Optional)</span>
+                </label>
+                <label class="input input-bordered flex items-center gap-2">
+                  <i class="bi bi-discord text-base-content/50"></i>
+                  <input type="text" class="grow" id="discord_handle" name="discord_handle"
+                         placeholder="@your_handle" autocomplete="off">
+                </label>
+                <label class="label">
+                  <span class="label-text-alt text-base-content/50">Use Discord's current @handle format (not legacy name#1234)</span>
+                </label>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="form-control">
+                  <label class="label" for="password">
+                    <span class="label-text">Password <span class="text-error">*</span></span>
+                  </label>
+                  <label class="input input-bordered flex items-center gap-2">
+                    <i class="bi bi-lock text-base-content/50"></i>
+                    <input type="password" class="grow" id="password" name="password" required
+                           placeholder="Create password" minlength="6" autocomplete="new-password">
+                  </label>
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/50">Minimum 6 characters</span>
+                  </label>
+                </div>
+
+                <div class="form-control">
+                  <label class="label" for="password_confirmation">
+                    <span class="label-text">Confirm <span class="text-error">*</span></span>
+                  </label>
+                  <label class="input input-bordered flex items-center gap-2">
+                    <i class="bi bi-lock-fill text-base-content/50"></i>
+                    <input type="password" class="grow" id="password_confirmation" name="password_confirmation" required
+                           placeholder="Re-enter password" autocomplete="new-password">
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-control mb-6">
+                <label class="label cursor-pointer justify-start gap-3">
+                  <input type="checkbox" class="checkbox" id="agree_terms" name="agree_terms" required>
+                  <span class="label-text">
+                    I agree to the <a href="/info/rules" class="text-primary hover:underline">Community Guidelines</a>
+                  </span>
+                </label>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block">
+                <i class="bi bi-rocket-takeoff mr-2"></i>Create Account
+              </button>
+            </form>
+
+            <div class="divider">OR</div>
+
+            <div class="text-center">
+              <p class="text-base-content/70 mb-3">Already have an account?</p>
+              <a href="/login" class="btn btn-outline btn-primary">
+                <i class="bi bi-box-arrow-in-right mr-2"></i>Sign In Instead
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Account Guidelines -->
+        <div class="card bg-base-200 mt-4">
+          <div class="card-body">
+            <h3 class="font-bold mb-3">
+              <i class="bi bi-info-circle mr-2"></i>Account Guidelines
+            </h3>
+            <ul class="space-y-2 text-sm text-base-content/70">
+              <li><i class="bi bi-check-circle text-success mr-2"></i>Choose a username you'll be happy to use in roleplay</li>
+              <li><i class="bi bi-check-circle text-success mr-2"></i>Your email will only be used for account recovery</li>
+              <li><i class="bi bi-check-circle text-success mr-2"></i>All characters must be 18+ years old</li>
+              <li><i class="bi bi-check-circle text-success mr-2"></i>Be respectful to other players</li>
+              <li><i class="bi bi-check-circle text-success mr-2"></i>Have fun exploring the world!</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

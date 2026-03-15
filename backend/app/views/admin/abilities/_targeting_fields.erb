@@ -1,0 +1,87 @@
+<div class="card bg-base-200 mb-4">
+  <div class="card-body">
+    <div class="p-4 border-b border-base-content/10 -mx-4 -mt-4 mb-4">
+      <h3 class="font-semibold"><i class="bi bi-crosshair mr-2"></i>Target Selection</h3>
+    </div>
+    <div class="grid grid-cols-1 gap-3">
+      <div>
+        <label class="label"><span class="label-text">Target Type</span></label>
+        <select class="select select-bordered w-full" name="target_type">
+          <% Ability::TARGET_TYPES.each do |t| %>
+            <option value="<%= t %>" <%= @ability.target_type == t ? 'selected' : '' %>><%= t.capitalize %></option>
+          <% end %>
+        </select>
+        <label class="label"><span class="label-text-alt text-base-content/70">Who can be targeted</span></label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card bg-base-200 mb-4">
+  <div class="card-body">
+    <div class="p-4 border-b border-base-content/10 -mx-4 -mt-4 mb-4">
+      <h3 class="font-semibold"><i class="bi bi-bullseye mr-2"></i>Area of Effect</h3>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div>
+        <label class="label"><span class="label-text">AoE Shape</span></label>
+        <select class="select select-bordered w-full" name="aoe_shape" id="aoe_shape">
+          <% Ability::AOE_SHAPES.each do |s| %>
+            <option value="<%= s %>" <%= @ability.aoe_shape == s ? 'selected' : '' %>><%= s.capitalize %></option>
+          <% end %>
+        </select>
+      </div>
+
+      <div id="aoe-radius-group" style="<%= @ability.aoe_shape == 'circle' ? '' : 'display:none;' %>">
+        <label class="label"><span class="label-text">Radius (hexes)</span></label>
+        <input type="number" class="input input-bordered w-full" name="aoe_radius"
+               value="<%= @ability.aoe_radius %>" min="0" max="20">
+        <label class="label"><span class="label-text-alt text-base-content/70">For circle AoE</span></label>
+      </div>
+
+      <div id="aoe-length-group" style="<%= %w[line cone].include?(@ability.aoe_shape) ? '' : 'display:none;' %>">
+        <label class="label"><span class="label-text">Length (hexes)</span></label>
+        <input type="number" class="input input-bordered w-full" name="aoe_length"
+               value="<%= @ability.aoe_length %>" min="0" max="20">
+        <label class="label"><span class="label-text-alt text-base-content/70">For line/cone AoE</span></label>
+      </div>
+
+      <div id="aoe-angle-group" style="<%= @ability.aoe_shape == 'cone' ? '' : 'display:none;' %>">
+        <label class="label"><span class="label-text">Cone Angle (degrees)</span></label>
+        <input type="number" class="input input-bordered w-full" name="aoe_angle"
+               value="<%= @ability.aoe_angle || 60 %>" min="15" max="180">
+        <label class="label"><span class="label-text-alt text-base-content/70">Default: 60</span></label>
+      </div>
+
+      <div id="aoe-hits-allies-group" style="<%= @ability.aoe_shape != 'single' ? '' : 'display:none;' %>">
+        <label class="label"><span class="label-text">Friendly Fire</span></label>
+        <div class="form-control mt-2">
+          <label class="label cursor-pointer justify-start gap-3">
+            <input type="hidden" name="aoe_hits_allies" value="0">
+            <input type="checkbox" class="toggle toggle-warning" name="aoe_hits_allies" value="1"
+                   <%= @ability.aoe_hits_allies ? 'checked' : '' %> id="aoe_hits_allies">
+            <span class="label-text">AoE can hit allies</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <h6 class="font-semibold mb-2">Shape Reference</h6>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-2 text-base-content/70 text-sm">
+        <div>
+          <strong>Single:</strong> One target only
+        </div>
+        <div>
+          <strong>Circle:</strong> All targets within radius of center
+        </div>
+        <div>
+          <strong>Cone:</strong> Targets in a cone from caster toward target
+        </div>
+        <div>
+          <strong>Line:</strong> All targets in a straight line
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

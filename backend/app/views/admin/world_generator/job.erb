@@ -1,0 +1,241 @@
+<% @page_title = 'Generation Job - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'World Generator', path: '/admin/world_generator' }, { label: "Job ##{@job.id}" }] %>
+
+<%= admin_content_start %>
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h1 class="text-2xl font-bold">
+            <i class="bi bi-gear mr-2"></i>Job #<%= @job.id %>
+            <% if @job.status == 'pending' %>
+              <span class="badge badge-neutral ml-2">Pending</span>
+            <% elsif @job.status == 'running' %>
+              <span class="badge badge-primary ml-2">Running</span>
+            <% elsif @job.status == 'completed' %>
+              <span class="badge badge-success ml-2">Completed</span>
+            <% elsif @job.status == 'failed' %>
+              <span class="badge badge-error ml-2">Failed</span>
+            <% elsif @job.status == 'cancelled' %>
+              <span class="badge badge-warning ml-2">Cancelled</span>
+            <% end %>
+          </h1>
+          <p class="text-base-content/70"><%= @job_info[:type] %> generation</p>
+        </div>
+        <div class="flex gap-2">
+          <a href="/admin/world_generator/jobs" class="btn btn-ghost">
+            <i class="bi bi-arrow-left mr-1"></i>All Jobs
+          </a>
+          <% if %w[pending running].include?(@job.status) %>
+            <form action="/admin/world_generator/jobs/<%= @job.id %>/cancel" method="post" class="inline">
+              <button type="submit" class="btn btn-error" onclick="return confirm('Cancel this job?')">
+                <i class="bi bi-x-circle mr-1"></i>Cancel Job
+              </button>
+            </form>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Job Details -->
+        <div class="card bg-base-200 h-full">
+          <div class="p-4 border-b border-base-content/10">
+            <i class="bi bi-info-circle mr-2"></i>Job Details
+          </div>
+          <div class="card-body">
+            <table class="table table-sm">
+              <tr>
+                <td class="text-base-content/70 w-2/5">Job ID</td>
+                <td>#<%= @job.id %></td>
+              </tr>
+              <tr>
+                <td class="text-base-content/70">Type</td>
+                <td><%= @job_info[:type] %></td>
+              </tr>
+              <tr>
+                <td class="text-base-content/70">Status</td>
+                <td><%= @job_info[:status_display] %></td>
+              </tr>
+              <tr>
+                <td class="text-base-content/70">Created</td>
+                <td><%= @job_info[:created_at] ? Time.parse(@job_info[:created_at]).strftime('%Y-%m-%d %H:%M:%S') : '-' %></td>
+              </tr>
+              <tr>
+                <td class="text-base-content/70">Started</td>
+                <td><%= @job_info[:started_at] ? Time.parse(@job_info[:started_at]).strftime('%Y-%m-%d %H:%M:%S') : '-' %></td>
+              </tr>
+              <tr>
+                <td class="text-base-content/70">Completed</td>
+                <td><%= @job_info[:completed_at] ? Time.parse(@job_info[:completed_at]).strftime('%Y-%m-%d %H:%M:%S') : '-' %></td>
+              </tr>
+              <tr>
+                <td class="text-base-content/70">Duration</td>
+                <td><%= @job_info[:duration] || 'N/A' %></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="card bg-base-200 h-full">
+          <div class="p-4 border-b border-base-content/10">
+            <i class="bi bi-bar-chart mr-2"></i>Progress
+          </div>
+          <div class="card-body">
+            <% if @job.status == 'running' %>
+              <div class="mb-4">
+                <div class="flex justify-between mb-2">
+                  <span>Progress</span>
+                  <span><%= (@job_info[:percent] || 0).round(1) %>%</span>
+                </div>
+                <progress class="progress progress-primary w-full" value="<%= @job_info[:percent] || 0 %>" max="100"></progress>
+              </div>
+              <p class="text-base-content/70"><%= @job_info[:message] || 'Processing...' %></p>
+            <% elsif @job.status == 'completed' %>
+              <div class="text-center py-8">
+                <i class="bi bi-check-circle text-success text-5xl block mb-4"></i>
+                <p class="text-success">Job completed successfully!</p>
+              </div>
+            <% elsif @job.status == 'failed' %>
+              <div class="text-center py-8">
+                <i class="bi bi-x-circle text-error text-5xl block mb-4"></i>
+                <p class="text-error"><%= @job_info[:error] || 'Unknown error' %></p>
+              </div>
+            <% elsif @job.status == 'cancelled' %>
+              <div class="text-center py-8">
+                <i class="bi bi-slash-circle text-warning text-5xl block mb-4"></i>
+                <p class="text-warning">Job was cancelled</p>
+              </div>
+            <% else %>
+              <div class="text-center py-8">
+                <i class="bi bi-hourglass-split text-base-content/50 text-5xl block mb-4"></i>
+                <p class="text-base-content/70">Waiting to start...</p>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Configuration -->
+        <div class="card bg-base-200">
+          <div class="p-4 border-b border-base-content/10">
+            <i class="bi bi-gear mr-2"></i>Configuration
+          </div>
+          <div class="card-body">
+            <% if @job.config && @job.config.any? %>
+              <table class="table table-sm">
+                <% @job.config.each do |key, value| %>
+                  <tr>
+                    <td class="text-base-content/70 w-2/5"><%= key.to_s.gsub('_', ' ').split.map(&:capitalize).join(' ') %></td>
+                    <td>
+                      <% if value.is_a?(Hash) || value.is_a?(Array) %>
+                        <code class="text-sm bg-base-300 px-2 py-1 rounded"><%= truncate_text(value.to_json, 100) %></code>
+                      <% else %>
+                        <%= value %>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </table>
+            <% else %>
+              <p class="text-base-content/70">No configuration data</p>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Results -->
+        <div class="card bg-base-200">
+          <div class="p-4 border-b border-base-content/10">
+            <i class="bi bi-file-text mr-2"></i>Results
+          </div>
+          <div class="card-body">
+            <% if @job_info[:results] && @job_info[:results].any? %>
+              <% @job_info[:results].each do |key, value| %>
+                <div class="mb-4">
+                  <strong class="text-base-content/70"><%= key.to_s.gsub('_', ' ').split.map(&:capitalize).join(' ') %></strong>
+                  <% if value.is_a?(String) && value.length > 200 %>
+                    <div class="border border-base-content/10 rounded p-2 mt-1 text-sm">
+                      <%= value %>
+                    </div>
+                  <% elsif value.is_a?(Array) %>
+                    <ul class="list-disc list-inside text-sm mt-1">
+                      <% value.first(10).each do |item| %>
+                        <li><%= item.is_a?(Hash) ? truncate_text(item.to_json, 80) : item %></li>
+                      <% end %>
+                      <% if value.length > 10 %>
+                        <li class="text-base-content/70">... and <%= value.length - 10 %> more</li>
+                      <% end %>
+                    </ul>
+                  <% elsif value.is_a?(Hash) %>
+                    <pre class="bg-base-300 rounded p-2 mt-1 text-sm overflow-x-auto"><%= truncate_text(JSON.pretty_generate(value), 500) %></pre>
+                  <% elsif value.to_s.start_with?('http', '/') %>
+                    <div class="mt-1">
+                      <a href="<%= value %>" target="_blank" class="btn btn-sm btn-ghost">
+                        <i class="bi bi-link-45deg"></i> View
+                      </a>
+                    </div>
+                  <% else %>
+                    <div class="mt-1"><%= value %></div>
+                  <% end %>
+                </div>
+              <% end %>
+            <% else %>
+              <p class="text-base-content/70">No results yet</p>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Child Jobs -->
+        <% if @job_info[:has_children] && @job_info[:child_progress]&.any? %>
+          <div class="col-span-full">
+            <div class="card bg-base-200">
+              <div class="p-4 border-b border-base-content/10">
+                <i class="bi bi-diagram-3 mr-2"></i>Sub-tasks (<%= @job_info[:child_progress].length %>)
+              </div>
+              <div class="card-body">
+                <div class="overflow-x-auto">
+                  <table class="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Progress</th>
+                        <th>Duration</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% @job_info[:child_progress].each do |child| %>
+                        <tr>
+                          <td><a href="/admin/world_generator/jobs/<%= child[:id] %>" class="link">#<%= child[:id] %></a></td>
+                          <td><%= child[:type] %></td>
+                          <td>
+                            <% if child[:status] == 'pending' %>
+                              <span class="badge badge-neutral badge-sm">Pending</span>
+                            <% elsif child[:status] == 'running' %>
+                              <span class="badge badge-primary badge-sm">Running</span>
+                            <% elsif child[:status] == 'completed' %>
+                              <span class="badge badge-success badge-sm">Completed</span>
+                            <% elsif child[:status] == 'failed' %>
+                              <span class="badge badge-error badge-sm">Failed</span>
+                            <% elsif child[:status] == 'cancelled' %>
+                              <span class="badge badge-warning badge-sm">Cancelled</span>
+                            <% end %>
+                          </td>
+                          <td>
+                            <% if child[:status] == 'running' %>
+                              <progress class="progress progress-primary w-24" value="<%= child[:percent] || 0 %>" max="100"></progress>
+                            <% else %>
+                              <%= child[:message] ? truncate_text(child[:message], 30) : '-' %>
+                            <% end %>
+                          </td>
+                          <td><%= child[:duration] || '-' %></td>
+                        </tr>
+                      <% end %>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    
+<%= admin_content_end %>

@@ -1,0 +1,313 @@
+<% @page_title = "Edit: #{@help_system.display_name || @help_system.name} - Admin" %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Help System', path: '/admin/help' }, { label: 'Systems', path: '/admin/help/systems' }, { label: @help_system.name, path: "/admin/help/systems/#{@help_system.id}" }] %>
+
+<%= admin_content_start %>
+      <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+        <h2 class="text-2xl font-bold"><i class="bi bi-pencil mr-2"></i>Edit: <%= @help_system.display_name || @help_system.name.capitalize %></h2>
+        <div class="flex flex-wrap gap-2">
+          <a href="/admin/help/systems" class="btn btn-outline btn-ghost">
+            <i class="bi bi-arrow-left mr-1"></i>Back to Systems
+          </a>
+          <button type="button" class="btn btn-outline btn-error" onclick="deleteSystem()">
+            <i class="bi bi-trash mr-1"></i>Delete
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <!-- Edit Form -->
+        <div class="lg:col-span-8">
+          <form action="/admin/help/systems/<%= @help_system.id %>" method="post">
+            <%= csrf_tag %>
+
+            <!-- Tabs Navigation -->
+            <div role="tablist" class="tabs tabs-boxed mb-3 bg-base-200" id="systemTabs">
+              <button type="button" role="tab" class="tab tab-active" data-target="basic">
+                <i class="bi bi-info-circle mr-1"></i>Basic Info
+              </button>
+              <button type="button" role="tab" class="tab" data-target="player">
+                <i class="bi bi-book mr-1"></i>Player Guide
+              </button>
+              <button type="button" role="tab" class="tab" data-target="staff">
+                <i class="bi bi-shield mr-1"></i>Staff Guide
+              </button>
+              <button type="button" role="tab" class="tab" data-target="constants">
+                <i class="bi bi-gear mr-1"></i>Constants
+              </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="systemTabContent">
+              <!-- Basic Info Tab -->
+              <div class="tab-panel" id="basic">
+                <div class="card bg-base-200 mb-4">
+                  <div class="p-4 border-b border-base-content/10">
+                    <h5 class="font-semibold"><i class="bi bi-info-circle mr-2"></i>Basic Information</h5>
+                  </div>
+                  <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div class="form-control">
+                        <label class="label">
+                          <span class="label-text">System Name</span>
+                        </label>
+                        <input type="text" name="name" class="input input-bordered w-full" value="<%= @help_system.name %>" required pattern="[a-z_]+">
+                        <label class="label">
+                          <span class="label-text-alt text-base-content/70">Lowercase letters and underscores only.</span>
+                        </label>
+                      </div>
+                      <div class="form-control">
+                        <label class="label">
+                          <span class="label-text">Display Order</span>
+                        </label>
+                        <input type="number" name="display_order" class="input input-bordered w-full" value="<%= @help_system.display_order %>" min="1">
+                      </div>
+                    </div>
+
+                    <div class="form-control mb-3">
+                      <label class="label">
+                        <span class="label-text">Display Name</span>
+                      </label>
+                      <input type="text" name="display_name" class="input input-bordered w-full" value="<%= @help_system.display_name %>">
+                    </div>
+
+                    <div class="form-control mb-3">
+                      <label class="label">
+                        <span class="label-text">Summary</span>
+                      </label>
+                      <input type="text" name="summary" class="input input-bordered w-full" value="<%= @help_system.summary %>">
+                      <label class="label">
+                        <span class="label-text-alt text-base-content/70">One-line description shown in listings.</span>
+                      </label>
+                    </div>
+
+                    <div class="form-control mb-3">
+                      <label class="label">
+                        <span class="label-text">Description (Fallback)</span>
+                      </label>
+                      <textarea name="description" class="textarea textarea-bordered w-full" rows="3"><%= @help_system.description %></textarea>
+                      <label class="label">
+                        <span class="label-text-alt text-base-content/70">Shown only if no Player Guide is set.</span>
+                      </label>
+                    </div>
+
+                    <div class="form-control mb-3">
+                      <label class="label">
+                        <span class="label-text">Commands (comma-separated)</span>
+                      </label>
+                      <input type="text" name="command_names" class="input input-bordered w-full" value="<%= @help_system.command_names&.to_a&.join(', ') %>">
+                      <label class="label">
+                        <span class="label-text-alt text-base-content/70">e.g., look, walk, follow, lead</span>
+                      </label>
+                    </div>
+
+                    <div class="form-control mb-3">
+                      <label class="label">
+                        <span class="label-text">Related Systems (comma-separated)</span>
+                      </label>
+                      <input type="text" name="related_systems" class="input input-bordered w-full" value="<%= @help_system.related_systems&.to_a&.join(', ') %>">
+                      <label class="label">
+                        <span class="label-text-alt text-base-content/70">e.g., combat, inventory</span>
+                      </label>
+                    </div>
+
+                    <div class="form-control mb-3">
+                      <label class="label">
+                        <span class="label-text">Key Files (one per line)</span>
+                      </label>
+                      <textarea name="key_files" class="textarea textarea-bordered w-full font-mono" rows="4"><%= @help_system.key_files&.to_a&.join("\n") %></textarea>
+                      <label class="label">
+                        <span class="label-text-alt text-base-content/70">Important source files (shown in staff view).</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Player Guide Tab -->
+              <div class="tab-panel hidden" id="player">
+                <div class="card bg-base-200 mb-4">
+                  <div class="p-4 border-b border-base-content/10 flex justify-between items-center">
+                    <h5 class="font-semibold"><i class="bi bi-book mr-2"></i>Player Guide (Markdown)</h5>
+                    <button type="button" class="btn btn-sm btn-outline btn-info" onclick="togglePreview('player')">
+                      <i class="bi bi-eye mr-1"></i>Preview
+                    </button>
+                  </div>
+                  <div class="card-body">
+                    <div class="form-control mb-3">
+                      <label class="label">
+                        <span class="label-text">Full Player Documentation</span>
+                      </label>
+                      <textarea name="player_guide" id="player_guide" class="textarea textarea-bordered w-full font-mono text-sm" rows="20"><%= @help_system.player_guide %></textarea>
+                      <label class="label">
+                        <span class="label-text-alt text-base-content/70">Comprehensive markdown guide for players. Supports headings, tables, code blocks, lists.</span>
+                      </label>
+                    </div>
+
+                    <div class="form-control mb-3">
+                      <label class="label">
+                        <span class="label-text">Quick Reference Card</span>
+                      </label>
+                      <textarea name="quick_reference" class="textarea textarea-bordered w-full font-mono" rows="8"><%= @help_system.quick_reference %></textarea>
+                      <label class="label">
+                        <span class="label-text-alt text-base-content/70">Short command cheatsheet (collapsible in public view).</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Player Guide Preview -->
+                <div class="card bg-base-200 mb-4 hidden" id="player-preview">
+                  <div class="p-4 border-b border-base-content/10">
+                    <h5 class="font-semibold"><i class="bi bi-eye mr-2"></i>Player Guide Preview</h5>
+                  </div>
+                  <div class="card-body system-guide" id="player-preview-content">
+                    <!-- Preview rendered here -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- Staff Guide Tab -->
+              <div class="tab-panel hidden" id="staff">
+                <div class="card bg-base-200 mb-4">
+                  <div class="p-4 border-b border-base-content/10 flex justify-between items-center">
+                    <h5 class="font-semibold"><i class="bi bi-shield mr-2"></i>Staff Guide (Markdown)</h5>
+                    <button type="button" class="btn btn-sm btn-outline btn-warning" onclick="togglePreview('staff')">
+                      <i class="bi bi-eye mr-1"></i>Preview
+                    </button>
+                  </div>
+                  <div class="card-body">
+                    <div class="form-control mb-3">
+                      <label class="label">
+                        <span class="label-text">Full Staff Documentation</span>
+                      </label>
+                      <textarea name="staff_guide" id="staff_guide" class="textarea textarea-bordered w-full font-mono text-sm" rows="20"><%= @help_system.staff_guide %></textarea>
+                      <label class="label">
+                        <span class="label-text-alt text-base-content/70">Technical documentation for staff: architecture, constants, debugging tips.</span>
+                      </label>
+                    </div>
+
+                    <div class="form-control mb-3">
+                      <label class="label">
+                        <span class="label-text">Staff Notes (Brief)</span>
+                      </label>
+                      <textarea name="staff_notes" class="textarea textarea-bordered w-full" rows="4"><%= @help_system.staff_notes %></textarea>
+                      <label class="label">
+                        <span class="label-text-alt text-base-content/70">Quick notes (shown if no Staff Guide is set).</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Staff Guide Preview -->
+                <div class="card bg-base-200 mb-4 hidden" id="staff-preview">
+                  <div class="p-4 border-b border-warning">
+                    <h5 class="font-semibold text-warning"><i class="bi bi-eye mr-2"></i>Staff Guide Preview</h5>
+                  </div>
+                  <div class="card-body staff-guide" id="staff-preview-content">
+                    <!-- Preview rendered here -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- Constants Tab -->
+              <div class="tab-panel hidden" id="constants">
+                <div class="card bg-base-200 mb-4">
+                  <div class="p-4 border-b border-base-content/10">
+                    <h5 class="font-semibold"><i class="bi bi-gear mr-2"></i>System Constants (JSON)</h5>
+                  </div>
+                  <div class="card-body">
+                    <div class="form-control mb-3">
+                      <label class="label">
+                        <span class="label-text">Constants JSON</span>
+                      </label>
+                      <textarea name="constants_json" id="constants_json" class="textarea textarea-bordered w-full font-mono text-xs" rows="15"><%= JSON.pretty_generate(@help_system.parsed_constants) rescue '{}' %></textarea>
+                      <label class="label">
+                        <span class="label-text-alt text-base-content/70">JSON object with system constants. Use nested objects to group related constants.</span>
+                      </label>
+                    </div>
+
+                    <div class="alert alert-info text-sm">
+                      <i class="bi bi-info-circle mr-1"></i>
+                      <div>
+                        <strong>Format example:</strong>
+                        <pre class="mt-2 bg-base-300 p-2 rounded">{
+  "timing": {
+    "BASE_ROOM_TIME_MS": { "value": 3000, "file": "config/movement.rb", "purpose": "Default room transition time" }
+  },
+  "speed_multipliers": {
+    "walk": 1.0,
+    "run": 0.5
+  }
+}</pre>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Save Button (always visible) -->
+            <div class="flex justify-end gap-2 mb-4">
+              <a href="/admin/help/systems" class="btn btn-ghost">Cancel</a>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg mr-1"></i>Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Info Panel -->
+        <div class="lg:col-span-4">
+          <!-- Commands in System -->
+          <div class="card bg-base-200 mb-3">
+            <div class="p-4 border-b border-base-content/10">
+              <h6 class="font-semibold"><i class="bi bi-terminal mr-2"></i>Commands (<%= @help_system.command_names&.to_a&.count || 0 %>)</h6>
+            </div>
+            <div class="card-body">
+              <% if @help_system.command_names && !@help_system.command_names.to_a.empty? %>
+                <div class="flex flex-wrap gap-1">
+                  <% @help_system.command_names.to_a.each do |cmd| %>
+                    <% hf = Helpfile.first(command_name: cmd) %>
+                    <% if hf %>
+                      <a href="/admin/help/commands/<%= hf.id %>" class="badge badge-neutral hover:badge-primary no-underline"><%= cmd %></a>
+                    <% else %>
+                      <span class="badge badge-error" title="Command not found"><%= cmd %></span>
+                    <% end %>
+                  <% end %>
+                </div>
+              <% else %>
+                <small class="text-base-content/70">No commands assigned yet.</small>
+              <% end %>
+            </div>
+          </div>
+
+          <!-- Available Commands -->
+          <div class="card bg-base-200 mb-3">
+            <div class="p-4 border-b border-base-content/10">
+              <h6 class="font-semibold"><i class="bi bi-search mr-2"></i>Available Commands</h6>
+            </div>
+            <div class="card-body max-h-52 overflow-y-auto">
+              <div class="flex flex-wrap gap-1">
+                <% @all_commands.first(50).each do |cmd| %>
+                  <span class="badge badge-outline badge-sm cursor-pointer hover:badge-primary" onclick="addCommand('<%= cmd %>')" title="Click to add"><%= cmd %></span>
+                <% end %>
+                <% if @all_commands.count > 50 %>
+                  <span class="badge badge-neutral">+<%= @all_commands.count - 50 %> more</span>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview -->
+          <div class="card bg-base-200">
+            <div class="p-4 border-b border-base-content/10">
+              <h6 class="font-semibold"><i class="bi bi-eye mr-2"></i>In-Game Preview</h6>
+            </div>
+            <div class="card-body">
+              <pre class="bg-base-300 text-base-content p-2 rounded text-sm whitespace-pre-wrap"><%= @help_system.to_staff_display %></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    
+<%= admin_content_end %>

@@ -1,0 +1,30 @@
+<%#
+  Renders a DaisyUI filter card with a GET form.
+  Required locals:
+    action:      String — form action URL (defaults to request.path)
+    content:     String — raw HTML for form body
+  Optional locals:
+    title:       String  — card heading (default: none)
+    form_class:  String  — CSS on <form> (default: 3-col grid)
+    margin:      String  — card bottom margin class (default: 'mb-4')
+    http_method: String  — form method (default: 'get')
+  WARNING: content: is rendered as raw HTML. Use h() for user-controlled data.
+%>
+<%
+  _ff_action     = defined?(action)      ? action      : request.path
+  _ff_method     = defined?(http_method) ? http_method : 'get'
+  _ff_title      = defined?(title)       ? title       : nil
+  _ff_form_class = defined?(form_class)  ? form_class  : 'grid grid-cols-1 md:grid-cols-3 gap-4 items-end'
+  _ff_margin     = defined?(margin)      ? margin      : 'mb-4'
+  _ff_content    = defined?(content)     ? content     : ''
+%>
+<div class="card bg-base-200 <%= _ff_margin %>">
+  <div class="card-body">
+    <% if _ff_title %>
+      <h3 class="card-title text-base"><%= _ff_title %></h3>
+    <% end %>
+    <form action="<%= _ff_action %>" method="<%= _ff_method %>" class="<%= _ff_form_class %>">
+      <%= _ff_content %>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,64 @@
+require 'sequel'
+require 'dotenv/load'
+
+namespace :db do
+  desc "Run database migrations"
+  task :migrate do
+    DB = Sequel.connect(ENV['DATABASE_URL'])
+    Sequel.extension :migration
+    Sequel::Migrator.run(DB, "db/migrations")
+    puts "Migrations completed"
+  end
+
+  desc "Rollback the last migration"
+  task :rollback do
+    DB = Sequel.connect(ENV['DATABASE_URL'])
+    Sequel.extension :migration
+    Sequel::Migrator.run(DB, "db/migrations", target: DB[:schema_info].first[:version] - 1)
+    puts "Rollback completed"
+  end
+
+  desc "Create the database"
+  task :create do
+    db_config = ENV['DATABASE_URL'].match(/postgres:\/\/([^:]+):([^@]+)@([^\/]+)\/(.+)/)
+    user = db_config[1]
+    password = db_config[2]
+    host = db_config[3]
+    db_name = db_config[4]
+    
+    system("PGPASSWORD=#{password} createdb -h #{host} -U #{user} #{db_name}")
+    puts "Database #{db_name} created"
+  end
+
+  desc "Drop the database"
+  task :drop do
+    db_config = ENV['DATABASE_URL'].match(/postgres:\/\/([^:]+):([^@]+)@([^\/]+)\/(.+)/)
+    user = db_config[1]
+    password = db_config[2]
+    host = db_config[3]
+    db_name = db_config[4]
+    
+    system("PGPASSWORD=#{password} dropdb -h #{host} -U #{user} #{db_name}")
+    puts "Database #{db_name} dropped"
+  end
+
+  desc "Reset database (drop, create, migrate)"
+  task :reset => [:drop, :create, :migrate]
+
+  desc "Seed database with default world data"
+  task :seed do
+    load File.expand_path('db/seeds.rb', __dir__)
+  end
+end
+
+desc "Run tests in parallel (default)"
+task :test do
+  system("bundle exec parallel_rspec spec/")
+end
+
+desc "Run tests sequentially (single process)"
+task :test_sequential do
+  system("bundle exec rspec")
+end
+
+task :default => :test

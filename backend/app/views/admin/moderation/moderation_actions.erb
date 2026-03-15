@@ -1,0 +1,132 @@
+<% @page_title = 'Moderation Actions Log' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Moderation', path: '/admin/moderation' }, { label: 'Actions Log', path: '/admin/moderation/moderation-actions' }] %>
+
+<%= admin_content_start %>
+      <h2 class="text-2xl font-bold mb-4"><i class="bi bi-journal-text mr-2"></i>Moderation Actions Log</h2>
+
+      <div class="card bg-base-200 shadow-lg">
+        <div class="card-body">
+          <% if @actions.empty? %>
+            <p class="text-base-content/70">No moderation actions recorded yet.</p>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Time</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Details</th>
+                    <th>Triggered By</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @actions.each do |action| %>
+                  <tr class="<%= action.reversed ? 'opacity-50' : '' %>">
+                    <td><%= action.id %></td>
+                    <td><%= action.created_at&.strftime('%m-%d %H:%M') %></td>
+                    <td>
+                      <% if action.user %>
+                        <a href="/admin/moderation/connections/user/<%= action.user_id %>" class="link link-primary">
+                          <%= h action.user.username %>
+                        </a>
+                      <% else %>
+                        <span class="text-base-content/70">-</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% case action.action_type
+                         when 'ip_ban' %>
+                        <span class="badge badge-error"><i class="bi bi-ban"></i> IP Ban</span>
+                      <% when 'range_ban' %>
+                        <span class="badge badge-error"><i class="bi bi-diagram-3"></i> Range Ban</span>
+                      <% when 'suspend' %>
+                        <span class="badge badge-warning"><i class="bi bi-person-x"></i> Suspend</span>
+                      <% when 'logout' %>
+                        <span class="badge badge-info"><i class="bi bi-box-arrow-right"></i> Logout</span>
+                      <% when 'registration_freeze' %>
+                        <span class="badge badge-neutral"><i class="bi bi-snow"></i> Reg Freeze</span>
+                      <% else %>
+                        <span class="badge badge-neutral"><%= action.action_type %></span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if action.ip_address %>
+                        <code class="bg-base-300 px-2 py-1 rounded"><%= action.ip_address %></code>
+                      <% elsif action.ip_range %>
+                        <code class="bg-base-300 px-2 py-1 rounded"><%= action.ip_range %></code>
+                      <% else %>
+                        <span class="text-base-content/70">-</span>
+                      <% end %>
+                      <% if action.expires_at %>
+                        <br><small class="text-base-content/70">Expires: <%= action.expires_at.strftime('%m-%d %H:%M') %></small>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if action.triggered_by == 'auto_moderation' %>
+                        <span class="badge badge-info"><i class="bi bi-robot"></i> Auto</span>
+                        <% if action.abuse_check %>
+                          <a href="/admin/moderation/abuse-checks/<%= action.abuse_check_id %>" class="link link-info ml-1">
+                            #<%= action.abuse_check_id %>
+                          </a>
+                        <% end %>
+                      <% else %>
+                        <span class="badge badge-neutral"><i class="bi bi-person"></i> Staff</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if action.reversed %>
+                        <span class="badge badge-neutral">Reversed</span>
+                      <% else %>
+                        <span class="badge badge-success">Active</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% unless action.reversed %>
+                        <button type="button" class="btn btn-sm btn-outline btn-warning"
+                                onclick="document.getElementById('reverseModal<%= action.id %>').showModal()">
+                          <i class="bi bi-arrow-counterclockwise"></i> Reverse
+                        </button>
+
+                        <!-- Reverse Modal -->
+                        <%
+                          _reverse_modal_content =
+                            '<form action="/admin/moderation/moderation-actions/' + action.id.to_s + '/reverse" method="post">' +
+                            csrf_tag +
+                            '<div class="py-4">' +
+                              '<p>Are you sure you want to reverse this ' + h(action.action_type) + ' action?</p>' +
+                              '<div class="form-control mt-4">' +
+                                '<label class="label"><span class="label-text">Reason (optional)</span></label>' +
+                                '<input type="text" name="reason" class="input input-bordered w-full" placeholder="Why are you reversing this action?">' +
+                              '</div>' +
+                            '</div>' +
+                            '<div class="modal-action">' +
+                              '<button type="button" class="btn btn-ghost" onclick="document.getElementById(\'reverseModal' + action.id.to_s + '\').close()">Cancel</button>' +
+                              '<button type="submit" class="btn btn-warning">Reverse Action</button>' +
+                            '</div>' +
+                            '</form>'
+                        %>
+                        <%= partial 'admin/modal', locals: {
+                          id: 'reverseModal' + action.id.to_s,
+                          title: 'Reverse Moderation Action',
+                          content: _reverse_modal_content,
+                          auto_actions: false
+                        } %>
+                      <% else %>
+                        <span class="text-base-content/70" title="<%= action.reversed_reason %>">
+                          <small>by <%= h(action.reversed_by_user&.username || 'Unknown') %></small>
+                        </span>
+                      <% end %>
+                    </td>
+                  </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+      </div>
+<%= admin_content_end %>

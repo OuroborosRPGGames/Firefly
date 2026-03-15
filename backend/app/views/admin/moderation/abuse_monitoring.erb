@@ -1,0 +1,238 @@
+<% @page_title = 'Abuse Monitoring' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Moderation', path: '/admin/moderation' }, { label: 'Abuse Monitoring', path: '/admin/moderation/abuse-monitoring' }] %>
+
+<%= admin_content_start %>
+      <h2 class="text-2xl font-bold mb-4"><i class="bi bi-robot mr-2"></i>Abuse Monitoring</h2>
+
+      <!-- System Status -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div class="card <%= @enabled ? 'bg-success text-success-content' : 'bg-base-300' %>">
+          <div class="card-body">
+            <div class="flex justify-between items-center">
+              <div>
+                <h6 class="text-sm font-medium opacity-80">AI Monitoring</h6>
+                <h3 class="text-2xl font-bold"><%= @enabled ? 'ENABLED' : 'DISABLED' %></h3>
+              </div>
+              <i class="bi bi-<%= @enabled ? 'eye' : 'eye-slash' %> text-5xl opacity-50"></i>
+            </div>
+            <form action="/admin/moderation/abuse-monitoring/toggle" method="post" class="mt-3">
+              <button type="submit" class="btn btn-outline btn-sm">
+                <%= @enabled ? 'Disable' : 'Enable' %>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div class="card <%= @delay_mode ? 'bg-warning text-warning-content' : 'bg-info text-info-content' %>">
+          <div class="card-body">
+            <div class="flex justify-between items-center">
+              <div>
+                <h6 class="text-sm font-medium opacity-80">Message Mode</h6>
+                <h3 class="text-2xl font-bold"><%= @delay_mode ? 'DELAYED' : 'IMMEDIATE' %></h3>
+                <small class="opacity-80"><%= @delay_mode ? 'Messages wait for AI check' : 'Messages go through, checked async' %></small>
+              </div>
+              <i class="bi bi-<%= @delay_mode ? 'hourglass-split' : 'lightning' %> text-5xl opacity-50"></i>
+            </div>
+            <form action="/admin/moderation/abuse-monitoring/toggle-delay" method="post" class="mt-3">
+              <button type="submit" class="btn btn-outline btn-sm">
+                Switch to <%= @delay_mode ? 'Immediate' : 'Delayed' %>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Staff Override -->
+      <div class="card bg-base-200 mb-4">
+        <div class="p-4 border-b border-base-content/10">
+          <h5 class="font-semibold"><i class="bi bi-exclamation-triangle mr-2"></i>Staff Override (Check All Players)</h5>
+        </div>
+        <div class="card-body">
+          <% if @override_active %>
+            <div class="alert alert-error mb-4">
+              <i class="bi bi-exclamation-triangle"></i>
+              <div>
+                <strong>Override Active!</strong> All players are being monitored (bypassing 100-hour exemption).
+                <br>
+                <small>
+                  Triggered by: <%= h(@override.triggered_by_user&.username || 'Unknown') %><br>
+                  Reason: <%= h(@override.reason || 'No reason given') %><br>
+                  Expires: <%= @override.active_until&.strftime('%Y-%m-%d %H:%M') || 'Unknown' %>
+                </small>
+              </div>
+            </div>
+            <form action="/admin/moderation/abuse-monitoring/cancel-override" method="post" class="inline">
+              <button type="submit" class="btn btn-warning" onclick="return confirm('Cancel the override?')">
+                <i class="bi bi-x-circle"></i> Cancel Override
+              </button>
+            </form>
+          <% else %>
+            <p class="text-base-content/70 mb-4">
+              Activate an override to monitor ALL players for a period of time, bypassing the 100-hour playtime exemption.
+              Use this when you suspect coordinated abuse or during high-risk events.
+            </p>
+            <form action="/admin/moderation/abuse-monitoring/override" method="post" class="flex flex-wrap gap-4 items-end">
+              <div class="form-control w-full md:w-auto">
+                <label class="label">
+                  <span class="label-text">Duration</span>
+                </label>
+                <select name="duration" class="select select-bordered">
+                  <option value="1">1 hour</option>
+                  <option value="2">2 hours</option>
+                  <option value="4">4 hours</option>
+                  <option value="8">8 hours</option>
+                  <option value="24">24 hours</option>
+                </select>
+              </div>
+              <div class="form-control flex-1">
+                <label class="label">
+                  <span class="label-text">Reason (optional)</span>
+                </label>
+                <input type="text" name="reason" class="input input-bordered w-full" placeholder="Why are you activating the override?">
+              </div>
+              <button type="submit" class="btn btn-error" onclick="return confirm('This will monitor ALL players. Continue?')">
+                <i class="bi bi-exclamation-triangle"></i> Activate
+              </button>
+            </form>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div class="card bg-warning text-warning-content">
+          <div class="card-body text-center py-4">
+            <h2 class="text-3xl font-bold"><%= @flagged_count %></h2>
+            <small class="opacity-80">Flagged (Gemini)</small>
+            <a href="/admin/moderation/abuse-checks?status=flagged" class="btn btn-outline btn-sm mt-2">View</a>
+          </div>
+        </div>
+        <div class="card text-white" style="background-color: #fd7e14;">
+          <div class="card-body text-center py-4">
+            <h2 class="text-3xl font-bold"><%= @escalated_count %></h2>
+            <small class="opacity-80">Escalated (Claude)</small>
+            <a href="/admin/moderation/abuse-checks?status=escalated" class="btn btn-outline btn-sm mt-2">View</a>
+          </div>
+        </div>
+        <div class="card bg-error text-error-content">
+          <div class="card-body text-center py-4">
+            <h2 class="text-3xl font-bold"><%= @confirmed_count %></h2>
+            <small class="opacity-80">Confirmed Abuse</small>
+            <a href="/admin/moderation/abuse-checks?status=confirmed" class="btn btn-outline btn-sm mt-2">View</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pending Checks -->
+      <div class="card bg-base-200 mb-4">
+        <div class="p-4 border-b border-base-content/10 flex justify-between items-center">
+          <h5 class="font-semibold"><i class="bi bi-hourglass mr-2"></i>Pending Checks</h5>
+          <a href="/admin/moderation/abuse-checks?status=pending" class="btn btn-sm btn-outline btn-primary">View All</a>
+        </div>
+        <div class="card-body">
+          <% if @pending_checks.empty? %>
+            <p class="text-base-content/70">No pending checks.</p>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra table-sm">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>User</th>
+                    <th>Type</th>
+                    <th>Content Preview</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @pending_checks.each do |check| %>
+                  <tr>
+                    <td><%= check.created_at&.strftime('%H:%M:%S') %></td>
+                    <td><%= h(check.user&.username || 'Unknown') %></td>
+                    <td><span class="badge badge-neutral"><%= check.message_type %></span></td>
+                    <td class="text-sm"><%= h check.message_content.to_s[0, 50] %><%= check.message_content.to_s.length > 50 ? '...' : '' %></td>
+                    <td><span class="badge badge-info"><%= check.status %></span></td>
+                  </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Recent Checks -->
+      <div class="card bg-base-200">
+        <div class="p-4 border-b border-base-content/10 flex justify-between items-center">
+          <h5 class="font-semibold"><i class="bi bi-list-check mr-2"></i>Recent Checks</h5>
+          <a href="/admin/moderation/abuse-checks" class="btn btn-sm btn-outline btn-primary">View All</a>
+        </div>
+        <div class="card-body">
+          <% if @recent_checks.empty? %>
+            <p class="text-base-content/70">No checks yet.</p>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra table-sm">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>User</th>
+                    <th>Type</th>
+                    <th>Gemini</th>
+                    <th>Claude</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @recent_checks.each do |check| %>
+                  <tr>
+                    <td><%= check.created_at&.strftime('%m-%d %H:%M') %></td>
+                    <td><%= h(check.user&.username || 'Unknown') %></td>
+                    <td><span class="badge badge-neutral"><%= check.message_type %></span></td>
+                    <td>
+                      <% if check.gemini_flagged.nil? %>
+                        <span class="badge badge-neutral">-</span>
+                      <% elsif check.gemini_flagged %>
+                        <span class="badge badge-warning"><%= (check.gemini_confidence.to_f * 100).round %>%</span>
+                      <% else %>
+                        <span class="badge badge-success">OK</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if check.claude_confirmed.nil? %>
+                        <span class="badge badge-neutral">-</span>
+                      <% elsif check.claude_confirmed %>
+                        <span class="badge badge-error">Confirmed</span>
+                      <% else %>
+                        <span class="badge badge-success">Cleared</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% case check.status
+                         when 'pending', 'gemini_checking' %>
+                        <span class="badge badge-info"><%= check.status %></span>
+                      <% when 'flagged' %>
+                        <span class="badge badge-warning">Flagged</span>
+                      <% when 'escalated' %>
+                        <span class="badge" style="background-color: #fd7e14; color: white;">Escalated</span>
+                      <% when 'confirmed' %>
+                        <span class="badge badge-error">Confirmed</span>
+                      <% when 'cleared' %>
+                        <span class="badge badge-success">Cleared</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <a href="/admin/moderation/abuse-checks/<%= check.id %>" class="btn btn-sm btn-outline btn-info">
+                        <i class="bi bi-eye"></i>
+                      </a>
+                    </td>
+                  </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+      </div>
+<%= admin_content_end %>

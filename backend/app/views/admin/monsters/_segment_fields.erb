@@ -1,0 +1,111 @@
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+  <div class="form-control">
+    <label class="label">
+      <span class="label-text">Segment Name *</span>
+    </label>
+    <input type="text" class="input input-bordered w-full" id="<%= prefix %>name" name="name"
+           value="<%= h segment.name %>" required placeholder="e.g., Head, Left Claw, Tail">
+  </div>
+  <div class="form-control">
+    <label class="label">
+      <span class="label-text">Type *</span>
+    </label>
+    <select class="select select-bordered w-full" id="<%= prefix %>segment_type" name="segment_type" required>
+      <option value="head" <%= segment.segment_type == 'head' ? 'selected' : '' %>>Head</option>
+      <option value="body" <%= segment.segment_type == 'body' ? 'selected' : '' %>>Body</option>
+      <option value="limb" <%= segment.segment_type == 'limb' ? 'selected' : '' %>>Limb</option>
+      <option value="tail" <%= segment.segment_type == 'tail' ? 'selected' : '' %>>Tail</option>
+      <option value="wing" <%= segment.segment_type == 'wing' ? 'selected' : '' %>>Wing</option>
+    </select>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+  <div class="form-control">
+    <label class="label">
+      <span class="label-text">HP %</span>
+    </label>
+    <input type="number" class="input input-bordered w-full" id="<%= prefix %>hp_percent" name="hp_percent"
+           value="<%= segment.hp_percent || 20 %>" min="1" max="100">
+    <label class="label">
+      <span class="label-text-alt text-base-content/70">% of monster's total HP for this segment</span>
+    </label>
+  </div>
+  <div class="form-control">
+    <label class="label">
+      <span class="label-text">Attacks/Round</span>
+    </label>
+    <input type="number" class="input input-bordered w-full" id="<%= prefix %>attacks_per_round" name="attacks_per_round"
+           value="<%= segment.attacks_per_round || 1 %>" min="0" max="5">
+  </div>
+  <div class="form-control">
+    <label class="label">
+      <span class="label-text">Attack Speed</span>
+    </label>
+    <input type="number" class="input input-bordered w-full" id="<%= prefix %>attack_speed" name="attack_speed"
+           value="<%= segment.attack_speed || 5 %>" min="1" max="10">
+    <label class="label">
+      <span class="label-text-alt text-base-content/70">Lower = faster</span>
+    </label>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+  <div class="form-control">
+    <label class="label">
+      <span class="label-text">Damage Dice</span>
+    </label>
+    <input type="text" class="input input-bordered w-full" id="<%= prefix %>damage_dice" name="damage_dice"
+           value="<%= segment.damage_dice || '2d6' %>" placeholder="e.g., 2d6, 3d8+5">
+  </div>
+  <div class="form-control">
+    <label class="label">
+      <span class="label-text">Reach (hexes)</span>
+    </label>
+    <input type="number" class="input input-bordered w-full" id="<%= prefix %>reach" name="reach"
+           value="<%= segment.reach || 2 %>" min="1" max="10">
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+  <div class="form-control">
+    <label class="label">
+      <span class="label-text">Hex Offset X</span>
+    </label>
+    <input type="number" class="input input-bordered w-full" id="<%= prefix %>hex_offset_x" name="hex_offset_x"
+           value="<%= segment.hex_offset_x || 0 %>">
+    <label class="label">
+      <span class="label-text-alt text-base-content/70">Position relative to center</span>
+    </label>
+  </div>
+  <div class="form-control">
+    <label class="label">
+      <span class="label-text">Hex Offset Y</span>
+    </label>
+    <input type="number" class="input input-bordered w-full" id="<%= prefix %>hex_offset_y" name="hex_offset_y"
+           value="<%= segment.hex_offset_y || 0 %>">
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+  <div class="form-control">
+    <label class="label cursor-pointer justify-start gap-3">
+      <input type="checkbox" class="checkbox checkbox-warning" id="<%= prefix %>is_weak_point" name="is_weak_point"
+             <%= segment.is_weak_point ? 'checked' : '' %>>
+      <span class="label-text">
+        <i class="bi bi-bullseye text-warning mr-1"></i>Weak Point
+      </span>
+    </label>
+    <span class="text-base-content/70 text-sm ml-9">Attacks here deal 3x damage to all segments</span>
+  </div>
+  <div class="form-control">
+    <label class="label cursor-pointer justify-start gap-3">
+      <input type="checkbox" class="checkbox checkbox-info" id="<%= prefix %>required_for_mobility" name="required_for_mobility"
+             <%= segment.required_for_mobility ? 'checked' : '' %>>
+      <span class="label-text">
+        <i class="bi bi-arrow-left-right text-info mr-1"></i>Required for Mobility
+      </span>
+    </label>
+    <span class="text-base-content/70 text-sm ml-9">Destroying this causes collapse</span>
+  </div>
+</div>

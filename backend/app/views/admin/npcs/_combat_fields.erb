@@ -1,0 +1,409 @@
+<div class="card bg-base-200 mb-4">
+  <div class="p-4 border-b border-base-content/10 flex items-center gap-2">
+    <i class="bi bi-lightning"></i>Combat Stats
+  </div>
+  <div class="card-body">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">Max HP</span>
+        </label>
+        <input type="number" class="input input-bordered w-full" name="combat_max_hp"
+               value="<%= @archetype.combat_max_hp || 5 %>" min="1" max="100">
+      </div>
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">Damage Bonus</span>
+        </label>
+        <input type="number" class="input input-bordered w-full" name="combat_damage_bonus"
+               value="<%= @archetype.combat_damage_bonus || 0 %>" min="-10" max="10">
+      </div>
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">Defense Bonus</span>
+        </label>
+        <input type="number" class="input input-bordered w-full" name="combat_defense_bonus"
+               value="<%= @archetype.combat_defense_bonus || 0 %>" min="-10" max="10">
+      </div>
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">Speed Modifier</span>
+        </label>
+        <input type="number" class="input input-bordered w-full" name="combat_speed_modifier"
+               value="<%= @archetype.combat_speed_modifier || 0 %>" min="-3" max="3">
+        <label class="label">
+          <span class="label-text-alt text-base-content/70">Extra attacks per round</span>
+        </label>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">Damage Dice Count</span>
+        </label>
+        <input type="number" class="input input-bordered w-full" name="damage_dice_count"
+               value="<%= @archetype.damage_dice_count || 2 %>" min="1" max="10">
+        <label class="label">
+          <span class="label-text-alt text-base-content/70">Number of dice to roll</span>
+        </label>
+      </div>
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">Damage Dice Sides</span>
+        </label>
+        <select class="select select-bordered w-full" name="damage_dice_sides">
+          <% [4, 6, 8, 10, 12, 20].each do |sides| %>
+            <option value="<%= sides %>" <%= (@archetype.damage_dice_sides || 8) == sides ? 'selected' : '' %>>
+              d<%= sides %>
+            </option>
+          <% end %>
+        </select>
+        <label class="label">
+          <span class="label-text-alt text-base-content/70">Type of dice (no explosion)</span>
+        </label>
+      </div>
+    </div>
+    <div class="alert alert-info mt-4">
+      <i class="bi bi-info-circle mr-1"></i>
+      <span><strong>Note:</strong> NPCs roll XdY damage (no explosion). PCs roll 2d8 with explosion on 8s.</span>
+    </div>
+  </div>
+</div>
+
+<div class="card bg-base-200 mb-4">
+  <div class="p-4 border-b border-base-content/10 flex items-center gap-2">
+    <i class="bi bi-cpu"></i>Combat AI
+  </div>
+  <div class="card-body">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">AI Profile</span>
+        </label>
+        <select class="select select-bordered w-full" name="combat_ai_profile">
+          <option value="">Auto (from behavior)</option>
+          <% NpcArchetype::AI_PROFILES.each do |profile| %>
+            <option value="<%= profile %>" <%= @archetype.combat_ai_profile == profile ? 'selected' : '' %>>
+              <%= profile.capitalize %>
+            </option>
+          <% end %>
+        </select>
+        <label class="label">
+          <span class="label-text-alt text-base-content/70">Current: <%= @archetype.ai_profile %></span>
+        </label>
+      </div>
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">Ability Chance %</span>
+        </label>
+        <input type="number" class="input input-bordered w-full" name="combat_ability_chance"
+               value="<%= @archetype.combat_ability_chance || 30 %>" min="0" max="100">
+        <label class="label">
+          <span class="label-text-alt text-base-content/70">Chance to use ability instead of attack</span>
+        </label>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">Flee Threshold %</span>
+        </label>
+        <input type="number" class="input input-bordered w-full" name="flee_health_percent"
+               value="<%= @archetype.flee_health_percent || 20 %>" min="0" max="100">
+        <label class="label">
+          <span class="label-text-alt text-base-content/70">HP% below which NPC tries to flee</span>
+        </label>
+      </div>
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">Defensive Threshold %</span>
+        </label>
+        <input type="number" class="input input-bordered w-full" name="defensive_health_percent"
+               value="<%= @archetype.defensive_health_percent || 50 %>" min="0" max="100">
+        <label class="label">
+          <span class="label-text-alt text-base-content/70">HP% below which NPC becomes defensive</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- AI Profile Reference -->
+    <div class="alert bg-base-300 mt-4">
+      <div class="w-full">
+        <h6 class="font-bold flex items-center gap-2 mb-2">
+          <i class="bi bi-info-circle"></i>AI Profile Reference
+        </h6>
+        <div class="overflow-x-auto">
+          <table class="table table-sm table-zebra">
+            <thead>
+              <tr>
+                <th>Profile</th>
+                <th>Attack</th>
+                <th>Defend</th>
+                <th>Flee At</th>
+                <th>Target</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Aggressive</td><td>80%</td><td>10%</td><td>10%</td><td>Weakest</td></tr>
+              <tr><td>Defensive</td><td>40%</td><td>50%</td><td>30%</td><td>Highest threat</td></tr>
+              <tr><td>Balanced</td><td>60%</td><td>30%</td><td>20%</td><td>Closest</td></tr>
+              <tr><td>Berserker</td><td>95%</td><td>0%</td><td>0%</td><td>Weakest</td></tr>
+              <tr><td>Coward</td><td>30%</td><td>40%</td><td>50%</td><td>Random</td></tr>
+              <tr><td>Guardian</td><td>50%</td><td>60%</td><td>15%</td><td>Highest threat</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card bg-base-200 mb-4">
+  <div class="p-4 border-b border-base-content/10 flex justify-between items-center">
+    <span class="flex items-center gap-2"><i class="bi bi-slash-circle"></i>Natural Attacks</span>
+    <button type="button" class="btn btn-outline btn-primary btn-sm" onclick="addAttack()">
+      <i class="bi bi-plus-lg mr-1"></i>Add Attack
+    </button>
+  </div>
+  <div class="card-body">
+    <p class="text-base-content/70 text-sm mb-4">
+      <i class="bi bi-info-circle mr-1"></i>
+      Define attacks for this NPC. If no attacks are defined, the NPC will fight unarmed.
+      Natural attacks allow NPCs to fight without needing equipped weapon items.
+    </p>
+
+    <div id="attacks-container">
+      <% attacks = @archetype.parsed_npc_attacks rescue [] %>
+      <% if attacks.empty? %>
+        <div class="text-base-content/70 text-center py-8" id="no-attacks-message">
+          <i class="bi bi-slash-circle text-4xl block mb-2"></i>
+          No attacks configured. Click "Add Attack" to define natural attacks.
+        </div>
+      <% else %>
+        <% attacks.each_with_index do |attack, index| %>
+          <div class="attack-row card bg-base-300 mb-3" data-index="<%= index %>">
+            <div class="card-body">
+              <div class="flex justify-between items-start mb-3">
+                <h6 class="font-bold"><%= h attack.name %></h6>
+                <button type="button" class="btn btn-outline btn-error btn-sm" onclick="removeAttack(this)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+              <div class="grid grid-cols-2 md:grid-cols-6 gap-2">
+                <div class="form-control">
+                  <label class="label py-1">
+                    <span class="label-text text-sm">Name</span>
+                  </label>
+                  <input type="text" class="input input-bordered input-sm w-full" name="npc_attacks[<%= index %>][name]" value="<%= h attack.name %>" required>
+                </div>
+                <div class="form-control">
+                  <label class="label py-1">
+                    <span class="label-text text-sm">Type</span>
+                  </label>
+                  <select class="select select-bordered select-sm w-full" name="npc_attacks[<%= index %>][attack_type]">
+                    <option value="melee" <%= attack.attack_type == 'melee' ? 'selected' : '' %>>Melee</option>
+                    <option value="ranged" <%= attack.attack_type == 'ranged' ? 'selected' : '' %>>Ranged</option>
+                  </select>
+                </div>
+                <div class="form-control">
+                  <label class="label py-1">
+                    <span class="label-text text-sm">Damage Dice</span>
+                  </label>
+                  <input type="text" class="input input-bordered input-sm w-full" name="npc_attacks[<%= index %>][damage_dice]" value="<%= attack.damage_dice %>" placeholder="2d6">
+                </div>
+                <div class="form-control">
+                  <label class="label py-1">
+                    <span class="label-text text-sm">Damage Type</span>
+                  </label>
+                  <select class="select select-bordered select-sm w-full" name="npc_attacks[<%= index %>][damage_type]">
+                    <% GameConfig::NpcAttacks::DAMAGE_TYPES.each do |dt| %>
+                      <option value="<%= dt %>" <%= attack.damage_type == dt ? 'selected' : '' %>><%= dt.capitalize %></option>
+                    <% end %>
+                  </select>
+                </div>
+                <div class="form-control">
+                  <label class="label py-1">
+                    <span class="label-text text-sm">Speed</span>
+                  </label>
+                  <input type="number" class="input input-bordered input-sm w-full" name="npc_attacks[<%= index %>][attack_speed]" value="<%= attack.attack_speed %>" min="1" max="10">
+                </div>
+                <div class="form-control">
+                  <label class="label py-1">
+                    <span class="label-text text-sm">Range (hexes)</span>
+                  </label>
+                  <input type="number" class="input input-bordered input-sm w-full" name="npc_attacks[<%= index %>][range_hexes]" value="<%= attack.range_hexes %>" min="1" max="20">
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+                <div class="form-control">
+                  <label class="label py-1">
+                    <span class="label-text text-sm">Hit Message (optional)</span>
+                  </label>
+                  <input type="text" class="input input-bordered input-sm w-full" name="npc_attacks[<%= index %>][hit_message]" value="<%= attack.hit_message %>" placeholder="%{attacker} bites %{target}!">
+                </div>
+                <div class="form-control">
+                  <label class="label py-1">
+                    <span class="label-text text-sm">Miss Message (optional)</span>
+                  </label>
+                  <input type="text" class="input input-bordered input-sm w-full" name="npc_attacks[<%= index %>][miss_message]" value="<%= attack.miss_message %>" placeholder="%{attacker} snaps at %{target}!">
+                </div>
+                <div class="form-control">
+                  <label class="label py-1">
+                    <span class="label-text text-sm">Template</span>
+                  </label>
+                  <select class="select select-bordered select-sm w-full attack-template-select" onchange="applyTemplate(this, <%= index %>)">
+                    <option value="">Custom</option>
+                    <% GameConfig::NpcAttacks::WEAPON_TEMPLATES.each do |name, _| %>
+                      <option value="<%= name %>" <%= attack.weapon_template == name ? 'selected' : '' %>><%= name.tr('_', ' ').capitalize %></option>
+                    <% end %>
+                  </select>
+                  <input type="hidden" name="npc_attacks[<%= index %>][weapon_template]" value="<%= attack.weapon_template %>">
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+
+    <!-- Template for new attacks (hidden) -->
+    <template id="attack-template">
+      <div class="attack-row card bg-base-300 mb-3" data-index="__INDEX__">
+        <div class="card-body">
+          <div class="flex justify-between items-start mb-3">
+            <h6 class="font-bold">New Attack</h6>
+            <button type="button" class="btn btn-outline btn-error btn-sm" onclick="removeAttack(this)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-6 gap-2">
+            <div class="form-control">
+              <label class="label py-1">
+                <span class="label-text text-sm">Name</span>
+              </label>
+              <input type="text" class="input input-bordered input-sm w-full" name="npc_attacks[__INDEX__][name]" value="Attack" required>
+            </div>
+            <div class="form-control">
+              <label class="label py-1">
+                <span class="label-text text-sm">Type</span>
+              </label>
+              <select class="select select-bordered select-sm w-full" name="npc_attacks[__INDEX__][attack_type]">
+                <option value="melee" selected>Melee</option>
+                <option value="ranged">Ranged</option>
+              </select>
+            </div>
+            <div class="form-control">
+              <label class="label py-1">
+                <span class="label-text text-sm">Damage Dice</span>
+              </label>
+              <input type="text" class="input input-bordered input-sm w-full" name="npc_attacks[__INDEX__][damage_dice]" value="2d6" placeholder="2d6">
+            </div>
+            <div class="form-control">
+              <label class="label py-1">
+                <span class="label-text text-sm">Damage Type</span>
+              </label>
+              <select class="select select-bordered select-sm w-full" name="npc_attacks[__INDEX__][damage_type]">
+                <% GameConfig::NpcAttacks::DAMAGE_TYPES.each do |dt| %>
+                  <option value="<%= dt %>" <%= dt == 'physical' ? 'selected' : '' %>><%= dt.capitalize %></option>
+                <% end %>
+              </select>
+            </div>
+            <div class="form-control">
+              <label class="label py-1">
+                <span class="label-text text-sm">Speed</span>
+              </label>
+              <input type="number" class="input input-bordered input-sm w-full" name="npc_attacks[__INDEX__][attack_speed]" value="5" min="1" max="10">
+            </div>
+            <div class="form-control">
+              <label class="label py-1">
+                <span class="label-text text-sm">Range (hexes)</span>
+              </label>
+              <input type="number" class="input input-bordered input-sm w-full" name="npc_attacks[__INDEX__][range_hexes]" value="1" min="1" max="20">
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+            <div class="form-control">
+              <label class="label py-1">
+                <span class="label-text text-sm">Hit Message (optional)</span>
+              </label>
+              <input type="text" class="input input-bordered input-sm w-full" name="npc_attacks[__INDEX__][hit_message]" placeholder="%{attacker} bites %{target}!">
+            </div>
+            <div class="form-control">
+              <label class="label py-1">
+                <span class="label-text text-sm">Miss Message (optional)</span>
+              </label>
+              <input type="text" class="input input-bordered input-sm w-full" name="npc_attacks[__INDEX__][miss_message]" placeholder="%{attacker} snaps at %{target}!">
+            </div>
+            <div class="form-control">
+              <label class="label py-1">
+                <span class="label-text text-sm">Template</span>
+              </label>
+              <select class="select select-bordered select-sm w-full attack-template-select" onchange="applyTemplate(this, __INDEX__)">
+                <option value="">Custom</option>
+                <% GameConfig::NpcAttacks::WEAPON_TEMPLATES.each do |name, _| %>
+                  <option value="<%= name %>"><%= name.tr('_', ' ').capitalize %></option>
+                <% end %>
+              </select>
+              <input type="hidden" name="npc_attacks[__INDEX__][weapon_template]" value="">
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <script>
+      // Weapon templates from GameConfig
+      const WEAPON_TEMPLATES = <%= GameConfig::NpcAttacks::WEAPON_TEMPLATES.to_json %>;
+
+      let attackIndex = <%= (attacks.length rescue 0) %>;
+
+      function addAttack() {
+        const container = document.getElementById('attacks-container');
+        const noAttacksMsg = document.getElementById('no-attacks-message');
+        if (noAttacksMsg) noAttacksMsg.remove();
+
+        const template = document.getElementById('attack-template');
+        const html = template.innerHTML.replace(/__INDEX__/g, attackIndex);
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        container.appendChild(div.firstElementChild);
+        attackIndex++;
+      }
+
+      function removeAttack(btn) {
+        const row = btn.closest('.attack-row');
+        row.remove();
+
+        // Show "no attacks" message if all removed
+        const container = document.getElementById('attacks-container');
+        if (!container.querySelector('.attack-row')) {
+          container.innerHTML = `
+            <div class="text-base-content/70 text-center py-8" id="no-attacks-message">
+              <i class="bi bi-slash-circle text-4xl block mb-2"></i>
+              No attacks configured. Click "Add Attack" to define natural attacks.
+            </div>
+          `;
+        }
+      }
+
+      function applyTemplate(select, index) {
+        const templateName = select.value;
+        if (!templateName || !WEAPON_TEMPLATES[templateName]) return;
+
+        const row = select.closest('.attack-row');
+        const template = WEAPON_TEMPLATES[templateName];
+
+        // Update form fields
+        row.querySelector(`[name="npc_attacks[${index}][name]"]`).value = templateName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        row.querySelector(`[name="npc_attacks[${index}][attack_type]"]`).value = template.attack_type;
+        row.querySelector(`[name="npc_attacks[${index}][damage_dice]"]`).value = template.damage_dice;
+        row.querySelector(`[name="npc_attacks[${index}][damage_type]"]`).value = template.damage_type;
+        row.querySelector(`[name="npc_attacks[${index}][attack_speed]"]`).value = template.attack_speed;
+        row.querySelector(`[name="npc_attacks[${index}][range_hexes]"]`).value = template.range_hexes;
+        row.querySelector(`[name="npc_attacks[${index}][weapon_template]"]`).value = templateName;
+      }
+    </script>
+  </div>
+</div>
+
+<%= partial 'admin/npcs/combat_abilities' %>

@@ -1,0 +1,72 @@
+<% @page_title = 'Monster Templates - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Monster Templates' }] %>
+
+<%= admin_content_start %>
+      <h2 class="text-2xl font-bold mb-6">Monster Templates</h2>
+
+      <div class="flex justify-between mb-4">
+        <a href="/admin/monsters/new" class="btn btn-primary">
+          <i class="bi bi-plus-lg mr-1"></i>New Monster Template
+        </a>
+      </div>
+
+      <% if @monster_templates.empty? %>
+        <%= partial 'shared/empty_state', locals: { message: 'No monster templates defined yet.', link: '/admin/monsters/new', link_text: 'Create your first monster' } %>
+      <% else %>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Total HP</th>
+                <th>Size (hexes)</th>
+                <th>Segments</th>
+                <th>Climb Distance</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @monster_templates.each do |monster| %>
+                <tr>
+                  <td><%= h monster.name %></td>
+                  <td>
+                    <%
+                      color = case monster.monster_type
+                              when 'colossus' then 'primary'
+                              when 'dragon' then 'error'
+                              when 'behemoth' then 'warning'
+                              when 'titan' then 'info'
+                              else 'ghost'
+                              end
+                    %>
+                    <span class="badge badge-<%= color %>">
+                      <%= monster.monster_type %>
+                    </span>
+                  </td>
+                  <td><%= monster.total_hp %> HP</td>
+                  <td><%= monster.hex_width %>x<%= monster.hex_height %></td>
+                  <td>
+                    <% segment_count = monster.monster_segment_templates_dataset.count %>
+                    <% weak_points = monster.monster_segment_templates_dataset.where(is_weak_point: true).count %>
+                    <%= segment_count %> segments
+                    <% if weak_points > 0 %>
+                      <br><small class="text-warning"><%= weak_points %> weak point<%= weak_points > 1 ? 's' : '' %></small>
+                    <% end %>
+                  </td>
+                  <td><%= monster.climb_distance %> hexes</td>
+                  <td>
+                    <div class="flex gap-1">
+                      <a href="/admin/monsters/<%= monster.id %>" class="btn btn-outline btn-primary btn-sm" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </a>
+                      <%= partial 'admin/delete_button', locals: { path: "/admin/monsters/#{monster.id}/delete", label: 'monster template' } %>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+<%= admin_content_end %>

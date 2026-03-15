@@ -1,0 +1,688 @@
+# frozen_string_literal: false
+#
+# Centralized Room Type Configuration
+# ====================================
+# Every room type must be defined here. Rooms with unlisted types cannot be created.
+#
+# Usage:
+#   RoomTypeConfig.valid?('shop')            # => true
+#   RoomTypeConfig.all_types                 # => ['standard', 'safe', ...]
+#   RoomTypeConfig.environment('forest')     # => :outdoor
+#   RoomTypeConfig.tagged(:street)           # => ['street', 'avenue', 'intersection']
+#   RoomTypeConfig.battle_map('cave')        # => { surfaces: [...], ... }
+#   RoomTypeConfig.badge_color('combat')     # => 'danger'
+#   RoomTypeConfig.icon('shop')              # => '[Shop]'
+#
+# Tags (used for flexible grouping):
+#   street              - Open-air city thoroughfares (for pathfinding, map rendering)
+#   building_entrance   - Buildings visible from streets (for street context, adjacency)
+#   interior            - Interior rooms shown as buildings on city maps
+#   interesting         - Locations the Auto GM considers for adventure generation
+#   excluded_from_atmosphere - Rooms that don't receive atmospheric/weather messages
+#   combat_zone         - Rooms designed for combat encounters
+#
+# Environment values: indoor, outdoor, underground
+#
+# Battle map fields:
+#   surfaces          - Floor/ground surface types
+#   objects           - Cover objects that can be placed (from CoverObjectType table)
+#   density           - Fraction of hexes to fill with cover objects (0.0 - 1.0)
+#   dark              - Room is naturally dark
+#   difficult_terrain - All hexes are difficult terrain
+#   combat_optimized  - Layout is designed for fighting
+#   water_chance      - Fraction of hexes with water features (ONLY set per-type; omit to use category default)
+#   hazard_chance     - Fraction of hexes with hazards (ONLY set per-type; omit to use category default)
+#   explosive_chance  - Fraction of hexes with explosives (ONLY set per-type; omit to use category default)
+#   elevation_variance - Max elevation difference in hex units (ONLY set per-type; omit to use category default)
+#
+# NOTE: water_chance, hazard_chance, explosive_chance, and elevation_variance are
+# intentionally NOT in defaults. When absent, BattleMapGeneratorService falls through
+# to CATEGORY_DEFAULTS (indoor: 2% hazard, outdoor: 5% hazard + water, underground: 10% hazard + water).
+
+defaults:
+  environment: indoor
+  badge_color: secondary
+  icon: "[Place]"
+  battle_map:
+    surfaces: [floor]
+    objects: []
+    density: 0.10
+    dark: false
+    difficult_terrain: false
+    combat_optimized: false
+
+categories:
+  basic:
+    display_name: Basic
+    types:
+      standard:
+        battle_map:
+          objects: [table, chair, desk]
+          density: 0.15
+      safe:
+        badge_color: success
+        battle_map:
+          objects: [chair, desk]
+          density: 0.10
+      combat:
+        badge_color: danger
+        tags: [combat_zone]
+        battle_map:
+          surfaces: [floor, sand]
+          objects: [pillar, sandbags, boulder]
+          density: 0.15
+          combat_optimized: true
+
+  services:
+    display_name: Services
+    types:
+      shop:
+        badge_color: info
+        icon: "[Shop]"
+        tags: [building_entrance, interior, interesting]
+        battle_map:
+          surfaces: [wood, tile]
+          objects: [shelf, counter, desk, chair]
+          density: 0.30
+      guild:
+        badge_color: info
+        tags: [interior]
+        battle_map:
+          surfaces: [wood, stone]
+          objects: [table, desk, chair, shelf, pillar]
+          density: 0.25
+      temple:
+        badge_color: info
+        tags: [building_entrance, interior, interesting]
+        battle_map:
+          surfaces: [stone, tile]
+          objects: [pillar, desk, chair]
+          density: 0.15
+      bank:
+        icon: "[Bank]"
+        tags: [interior]
+        battle_map:
+          surfaces: [tile, stone]
+          objects: [desk, counter, pillar, chair]
+          density: 0.20
+      hospital:
+        tags: [interior]
+        battle_map:
+          surfaces: [tile]
+          objects: [bed, desk, chair, shelf]
+          density: 0.20
+          hazard_chance: 0.02
+
+  water:
+    display_name: Water
+    types:
+      water:
+        environment: outdoor
+        icon: "[Water]"
+        battle_map:
+          surfaces: [sand, dirt]
+          objects: [rock, log]
+          density: 0.08
+          water_chance: 0.6
+      lake:
+        environment: outdoor
+        icon: "[Water]"
+        battle_map:
+          surfaces: [sand, dirt]
+          objects: [rock, log, boulder]
+          density: 0.08
+          water_chance: 0.7
+      river:
+        environment: outdoor
+        icon: "[Water]"
+        battle_map:
+          surfaces: [sand, dirt]
+          objects: [rock, boulder, log]
+          density: 0.10
+          water_chance: 0.5
+      ocean:
+        environment: outdoor
+        icon: "[Water]"
+        battle_map:
+          surfaces: [sand]
+          objects: [rock, boulder]
+          density: 0.05
+          water_chance: 0.8
+      pool:
+        environment: outdoor
+        icon: "[Water]"
+        battle_map:
+          surfaces: [tile, stone]
+          objects: [chair, wall_low]
+          density: 0.10
+          water_chance: 0.4
+
+  city:
+    display_name: City
+    types:
+      street:
+        environment: outdoor
+        icon: "[Street]"
+        tags: [street]
+        battle_map:
+          surfaces: [concrete, asphalt]
+          objects: [car, truck, motorcycle, dumpster]
+          density: 0.15
+          explosive_chance: 0.02
+      avenue:
+        environment: outdoor
+        icon: "[Street]"
+        tags: [street]
+        battle_map:
+          surfaces: [concrete, asphalt]
+          objects: [car, truck, dumpster, crate]
+          density: 0.12
+      intersection:
+        environment: outdoor
+        icon: "[Street]"
+        tags: [street]
+        battle_map:
+          surfaces: [concrete, asphalt]
+          objects: [car, truck, motorcycle]
+          density: 0.10
+      building:
+        icon: "[Building]"
+        tags: [building_entrance]
+        battle_map:
+          surfaces: [floor, tile]
+          objects: [table, chair, desk, shelf]
+          density: 0.20
+      hallway:
+        icon: "[Hallway]"
+        battle_map:
+          surfaces: [floor, carpet]
+          objects: [table, chair, shelf]
+          density: 0.10
+      floor:
+        display_name: "Floor"
+        tags: []
+        battle_map:
+          surfaces: [floor]
+          objects: []
+          density: 0.05
+
+  residential:
+    display_name: Residential
+    types:
+      apartment:
+        icon: "[Residence]"
+        tags: [interior]
+        battle_map:
+          surfaces: [carpet, wood]
+          objects: [couch, table, chair, shelf, desk]
+          density: 0.25
+      residence:
+        icon: "[Residence]"
+        tags: [interior]
+        battle_map:
+          surfaces: [carpet, wood]
+          objects: [couch, table, chair, shelf]
+          density: 0.25
+      bedroom:
+        tags: [interior]
+        battle_map:
+          surfaces: [carpet, wood]
+          objects: [bed, desk, chair, shelf]
+          density: 0.25
+      bathroom:
+        tags: [interior]
+        battle_map:
+          surfaces: [tile]
+          objects: [wall_low]
+          density: 0.10
+          water_chance: 0.3
+      kitchen:
+        tags: [interior]
+        battle_map:
+          surfaces: [tile, wood]
+          objects: [counter, table, chair]
+          density: 0.30
+          hazard_chance: 0.1
+      living_room:
+        tags: [interior]
+        battle_map:
+          surfaces: [carpet, wood]
+          objects: [couch, table, chair, shelf]
+          density: 0.25
+      basement:
+        tags: [interior, interesting]
+        battle_map:
+          surfaces: [concrete, stone]
+          objects: [crate, barrel, shelf]
+          density: 0.20
+          dark: true
+          hazard_chance: 0.05
+      attic:
+        tags: [interior, interesting]
+        battle_map:
+          surfaces: [wood]
+          objects: [crate, debris, shelf]
+          density: 0.15
+          dark: true
+      garage:
+        tags: [interior]
+        battle_map:
+          surfaces: [concrete]
+          objects: [car, motorcycle, crate, barrel]
+          density: 0.20
+          explosive_chance: 0.1
+          hazard_chance: 0.03
+
+  commercial:
+    display_name: Commercial
+    types:
+      office:
+        icon: "[Building]"
+        tags: [interior]
+        battle_map:
+          surfaces: [carpet, tile]
+          objects: [desk, chair, shelf]
+          density: 0.25
+      commercial:
+        icon: "[Building]"
+        tags: [interior]
+        battle_map:
+          surfaces: [tile, wood]
+          objects: [shelf, counter, desk, crate]
+          density: 0.20
+      restaurant:
+        tags: [building_entrance, interior]
+        battle_map:
+          surfaces: [tile, wood]
+          objects: [table, chair, counter]
+          density: 0.30
+          hazard_chance: 0.03
+      bar:
+        tags: [building_entrance, interior]
+        battle_map:
+          surfaces: [wood]
+          objects: [counter, table, chair, barrel]
+          density: 0.30
+          dark: true
+      lobby:
+        tags: [interior]
+        battle_map:
+          surfaces: [tile, carpet]
+          objects: [couch, pillar, desk]
+          density: 0.15
+      warehouse:
+        tags: [building_entrance, interior, interesting]
+        battle_map:
+          surfaces: [concrete]
+          objects: [crate, barrel, shelf, machinery]
+          density: 0.25
+          explosive_chance: 0.1
+          hazard_chance: 0.05
+      factory:
+        tags: [interior, interesting]
+        battle_map:
+          surfaces: [concrete, metal]
+          objects: [machinery, crate, barrel]
+          density: 0.30
+          hazard_chance: 0.15
+          explosive_chance: 0.15
+      storage:
+        tags: [interior]
+        battle_map:
+          surfaces: [concrete]
+          objects: [crate, barrel, shelf]
+          density: 0.20
+
+  indoor_special:
+    display_name: Indoor Special
+    types:
+      arena:
+        badge_color: danger
+        tags: [interior, interesting, combat_zone]
+        battle_map:
+          surfaces: [sand, stone]
+          objects: [pillar, sandbags, boulder]
+          density: 0.15
+          combat_optimized: true
+      dojo:
+        badge_color: warning
+        tags: [interior, combat_zone]
+        battle_map:
+          surfaces: [wood]
+          objects: [sandbags, pillar]
+          density: 0.08
+          combat_optimized: true
+      gym:
+        badge_color: warning
+        tags: [interior, combat_zone]
+        battle_map:
+          surfaces: [rubber, wood]
+          objects: [sandbags, machinery, crate]
+          density: 0.10
+          combat_optimized: true
+      nightclub:
+        tags: [interior]
+        battle_map:
+          surfaces: [tile, wood]
+          objects: [table, couch, counter, chair]
+          density: 0.20
+          dark: true
+      theater:
+        tags: [interior]
+        battle_map:
+          surfaces: [carpet, wood]
+          objects: [chair, desk]
+          density: 0.35
+      museum:
+        tags: [interior]
+        battle_map:
+          surfaces: [tile, stone]
+          objects: [pillar, desk, shelf]
+          density: 0.15
+      library:
+        tags: [interior, interesting]
+        battle_map:
+          surfaces: [carpet, wood]
+          objects: [shelf, desk, chair]
+          density: 0.35
+          hazard_chance: 0.02
+
+  outdoor_urban:
+    display_name: Outdoor Urban
+    types:
+      alley:
+        environment: outdoor
+        battle_map:
+          surfaces: [concrete, asphalt]
+          objects: [dumpster, barrel, debris, crate]
+          density: 0.25
+          dark: true
+          hazard_chance: 0.05
+      parking_lot:
+        environment: outdoor
+        battle_map:
+          surfaces: [asphalt, concrete]
+          objects: [car, truck, motorcycle]
+          density: 0.25
+          explosive_chance: 0.05
+      rooftop:
+        environment: outdoor
+        battle_map:
+          surfaces: [concrete, metal]
+          objects: [wall_low, crate, barrel]
+          density: 0.12
+          elevation_variance: 1
+      courtyard:
+        environment: outdoor
+        tags: [interesting]
+        battle_map:
+          surfaces: [stone, grass]
+          objects: [tree, bush, boulder, wall_low]
+          density: 0.20
+          water_chance: 0.05
+      plaza:
+        environment: outdoor
+        tags: [interesting]
+        battle_map:
+          surfaces: [stone, tile]
+          objects: [pillar, tree, boulder]
+          density: 0.10
+          water_chance: 0.03
+      garden:
+        environment: outdoor
+        battle_map:
+          surfaces: [grass, dirt]
+          objects: [tree, bush, rock]
+          density: 0.25
+          water_chance: 0.15
+      outdoor:
+        environment: outdoor
+        battle_map:
+          surfaces: [grass, dirt]
+          objects: [rock, bush, tree]
+          density: 0.10
+      sky:
+        environment: outdoor
+        battle_map:
+          surfaces: [metal]
+          objects: [wall_low, crate]
+          density: 0.05
+
+  outdoor_nature:
+    display_name: Outdoor Nature
+    types:
+      forest:
+        environment: outdoor
+        tags: [interesting]
+        battle_map:
+          surfaces: [dirt, grass]
+          objects: [tree, bush, boulder, log, rock]
+          density: 0.30
+          difficult_terrain: true
+      beach:
+        environment: outdoor
+        battle_map:
+          surfaces: [sand]
+          objects: [rock, boulder, log]
+          density: 0.10
+          water_chance: 0.3
+      field:
+        environment: outdoor
+        battle_map:
+          surfaces: [grass, dirt]
+          objects: [rock, boulder, bush]
+          density: 0.08
+      swamp:
+        environment: outdoor
+        battle_map:
+          surfaces: [mud, dirt]
+          objects: [tree, log, rock, debris]
+          density: 0.25
+          water_chance: 0.5
+          difficult_terrain: true
+          hazard_chance: 0.1
+      meadow:
+        environment: outdoor
+        battle_map:
+          surfaces: [grass]
+          objects: [rock, bush, log]
+          density: 0.08
+      hillside:
+        environment: outdoor
+        battle_map:
+          surfaces: [grass, dirt, stone]
+          objects: [boulder, rock, tree]
+          density: 0.15
+          elevation_variance: 3
+      mountain:
+        environment: outdoor
+        tags: [interesting]
+        battle_map:
+          surfaces: [stone, dirt]
+          objects: [boulder, rock]
+          density: 0.20
+          elevation_variance: 5
+          difficult_terrain: true
+      desert:
+        environment: outdoor
+        battle_map:
+          surfaces: [sand]
+          objects: [rock, boulder]
+          density: 0.08
+          hazard_chance: 0.05
+
+  underground:
+    display_name: Underground
+    types:
+      cave:
+        environment: underground
+        tags: [interesting]
+        battle_map:
+          surfaces: [stone]
+          objects: [boulder, rock, debris]
+          density: 0.25
+          dark: true
+          elevation_variance: 2
+      sewer:
+        environment: underground
+        battle_map:
+          surfaces: [concrete, stone]
+          objects: [debris, barrel, crate]
+          density: 0.15
+          dark: true
+          water_chance: 0.4
+          hazard_chance: 0.1
+      tunnel:
+        environment: underground
+        battle_map:
+          surfaces: [stone, dirt]
+          objects: [rock, debris, crate]
+          density: 0.15
+          dark: true
+          elevation_variance: 1
+      mine:
+        environment: underground
+        battle_map:
+          surfaces: [stone, dirt]
+          objects: [crate, rock, debris, machinery]
+          density: 0.20
+          dark: true
+          explosive_chance: 0.1
+          elevation_variance: 2
+      crypt:
+        environment: underground
+        tags: [interesting]
+        battle_map:
+          surfaces: [stone]
+          objects: [pillar, debris, boulder]
+          density: 0.15
+          dark: true
+          hazard_chance: 0.05
+      dungeon:
+        environment: underground
+        tags: [interesting]
+        battle_map:
+          surfaces: [stone]
+          objects: [pillar, debris, crate]
+          density: 0.20
+          dark: true
+          hazard_chance: 0.15
+
+  system:
+    display_name: System
+    types:
+      staff:
+        tags: [excluded_from_atmosphere]
+        battle_map:
+          objects: [desk, chair]
+          density: 0.10
+      death:
+        tags: [excluded_from_atmosphere]
+      limbo:
+        tags: [excluded_from_atmosphere]
+      tutorial:
+        tags: [excluded_from_atmosphere]
+        battle_map:
+          objects: [pillar, sandbags]
+          density: 0.10
+
+  fabrication:
+    display_name: Fabrication
+    types:
+      forge:
+        tags: [interior, interesting]
+        battle_map:
+          surfaces: [stone]
+          objects: [anvil, machinery, crate]
+          density: 0.25
+          hazard_chance: 0.15
+      tailor:
+        tags: [interior]
+        battle_map:
+          surfaces: [wood]
+          objects: [table, chair, shelf]
+          density: 0.20
+      jeweler:
+        tags: [interior]
+        battle_map:
+          surfaces: [wood]
+          objects: [counter, chair, shelf, desk]
+          density: 0.20
+      tattoo_parlor:
+        tags: [interior]
+        battle_map:
+          surfaces: [tile]
+          objects: [chair, desk, shelf]
+          density: 0.15
+      replicator:
+        tags: [interior]
+        battle_map:
+          surfaces: [metal]
+          objects: [machinery, crate]
+          density: 0.12
+          hazard_chance: 0.03
+      materializer:
+        tags: [interior]
+        battle_map:
+          surfaces: [metal]
+          objects: [machinery, crate]
+          density: 0.12
+          hazard_chance: 0.03
+      fabrication_bay:
+        tags: [interior]
+        battle_map:
+          surfaces: [metal]
+          objects: [machinery, crate, barrel]
+          density: 0.15
+          hazard_chance: 0.05
+      armory:
+        tags: [interior]
+        battle_map:
+          surfaces: [stone, metal]
+          objects: [shelf, crate, barrel]
+          density: 0.25
+          explosive_chance: 0.05
+      blacksmith:
+        tags: [interior]
+        battle_map:
+          surfaces: [stone]
+          objects: [anvil, machinery, crate]
+          density: 0.25
+          hazard_chance: 0.15
+      fashion_studio:
+        tags: [interior]
+        battle_map:
+          surfaces: [wood, carpet]
+          objects: [table, chair, shelf]
+          density: 0.20
+      crafting_studio:
+        tags: [interior]
+        battle_map:
+          surfaces: [wood]
+          objects: [table, chair, desk, shelf]
+          density: 0.25
+      pet_shop:
+        tags: [interior]
+        battle_map:
+          surfaces: [tile]
+          objects: [shelf, crate, barrel]
+          density: 0.20
+      breeder:
+        tags: [interior]
+        battle_map:
+          surfaces: [dirt, grass]
+          objects: [crate, barrel, rock]
+          density: 0.15
+      cloning_lab:
+        tags: [interior]
+        battle_map:
+          surfaces: [metal, tile]
+          objects: [machinery, crate, desk]
+          density: 0.15
+          hazard_chance: 0.05
+      clinic:
+        tags: [interior]
+        battle_map:
+          surfaces: [tile]
+          objects: [bed, desk, chair, shelf]
+          density: 0.20

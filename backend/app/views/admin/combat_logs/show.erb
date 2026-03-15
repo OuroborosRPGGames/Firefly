@@ -1,0 +1,69 @@
+<% @page_title = "Fight ##{@fight_id} - Combat Logs" %>
+<% @breadcrumbs = [
+  { label: 'Admin', path: '/admin' },
+  { label: 'Combat Logs', path: "/admin/combat_logs?date=#{@selected_date}" },
+  { label: "Fight ##{@fight_id}", path: "/admin/combat_logs/#{@fight_id}?date=#{@selected_date}" }
+] %>
+
+<%= admin_content_start %>
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-2xl font-bold">
+      <i class="bi bi-journal-text mr-2"></i>Fight #<%= @fight_id %>
+    </h2>
+    <a href="/admin/combat_logs?date=<%= @selected_date %>" class="btn btn-sm btn-ghost">
+      <i class="bi bi-arrow-left"></i> Back to list
+    </a>
+  </div>
+
+  <% if @rounds.empty? %>
+    <div class="card bg-base-200">
+      <div class="card-body text-center text-base-content/60">
+        <p>No log data found for this fight.</p>
+      </div>
+    </div>
+  <% else %>
+    <!-- Round navigation -->
+    <div class="flex gap-2 mb-4 flex-wrap">
+      <% @rounds.each_with_index do |round, i| %>
+        <a href="#round-<%= i %>" class="btn btn-sm btn-outline">Round <%= round[:round_number] %></a>
+      <% end %>
+    </div>
+
+    <% @rounds.each_with_index do |round, i| %>
+      <div id="round-<%= i %>" class="card bg-base-200 mb-4">
+        <div class="card-body p-0">
+          <div class="flex justify-between items-center px-4 py-3 border-b border-base-content/10 cursor-pointer"
+               onclick="this.closest('.card').querySelector('.round-content').classList.toggle('hidden')">
+            <h5 class="font-semibold">
+              <i class="bi bi-caret-down-fill text-xs mr-1"></i>
+              Round <%= round[:round_number] %>
+              <span class="text-base-content/50 text-sm ml-2"><%= round[:timestamp] %></span>
+            </h5>
+            <div class="flex gap-2">
+              <% round[:sections].each do |section| %>
+                <% if section[:name] == 'ROUND END' %>
+                  <% section[:lines].each do |line| %>
+                    <% if line.include?('[KO]') %>
+                      <span class="badge badge-error badge-sm">KO</span>
+                    <% end %>
+                  <% end %>
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+          <div class="round-content">
+            <% round[:sections].each do |section| %>
+              <div class="border-b border-base-content/5 last:border-0">
+                <div class="px-4 py-2 bg-base-300/30 text-sm font-medium text-base-content/70">
+                  <%= section[:name] %>
+                </div>
+                <pre class="px-4 py-2 text-xs font-mono whitespace-pre-wrap overflow-x-auto leading-relaxed"><% section[:lines].each do |line| %><%= color_log_line(h(line)) %>
+<% end %></pre>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+<%= admin_content_end %>

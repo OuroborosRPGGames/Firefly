@@ -1,0 +1,154 @@
+<div class="card bg-base-200 mb-4">
+  <div class="card-body">
+    <div class="p-4 border-b border-base-content/10 -mx-4 -mt-4 mb-4 flex justify-between items-center">
+      <h3 class="font-semibold"><i class="bi bi-shield-exclamation mr-2"></i>Applied Status Effects</h3>
+      <button type="button" class="btn btn-sm btn-outline btn-primary" onclick="addStatusEffect()">
+        <i class="bi bi-plus-lg mr-1"></i>Add Effect
+      </button>
+    </div>
+    <p class="text-base-content/70 text-sm mb-3">
+      Status effects applied to targets when the ability hits. Each effect can have duration, chance, and threshold requirements.
+    </p>
+
+    <div id="status-effects-container">
+      <% effects = @ability.parsed_status_effects || [] %>
+      <% if effects.empty? %>
+        <div class="text-base-content/70 text-center py-3" id="no-effects-message">
+          No status effects configured. This ability doesn't apply any debuffs or buffs.
+        </div>
+      <% else %>
+        <% effects.each_with_index do |effect, index| %>
+          <div class="status-effect-row card bg-base-300 mb-2" data-index="<%= index %>">
+            <div class="card-body py-3">
+              <div class="grid grid-cols-2 md:grid-cols-7 gap-2 items-end">
+                <div class="md:col-span-2">
+                  <label class="label py-1"><span class="label-text text-sm">Status Effect</span></label>
+                  <select class="select select-bordered select-sm w-full" name="status_effects[<%= index %>][effect]">
+                    <option value="">-- Select --</option>
+                    <% configured = (effect['effect'] || effect['effect_name'] || '').to_s.downcase %>
+                    <% (@status_effects || []).each do |se| %>
+                      <% legacy_id_match = effect['effect_id'].to_s == se.id.to_s %>
+                      <option value="<%= se.name.downcase %>" <%= configured == se.name.downcase || legacy_id_match ? 'selected' : '' %>><%= h se.name %></option>
+                    <% end %>
+                  </select>
+                </div>
+                <div>
+                  <label class="label py-1"><span class="label-text text-sm">Duration (rounds)</span></label>
+                  <input type="number" class="input input-bordered input-sm w-full" name="status_effects[<%= index %>][duration_rounds]"
+                         value="<%= effect['duration_rounds'] || effect['duration'] || 3 %>" min="1" max="20">
+                </div>
+                <div>
+                  <label class="label py-1"><span class="label-text text-sm">Chance %</span></label>
+                  <% raw_chance = (effect['chance'] || 1.0).to_f %>
+                  <% chance_percent = raw_chance <= 1.0 ? (raw_chance * 100).round : raw_chance.round %>
+                  <input type="number" class="input input-bordered input-sm w-full" name="status_effects[<%= index %>][chance]"
+                         value="<%= chance_percent %>" min="0" max="100">
+                </div>
+                <div>
+                  <label class="label py-1"><span class="label-text text-sm">Min Damage</span></label>
+                  <input type="number" class="input input-bordered input-sm w-full" name="status_effects[<%= index %>][effect_threshold]"
+                         value="<%= effect['effect_threshold'] || effect['threshold'] || 0 %>" min="0">
+                  <label class="label py-0"><span class="label-text-alt text-base-content/70">Damage threshold</span></label>
+                </div>
+                <div>
+                  <label class="label py-1"><span class="label-text text-sm">Stacks/Value</span></label>
+                  <input type="number" class="input input-bordered input-sm w-full" name="status_effects[<%= index %>][value]"
+                         value="<%= effect['value'] || 1 %>" min="1">
+                </div>
+                <div>
+                  <button type="button" class="btn btn-sm btn-outline btn-error" onclick="removeStatusEffect(this)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+
+    <div class="mt-4">
+      <h6 class="font-semibold mb-2">Common Status Effects</h6>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-base-content/70 text-sm">
+        <div>
+          <strong>Burning:</strong> DoT fire damage over time
+        </div>
+        <div>
+          <strong>Stunned:</strong> Skip next turn
+        </div>
+        <div>
+          <strong>Weakened:</strong> Reduced damage output
+        </div>
+        <div>
+          <strong>Slowed:</strong> Reduced movement/segment
+        </div>
+        <div>
+          <strong>Bleeding:</strong> Physical DoT
+        </div>
+        <div>
+          <strong>Poisoned:</strong> Poison DoT
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let statusEffectIndex = <%= (@ability.parsed_status_effects || []).length %>;
+
+function addStatusEffect() {
+  document.getElementById('no-effects-message')?.remove();
+  const container = document.getElementById('status-effects-container');
+  const html = `
+    <div class="status-effect-row card bg-base-300 mb-2" data-index="${statusEffectIndex}">
+      <div class="card-body py-3">
+        <div class="grid grid-cols-2 md:grid-cols-7 gap-2 items-end">
+          <div class="md:col-span-2">
+            <label class="label py-1"><span class="label-text text-sm">Status Effect</span></label>
+            <select class="select select-bordered select-sm w-full" name="status_effects[${statusEffectIndex}][effect]">
+              <option value="">-- Select --</option>
+              <% (@status_effects || []).each do |se| %>
+                <option value="<%= se.name.downcase %>"><%= h se.name %></option>
+              <% end %>
+            </select>
+          </div>
+          <div>
+            <label class="label py-1"><span class="label-text text-sm">Duration (rounds)</span></label>
+            <input type="number" class="input input-bordered input-sm w-full" name="status_effects[${statusEffectIndex}][duration_rounds]"
+                   value="3" min="1" max="20">
+          </div>
+          <div>
+            <label class="label py-1"><span class="label-text text-sm">Chance %</span></label>
+            <input type="number" class="input input-bordered input-sm w-full" name="status_effects[${statusEffectIndex}][chance]"
+                   value="100" min="0" max="100">
+          </div>
+          <div>
+            <label class="label py-1"><span class="label-text text-sm">Min Damage</span></label>
+            <input type="number" class="input input-bordered input-sm w-full" name="status_effects[${statusEffectIndex}][effect_threshold]"
+                   value="0" min="0">
+            <label class="label py-0"><span class="label-text-alt text-base-content/70">Damage threshold</span></label>
+          </div>
+          <div>
+            <label class="label py-1"><span class="label-text text-sm">Stacks/Value</span></label>
+            <input type="number" class="input input-bordered input-sm w-full" name="status_effects[${statusEffectIndex}][value]"
+                   value="1" min="1">
+          </div>
+          <div>
+            <button type="button" class="btn btn-sm btn-outline btn-error" onclick="removeStatusEffect(this)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  container.insertAdjacentHTML('beforeend', html);
+  statusEffectIndex++;
+  updatePowerDisplay();
+}
+
+function removeStatusEffect(btn) {
+  btn.closest('.status-effect-row').remove();
+  updatePowerDisplay();
+}
+</script>

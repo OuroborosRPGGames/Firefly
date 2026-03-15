@@ -1,0 +1,85 @@
+#!/bin/bash
+# Pre-commit hook for Firefly MUD Engine
+#
+# Installation:
+#   ln -sf ../../backend/scripts/pre-commit .git/hooks/pre-commit
+#
+# Or run manually:
+#   ./backend/scripts/pre-commit
+
+set -e
+
+cd "$(git rev-parse --show-toplevel)/backend"
+
+echo "Running pre-commit checks..."
+
+# Get list of staged Ruby files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.rb$' || true)
+
+if [ -z "$STAGED_FILES" ]; then
+  echo "No Ruby files staged, skipping checks."
+  exit 0
+fi
+
+# Check for frozen_string_literal
+echo "Checking frozen_string_literal..."
+for file in $STAGED_FILES; do
+  if [ -f "$file" ]; then
+    if ! head -1 "$file" | grep -q "frozen_string_literal"; then
+      echo "ERROR: Missing frozen_string_literal in $file"
+      echo "Add '# frozen_string_literal: true' as the first line"
+      exit 1
+    fi
+  fi
+done
+echo "  frozen_string_literal: OK"
+
+# Check for debug statements
+echo "Checking for debug statements..."
+FORBIDDEN_PATTERNS="binding\.pry|byebug|debugger|puts.*DEBUG"
+for file in $STAGED_FILES; do
+  if [ -f "$file" ]; then
+    if grep -E "$FORBIDDEN_PATTERNS" "$file" > /dev/null; then
+      echo "ERROR: Debug statement found in $file"
+      grep -n -E "$FORBIDDEN_PATTERNS" "$file"
+      exit 1
+    fi
+  fi
+done
+echo "  No debug statements: OK"
+
+# Run Rubocop on staged files only (fast)
+echo "Running Rubocop on staged files..."
+if bundle exec rubocop --force-exclusion $STAGED_FILES > /dev/null 2>&1; then
+  echo "  Rubocop: OK"
+else
+  echo "Rubocop found issues:"
+  bundle exec rubocop --force-exclusion $STAGED_FILES
+  exit 1
+fi
+
+# Run relevant specs (if test files exist)
+echo "Running quick test check..."
+SPEC_FILES=""
+for file in $STAGED_FILES; do
+  # Convert app/commands/foo/bar.rb to spec/commands/foo/bar_spec.rb
+  spec_file=$(echo "$file" | sed 's|^app/|spec/|' | sed 's|^plugins/|spec/plugins/|' | sed 's|\.rb$|_spec.rb|')
+  if [ -f "$spec_file" ]; then
+    SPEC_FILES="$SPEC_FILES $spec_file"
+  fi
+done
+
+if [ -n "$SPEC_FILES" ]; then
+  echo "Running specs for changed files..."
+  if bundle exec rspec --format progress $SPEC_FILES; then
+    echo "  Tests: OK"
+  else
+    echo "ERROR: Tests failed"
+    exit 1
+  fi
+else
+  echo "  No matching specs found, skipping tests"
+fi
+
+echo ""
+echo "All pre-commit checks passed!"

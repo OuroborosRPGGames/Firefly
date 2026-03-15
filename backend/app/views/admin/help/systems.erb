@@ -1,0 +1,345 @@
+<% @page_title = 'Help Systems - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Help System', path: '/admin/help' }, { label: 'Systems', path: '/admin/help/systems' }] %>
+
+<div class="container mx-auto px-4 py-4">
+  <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+    <!-- Sidebar -->
+    <div class="md:col-span-3 mb-4">
+      <div class="card bg-base-200 shadow-lg">
+        <div class="card-body p-0">
+          <div class="flex items-center gap-2 px-4 py-3 border-b border-base-content/10">
+            <i class="bi bi-shield-lock text-primary"></i>
+            <h5 class="font-semibold text-base-content">Admin Console</h5>
+          </div>
+          <%= partial 'admin/sidebar' %>
+        </div>
+      </div>
+
+      <% unless @help_systems.empty? %>
+        <!-- Table of Contents -->
+        <div class="card bg-base-200 shadow-lg mt-4">
+          <div class="p-3 border-b border-base-content/10">
+            <h6 class="font-semibold text-sm"><i class="bi bi-list-nested mr-1"></i>Systems</h6>
+          </div>
+          <div class="card-body p-2">
+            <ul class="menu menu-xs p-0">
+              <% @help_systems.each do |sys| %>
+                <li><a href="#sys-<%= sys.name %>" class="text-xs"><%= sys.display_name || sys.name %></a></li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Main Content -->
+    <div class="md:col-span-9">
+      <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+        <div>
+          <h2 class="text-2xl font-bold"><i class="bi bi-collection mr-2"></i>Help Systems</h2>
+          <p class="text-base-content/60 text-sm mt-1"><%= @help_systems.count %> systems &middot; <%= @help_systems.sum { |s| s.command_names&.to_a&.count || 0 } %> commands total</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <a href="/admin/help" class="btn btn-outline btn-ghost btn-sm">
+            <i class="bi bi-arrow-left mr-1"></i>Back to Help
+          </a>
+          <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('newSystemModal').showModal()">
+            <i class="bi bi-plus-circle mr-1"></i>New System
+          </button>
+        </div>
+      </div>
+
+      <!-- View Toggle -->
+      <div class="flex gap-2 mb-4">
+        <button class="btn btn-sm btn-ghost" id="btn-detail" onclick="setView('detail')">
+          <i class="bi bi-card-text mr-1"></i>Detailed
+        </button>
+        <button class="btn btn-sm btn-ghost" id="btn-compact" onclick="setView('compact')">
+          <i class="bi bi-grid mr-1"></i>Compact
+        </button>
+      </div>
+
+      <% if @help_systems.empty? %>
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle mr-2"></i>
+          <div>
+            <p>No help systems defined yet. Help systems group related commands together with overview documentation.</p>
+            <button type="button" class="btn btn-primary btn-sm mt-2" onclick="document.getElementById('newSystemModal').showModal()">
+              <i class="bi bi-plus-circle mr-1"></i>Create First System
+            </button>
+          </div>
+        </div>
+      <% else %>
+
+        <!-- Detailed View -->
+        <div id="view-detail" class="space-y-4">
+          <% @help_systems.each do |sys| %>
+            <div class="card bg-base-200 shadow" id="sys-<%= sys.name %>">
+              <!-- Header -->
+              <div class="p-4 border-b border-base-content/10 flex flex-wrap justify-between items-center gap-2">
+                <div>
+                  <h3 class="text-lg font-bold"><%= sys.display_name || sys.name.capitalize %></h3>
+                  <p class="text-sm text-base-content/60"><%= sys.summary %></p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="badge badge-neutral"><%= sys.command_names&.to_a&.count || 0 %> commands</span>
+                  <a href="/admin/help/systems/<%= sys.id %>" class="btn btn-xs btn-outline btn-ghost">
+                    <i class="bi bi-pencil mr-1"></i>Edit
+                  </a>
+                </div>
+              </div>
+
+              <div class="card-body">
+                <!-- Player Description (rendered markdown) -->
+                <% desc_html = sys.player_guide_html %>
+                <% if desc_html %>
+                  <div class="help-content mb-4">
+                    <%= desc_html %>
+                  </div>
+                <% end %>
+
+                <!-- Commands -->
+                <% cmds = sys.command_names&.to_a || [] %>
+                <% unless cmds.empty? %>
+                  <div class="mb-4">
+                    <h4 class="text-sm font-semibold text-base-content/70 mb-2"><i class="bi bi-terminal mr-1"></i>Commands</h4>
+                    <div class="flex flex-wrap gap-1">
+                      <% cmds.each do |cmd| %>
+                        <span class="badge badge-sm badge-neutral"><%= cmd %></span>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+
+                <!-- Related Systems -->
+                <% related = sys.related_systems&.to_a || [] %>
+                <% unless related.empty? %>
+                  <div class="mb-4">
+                    <span class="text-sm text-base-content/60">Related:</span>
+                    <% related.each do |rel| %>
+                      <a href="#sys-<%= rel %>" class="badge badge-sm badge-outline badge-primary no-underline"><%= rel %></a>
+                    <% end %>
+                  </div>
+                <% end %>
+
+                <!-- Staff Notes (collapsible) -->
+                <% notes_html = sys.staff_notes_html %>
+                <% if notes_html %>
+                  <div class="collapse collapse-arrow bg-base-300/50 rounded-lg">
+                    <input type="checkbox" />
+                    <div class="collapse-title text-sm font-semibold py-2 min-h-0">
+                      <i class="bi bi-shield-lock mr-1 text-warning"></i>Staff Implementation Notes
+                    </div>
+                    <div class="collapse-content">
+                      <div class="help-content staff-content pt-2">
+                        <%= notes_html %>
+                      </div>
+
+                      <!-- Key Files -->
+                      <% files = sys.key_files&.to_a || [] %>
+                      <% unless files.empty? %>
+                        <div class="mt-3 pt-3 border-t border-base-content/10">
+                          <h5 class="text-xs font-semibold text-base-content/60 mb-1">Key Files</h5>
+                          <div class="flex flex-wrap gap-1">
+                            <% files.each do |f| %>
+                              <code class="text-xs bg-base-300 px-1.5 py-0.5 rounded"><%= f %></code>
+                            <% end %>
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Compact View (hidden by default) -->
+        <div id="view-compact" class="hidden">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <% @help_systems.each do |sys| %>
+              <div class="card bg-base-200 h-full">
+                <div class="p-4 border-b border-base-content/10 flex justify-between items-center">
+                  <h5 class="font-semibold">
+                    <a href="#sys-<%= sys.name %>" class="no-underline hover:text-primary" onclick="setView('detail')">
+                      <%= sys.display_name || sys.name.capitalize %>
+                    </a>
+                  </h5>
+                  <span class="badge badge-neutral"><%= sys.command_names&.to_a&.count || 0 %> commands</span>
+                </div>
+                <div class="card-body py-3">
+                  <p class="text-base-content/70 text-sm"><%= sys.summary || 'No summary' %></p>
+
+                  <% if sys.command_names && !sys.command_names.to_a.empty? %>
+                    <div class="mt-2">
+                      <div class="flex flex-wrap gap-1">
+                        <% sys.command_names.to_a.first(8).each do |cmd| %>
+                          <span class="badge badge-xs badge-neutral"><%= cmd %></span>
+                        <% end %>
+                        <% if sys.command_names.to_a.count > 8 %>
+                          <span class="badge badge-xs badge-ghost">+<%= sys.command_names.to_a.count - 8 %> more</span>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
+
+                  <div class="flex justify-between items-center mt-2">
+                    <small class="text-base-content/50">Order: <%= sys.display_order %></small>
+                    <a href="/admin/help/systems/<%= sys.id %>" class="btn btn-xs btn-outline btn-ghost">
+                      <i class="bi bi-pencil mr-1"></i>Edit
+                    </a>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- New System Modal -->
+<%= partial 'admin/modal', locals: {
+  id: 'newSystemModal',
+  title: '<i class="bi bi-plus-circle mr-2"></i>New Help System',
+  content: partial('admin/help/new_system_modal_content'),
+  auto_actions: false
+} %>
+
+<style>
+/* Rendered markdown content */
+.help-content {
+  line-height: 1.7;
+  font-size: 0.925rem;
+}
+.help-content p {
+  margin-bottom: 0.75rem;
+}
+.help-content p:last-child {
+  margin-bottom: 0;
+}
+.help-content h2 {
+  color: oklch(var(--p));
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid oklch(var(--bc) / 0.15);
+}
+.help-content h3 {
+  color: oklch(var(--p) / 0.85);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+.help-content h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+.help-content strong {
+  color: oklch(var(--bc));
+  font-weight: 600;
+}
+.help-content code {
+  background: oklch(var(--b3));
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.85em;
+  color: oklch(var(--s));
+}
+.help-content pre {
+  background: oklch(var(--b3));
+  padding: 0.75rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+}
+.help-content pre code {
+  background: transparent;
+  padding: 0;
+  color: oklch(var(--bc));
+}
+.help-content ul, .help-content ol {
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+.help-content li {
+  margin-bottom: 0.3rem;
+}
+.help-content ul {
+  list-style-type: disc;
+}
+.help-content ol {
+  list-style-type: decimal;
+}
+.help-content ul ul {
+  list-style-type: circle;
+  margin-bottom: 0;
+}
+.help-content table {
+  width: 100%;
+  margin-bottom: 0.75rem;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.help-content th, .help-content td {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid oklch(var(--bc) / 0.15);
+  text-align: left;
+}
+.help-content th {
+  background: oklch(var(--b3));
+  font-weight: 600;
+  color: oklch(var(--p));
+}
+
+/* Staff-specific styling */
+.staff-content h2 {
+  color: oklch(var(--wa));
+  font-size: 1.1rem;
+  margin-top: 1rem;
+}
+.staff-content h3 {
+  color: oklch(var(--wa) / 0.8);
+  font-size: 0.95rem;
+}
+.staff-content {
+  font-size: 0.875rem;
+}
+</style>
+
+<script>
+function setView(view) {
+  const detail = document.getElementById('view-detail');
+  const compact = document.getElementById('view-compact');
+  const btnDetail = document.getElementById('btn-detail');
+  const btnCompact = document.getElementById('btn-compact');
+
+  if (view === 'detail') {
+    detail.classList.remove('hidden');
+    compact.classList.add('hidden');
+    btnDetail.classList.add('btn-active');
+    btnCompact.classList.remove('btn-active');
+  } else {
+    detail.classList.add('hidden');
+    compact.classList.remove('hidden');
+    btnCompact.classList.add('btn-active');
+    btnDetail.classList.remove('btn-active');
+  }
+  localStorage.setItem('helpSystemsView', view);
+}
+
+// Restore saved view preference
+document.addEventListener('DOMContentLoaded', function() {
+  const saved = localStorage.getItem('helpSystemsView') || 'detail';
+  setView(saved);
+});
+</script>

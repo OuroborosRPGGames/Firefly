@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="<%= csrf_token %>">
+  <meta name="description" content="<%= @site_description || 'A modern text-based RPG for collaborative storytelling' %>">
+
+  <title><%= @page_title ? "#{@page_title} | #{game_name}" : "#{game_name} - A World of Stories Awaits" %></title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oxygen:wght@300;400;700&family=Crimson+Text:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css" rel="stylesheet">
+
+  <!-- Tailwind CSS + DaisyUI -->
+  <link rel="stylesheet" href="/css/daisyui.css">
+  <link rel="stylesheet" href="/css/tailwind.css">
+
+  <!-- Custom Theme Overrides -->
+  <link rel="stylesheet" href="/css/firefly.css">
+
+  <!-- Custom styles -->
+  <style>
+    /* Dropdown positioning fix */
+    .navbar .dropdown-content {
+      position: absolute;
+      top: 100%;
+      z-index: 100;
+    }
+    /* Mobile drawer z-index */
+    .drawer-side {
+      z-index: 60;
+    }
+    /* Scroll-to-top button */
+    .btn-scroll-top {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+      z-index: 50;
+    }
+    .btn-scroll-top.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+  </style>
+
+  <!-- Additional page-specific styles -->
+  <% if @extra_css %>
+    <% @extra_css.each do |css_file| %>
+      <link rel="stylesheet" href="/css/<%= css_file %>">
+    <% end %>
+  <% end %>
+</head>
+<body>
+
+  <!-- DaisyUI Drawer with Navbar -->
+  <div class="drawer">
+    <input id="mobile-drawer" type="checkbox" class="drawer-toggle" />
+    <div class="drawer-content flex flex-col">
+      <!-- Navbar -->
+      <div class="navbar bg-primary sticky top-0 z-50">
+        <div class="navbar-start">
+          <!-- Mobile hamburger -->
+          <label for="mobile-drawer" class="btn btn-ghost lg:hidden">
+            <i class="bi bi-list text-xl"></i>
+          </label>
+          <!-- Brand -->
+          <a class="btn btn-ghost text-xl" href="/">
+            <% if File.exist?(File.join('public', 'images', 'logo.png')) %>
+              <img src="/images/logo.png" alt="" height="32" class="mr-2 h-8">
+            <% else %>
+              <i class="bi bi-fire mr-2"></i>
+            <% end %>
+            <span class="font-bold"><%= game_name %></span>
+          </a>
+        </div>
+
+        <!-- Desktop nav -->
+        <div class="navbar-center hidden lg:flex">
+          <ul class="menu menu-horizontal px-1">
+            <li><a href="/">Home</a></li>
+            <li><a href="/dashboard">Play</a></li>
+            <li>
+              <details>
+                <summary>Game Info</summary>
+                <ul class="bg-base-200 rounded-box w-52 z-[100] p-2">
+                  <li><a href="/info/rules"><i class="bi bi-book mr-2"></i>Rules</a></li>
+                  <li><a href="/info/getting-started"><i class="bi bi-rocket-takeoff mr-2"></i>Getting Started</a></li>
+                </ul>
+              </details>
+            </li>
+            <li>
+              <details>
+                <summary>World</summary>
+                <ul class="bg-base-200 rounded-box w-52 z-[100] p-2">
+                  <li><a href="/world/lore"><i class="bi bi-journal-text mr-2"></i>Lore</a></li>
+                  <li><a href="/world/locations"><i class="bi bi-map mr-2"></i>Locations</a></li>
+                </ul>
+              </details>
+            </li>
+            <li><a href="/news">Logs</a></li>
+          </ul>
+        </div>
+
+        <!-- Right side -->
+        <div class="navbar-end hidden lg:flex">
+          <ul class="menu menu-horizontal px-1">
+            <% if @current_user %>
+              <li>
+                <details>
+                  <summary><i class="bi bi-person-circle mr-1"></i><%= h @current_user.username %></summary>
+                  <ul class="bg-base-200 rounded-box w-52 z-[100] p-2">
+                    <li><a href="/settings"><i class="bi bi-gear mr-2"></i>Settings</a></li>
+                    <li>
+                      <form action="/logout" method="post">
+                        <button type="submit" class="w-full text-left"><i class="bi bi-box-arrow-right mr-2"></i>Log out</button>
+                      </form>
+                    </li>
+                  </ul>
+                </details>
+              </li>
+            <% else %>
+              <li><a href="/login" class="btn btn-ghost btn-sm">Login</a></li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Flash Messages -->
+      <% if flash['error'] || flash['success'] || flash['notice'] %>
+        <div class="container mx-auto px-4 mt-3">
+          <% if flash['error'] %>
+            <div class="alert alert-error mb-2">
+              <i class="bi bi-exclamation-triangle mr-2"></i>
+              <span><%= h flash['error'] %></span>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="this.closest('.alert').remove()">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+          <% end %>
+
+          <% if flash['success'] %>
+            <div class="alert alert-success mb-2">
+              <i class="bi bi-check-circle mr-2"></i>
+              <span><%= h flash['success'] %></span>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="this.closest('.alert').remove()">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+          <% end %>
+
+          <% if flash['notice'] %>
+            <div class="alert alert-info mb-2">
+              <i class="bi bi-info-circle mr-2"></i>
+              <span><%= h flash['notice'] %></span>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="this.closest('.alert').remove()">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+
+      <!-- Main Content -->
+      <main role="main" class="flex-1">
+        <%= yield %>
+      </main>
+
+      <!-- Site Footer -->
+      <footer class="bg-base-300 border-t border-base-content/10 py-10 mt-10">
+        <div class="container mx-auto px-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+            <div class="lg:col-span-1">
+              <h5 class="text-primary font-bold mb-3">About <%= game_name %></h5>
+              <p class="text-base-content/70 text-sm">
+                <%= game_name %> is a modern text-based RPG engine designed for collaborative storytelling and immersive role-playing experiences. Create unique characters and forge your own legend.
+              </p>
+            </div>
+
+            <div>
+              <h5 class="text-primary font-bold mb-3">Quick Links</h5>
+              <ul class="space-y-2">
+                <li><a href="/" class="text-base-content/70 hover:text-primary text-sm">Home</a></li>
+                <li><a href="/news" class="text-base-content/70 hover:text-primary text-sm">News</a></li>
+                <li><a href="/info/rules" class="text-base-content/70 hover:text-primary text-sm">Rules</a></li>
+                <li><a href="/info/getting-started" class="text-base-content/70 hover:text-primary text-sm">Getting Started</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h5 class="text-primary font-bold mb-3">World</h5>
+              <ul class="space-y-2">
+                <li><a href="/world/lore" class="text-base-content/70 hover:text-primary text-sm">Lore</a></li>
+                <li><a href="/world/locations" class="text-base-content/70 hover:text-primary text-sm">Locations</a></li>
+                <li><a href="/forums" class="text-base-content/70 hover:text-primary text-sm">Forums</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h5 class="text-primary font-bold mb-3">Account</h5>
+              <ul class="space-y-2">
+                <% if @current_user %>
+                  <li><a href="/dashboard" class="text-base-content/70 hover:text-primary text-sm">Dashboard</a></li>
+                  <li><a href="/settings" class="text-base-content/70 hover:text-primary text-sm">Settings</a></li>
+                  <li><a href="/characters/new" class="text-base-content/70 hover:text-primary text-sm">Create Character</a></li>
+                <% else %>
+                  <li><a href="/login" class="text-base-content/70 hover:text-primary text-sm">Sign In</a></li>
+                  <li><a href="/register" class="text-base-content/70 hover:text-primary text-sm">Create Account</a></li>
+                <% end %>
+              </ul>
+            </div>
+
+            <div>
+              <h5 class="text-primary font-bold mb-3">Connect</h5>
+              <ul class="space-y-2">
+                <li><a href="/discord" class="text-base-content/70 hover:text-primary text-sm" target="_blank"><i class="bi bi-discord mr-1"></i>Discord</a></li>
+                <li><a href="/contact" class="text-base-content/70 hover:text-primary text-sm">Contact</a></li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="text-center text-base-content/70 text-sm">
+            <p>&copy; <%= Time.now.year %> <%= game_name %>. Powered by collaborative storytelling.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <!-- Mobile drawer sidebar -->
+    <div class="drawer-side">
+      <label for="mobile-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+      <ul class="menu bg-base-200 min-h-full w-80 p-4">
+        <li class="menu-title">Navigation</li>
+        <li><a href="/">Home</a></li>
+        <li><a href="/dashboard">Play</a></li>
+        <li class="menu-title">Game Info</li>
+        <li><a href="/info/rules"><i class="bi bi-book mr-2"></i>Rules</a></li>
+        <li><a href="/info/getting-started"><i class="bi bi-rocket-takeoff mr-2"></i>Getting Started</a></li>
+        <li class="menu-title">World</li>
+        <li><a href="/world/lore"><i class="bi bi-journal-text mr-2"></i>Lore</a></li>
+        <li><a href="/world/locations"><i class="bi bi-map mr-2"></i>Locations</a></li>
+        <li class="menu-title">Other</li>
+        <li><a href="/news">Logs</a></li>
+        <% if @current_user %>
+          <li class="menu-title">Account</li>
+          <li><a href="/settings"><i class="bi bi-gear mr-2"></i>Settings</a></li>
+          <li>
+            <form action="/logout" method="post">
+              <button type="submit" class="w-full text-left"><i class="bi bi-box-arrow-right mr-2"></i>Log out</button>
+            </form>
+          </li>
+        <% else %>
+          <li class="menu-title">Account</li>
+          <li><a href="/login">Login</a></li>
+        <% end %>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Scroll to Top Button -->
+  <button class="btn btn-primary btn-scroll-top" id="scrollToTop" aria-label="Scroll to top">
+    <i class="bi bi-chevron-up"></i>
+  </button>
+
+  <!-- Shared Utilities -->
+  <script src="/js/utils.js"></script>
+
+  <!-- Modal System -->
+  <script src="/js/modal-system.js"></script>
+
+  <!-- Main JS -->
+  <script src="/js/main.js"></script>
+
+  <!-- Additional page-specific scripts -->
+  <% if @extra_js %>
+    <% @extra_js.each do |js_file| %>
+      <script src="/js/<%= js_file %>"></script>
+    <% end %>
+  <% end %>
+</body>
+</html>

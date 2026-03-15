@@ -1,0 +1,109 @@
+<% is_new = @ability.new? %>
+<%= admin_content_start %>
+<div class="breadcrumbs text-sm mb-3">
+  <ul>
+    <li><a href="/admin">Admin</a></li>
+    <li><a href="/admin/abilities">Abilities</a></li>
+    <li><%= is_new ? 'New Ability' : h(@ability.name) %></li>
+  </ul>
+</div>
+
+<div class="flex justify-between items-center mb-4">
+  <h2 class="text-2xl font-bold">
+    <i class="bi bi-magic mr-2"></i>
+    <%= is_new ? 'New Ability' : h(@ability.name) %>
+  </h2>
+  <div class="flex gap-2 items-center">
+    <!-- Power Display -->
+    <% power_breakdown = (is_new ? {} : (@ability.power_breakdown rescue {})) %>
+    <% ability_power = (is_new ? 0 : (@ability.power rescue 0)) %>
+    <div id="power-display" class="card bg-base-200" style="min-width: 100px;"
+         title="<%= format_power_breakdown(power_breakdown) %>">
+      <div class="card-body text-center py-2 px-3">
+        <small class="text-base-content/70 block">Power</small>
+        <span id="power-value" class="text-2xl font-bold text-<%= power_color(ability_power) %>">
+          <%= is_new ? '?' : ability_power %>
+        </span>
+      </div>
+    </div>
+    <% unless is_new %>
+      <form method="post" action="/admin/abilities/<%= @ability.id %>/duplicate" class="inline">
+        <%= csrf_tag %>
+        <button type="submit" class="btn btn-outline">
+          <i class="bi bi-copy mr-1"></i>Duplicate
+        </button>
+      </form>
+      <%= partial 'admin/delete_button', locals: { path: "/admin/abilities/#{@ability.id}/delete", label: 'ability' } %>
+    <% end %>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs tabs-boxed mb-4">
+  <a class="tab <%= @tab == 'general' ? 'tab-active' : '' %>"
+     href="<%= is_new ? '#' : "/admin/abilities/#{@ability.id}?tab=general" %>">
+    <i class="bi bi-info-circle mr-1"></i>General
+  </a>
+  <% unless is_new %>
+    <a class="tab <%= @tab == 'damage' ? 'tab-active' : '' %>"
+       href="/admin/abilities/<%= @ability.id %>?tab=damage">
+      <i class="bi bi-lightning-charge mr-1"></i>Damage
+    </a>
+    <a class="tab <%= @tab == 'targeting' ? 'tab-active' : '' %>"
+       href="/admin/abilities/<%= @ability.id %>?tab=targeting">
+      <i class="bi bi-crosshair mr-1"></i>Targeting
+    </a>
+    <a class="tab <%= @tab == 'costs' ? 'tab-active' : '' %>"
+       href="/admin/abilities/<%= @ability.id %>?tab=costs">
+      <i class="bi bi-clock mr-1"></i>Timing & Costs
+    </a>
+    <a class="tab <%= @tab == 'status' ? 'tab-active' : '' %>"
+       href="/admin/abilities/<%= @ability.id %>?tab=status">
+      <i class="bi bi-shield-exclamation mr-1"></i>Status Effects
+    </a>
+    <a class="tab <%= @tab == 'advanced' ? 'tab-active' : '' %>"
+       href="/admin/abilities/<%= @ability.id %>?tab=advanced">
+      <i class="bi bi-gear-wide mr-1"></i>Advanced
+    </a>
+  <% end %>
+</div>
+
+<% form_action = is_new ? '/admin/abilities/create' : "/admin/abilities/#{@ability.id}" %>
+
+<form method="post" action="<%= form_action %>" id="ability-form">
+  <%= csrf_tag %>
+  <input type="hidden" name="_tab" value="<%= @tab %>">
+
+  <% if @tab == 'general' || is_new %>
+    <%= partial 'admin/abilities/general_fields' %>
+  <% end %>
+
+  <% if @tab == 'damage' && !is_new %>
+    <%= partial 'admin/abilities/damage_fields' %>
+  <% end %>
+
+  <% if @tab == 'targeting' && !is_new %>
+    <%= partial 'admin/abilities/targeting_fields' %>
+  <% end %>
+
+  <% if @tab == 'costs' && !is_new %>
+    <%= partial 'admin/abilities/cost_fields' %>
+  <% end %>
+
+  <% if @tab == 'status' && !is_new %>
+    <%= partial 'admin/abilities/status_fields' %>
+  <% end %>
+
+  <% if @tab == 'advanced' && !is_new %>
+    <%= partial 'admin/abilities/advanced_fields' %>
+  <% end %>
+
+  <div class="mt-4 flex gap-2">
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-check-lg mr-1"></i><%= is_new ? 'Create Ability' : 'Save Changes' %>
+    </button>
+    <a href="/admin/abilities" class="btn btn-outline">Cancel</a>
+  </div>
+</form>
+    
+<%= admin_content_end %>

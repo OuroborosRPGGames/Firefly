@@ -1,0 +1,112 @@
+<% costs = @ability.parsed_costs || {} %>
+
+<div class="card bg-base-200 mb-4">
+  <div class="card-body">
+    <div class="p-4 border-b border-base-content/10 -mx-4 -mt-4 mb-4">
+      <h3 class="font-semibold"><i class="bi bi-clock mr-2"></i>Timing</h3>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div>
+        <label class="label"><span class="label-text">Activation Segment</span></label>
+        <input type="number" class="input input-bordered w-full" name="activation_segment"
+               value="<%= @ability.activation_segment || 50 %>" min="1" max="100">
+        <label class="label"><span class="label-text-alt text-base-content/70">When in the round (1-100). Lower = earlier.</span></label>
+      </div>
+
+      <div>
+        <label class="label"><span class="label-text">Segment Variance</span></label>
+        <input type="number" class="input input-bordered w-full" name="segment_variance"
+               value="<%= @ability.segment_variance || 2 %>" min="0" max="20">
+        <label class="label"><span class="label-text-alt text-base-content/70">Random +/- variance</span></label>
+      </div>
+
+      <div>
+        <label class="label"><span class="label-text">Cooldown (seconds)</span></label>
+        <input type="number" class="input input-bordered w-full" name="cooldown_seconds"
+               value="<%= @ability.cooldown_seconds || 0 %>" min="0">
+        <label class="label"><span class="label-text-alt text-base-content/70">Legacy time-based cooldown</span></label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-info mb-4">
+  <i class="bi bi-info-circle mr-2"></i>
+  <span>Abilities do not consume willpower to activate. Players can still empower ability damage by allocating willpower dice during combat.</span>
+</div>
+
+<div class="card bg-base-200 mb-4">
+  <div class="card-body">
+    <div class="p-4 border-b border-base-content/10 -mx-4 -mt-4 mb-4">
+      <h3 class="font-semibold"><i class="bi bi-arrow-down-circle mr-2"></i>Roll Penalties</h3>
+    </div>
+    <p class="text-base-content/70 text-sm mb-3">
+      Penalties applied after using this ability. Penalties decay over rounds.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="card bg-base-300">
+        <div class="card-body py-3">
+          <h4 class="font-medium mb-2">Ability Penalty</h4>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="label py-1"><span class="label-text text-sm">Penalty Amount</span></label>
+              <input type="number" class="input input-bordered input-sm w-full" name="ability_penalty_amount"
+                     value="<%= costs.dig('ability_penalty', 'amount') || 0 %>" max="0">
+              <label class="label py-0"><span class="label-text-alt text-base-content/70">Negative number (e.g., -6)</span></label>
+            </div>
+            <div>
+              <label class="label py-1"><span class="label-text text-sm">Decay/Round</span></label>
+              <input type="number" class="input input-bordered input-sm w-full" name="ability_penalty_decay"
+                     value="<%= costs.dig('ability_penalty', 'decay_per_round') || 0 %>" min="0">
+            </div>
+          </div>
+          <p class="text-base-content/70 text-xs mt-2">Applied to ability rolls only</p>
+        </div>
+      </div>
+
+      <div class="card bg-base-300">
+        <div class="card-body py-3">
+          <h4 class="font-medium mb-2">All-Roll Penalty</h4>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="label py-1"><span class="label-text text-sm">Penalty Amount</span></label>
+              <input type="number" class="input input-bordered input-sm w-full" name="all_roll_penalty_amount"
+                     value="<%= costs.dig('all_roll_penalty', 'amount') || 0 %>" max="0">
+              <label class="label py-0"><span class="label-text-alt text-base-content/70">Negative number (e.g., -4)</span></label>
+            </div>
+            <div>
+              <label class="label py-1"><span class="label-text text-sm">Decay/Round</span></label>
+              <input type="number" class="input input-bordered input-sm w-full" name="all_roll_penalty_decay"
+                     value="<%= costs.dig('all_roll_penalty', 'decay_per_round') || 0 %>" min="0">
+            </div>
+          </div>
+          <p class="text-base-content/70 text-xs mt-2">Applied to ALL rolls (attacks too)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card bg-base-200 mb-4">
+  <div class="card-body">
+    <div class="p-4 border-b border-base-content/10 -mx-4 -mt-4 mb-4">
+      <h3 class="font-semibold"><i class="bi bi-hourglass-split mr-2"></i>Round-Based Cooldowns</h3>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div>
+        <label class="label"><span class="label-text">Specific Cooldown (rounds)</span></label>
+        <input type="number" class="input input-bordered w-full" name="specific_cooldown_rounds"
+               value="<%= costs.dig('specific_cooldown', 'rounds') || 0 %>" min="0" max="20">
+        <label class="label"><span class="label-text-alt text-base-content/70">This ability unavailable for N rounds after use</span></label>
+      </div>
+
+      <div>
+        <label class="label"><span class="label-text">Global Cooldown (rounds)</span></label>
+        <input type="number" class="input input-bordered w-full" name="global_cooldown_rounds"
+               value="<%= costs.dig('global_cooldown', 'rounds') || 0 %>" min="0" max="5">
+        <label class="label"><span class="label-text-alt text-base-content/70">ALL abilities unavailable for N rounds after use</span></label>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,92 @@
+<% @page_title = 'Content Restrictions - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Content Restrictions', path: '/admin/content_restrictions' }] %>
+
+<%= admin_content_start %>
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold"><i class="bi bi-shield-exclamation mr-2"></i>Content Restrictions</h2>
+        <a href="/admin/content_restrictions/new" class="btn btn-primary">
+          <i class="bi bi-plus-circle mr-1"></i>New Restriction
+        </a>
+      </div>
+
+      <div class="alert alert-info mb-4">
+        <i class="bi bi-info-circle mr-2"></i>
+        <span>Content restrictions are content types that require player consent. Players can choose which types they consent to,
+        and rooms will display mutually allowed content after 10 minutes of stable occupancy.</span>
+      </div>
+
+      <% if @restrictions.empty? %>
+        <div class="card bg-base-200 shadow-lg">
+          <div class="card-body text-center py-12">
+            <i class="bi bi-shield-exclamation text-5xl text-base-content/30 mb-4"></i>
+            <h4 class="text-xl font-semibold mb-2">No Content Restrictions</h4>
+            <p class="text-base-content/70 mb-4">Create content types like "Violence/Gore", "Mature Themes", or "Dark Themes" that require player consent.</p>
+            <a href="/admin/content_restrictions/new" class="btn btn-primary">
+              <i class="bi bi-plus-circle mr-1"></i>Create First Restriction
+            </a>
+          </div>
+        </div>
+      <% else %>
+        <div class="card bg-base-200 shadow-lg">
+          <div class="overflow-x-auto">
+            <table class="table table-zebra">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Name</th>
+                  <th>Severity</th>
+                  <th>Mutual?</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @restrictions.each do |r| %>
+                <tr>
+                  <td><code class="text-primary"><%= r.code %></code></td>
+                  <td>
+                    <strong><%= h r.name %></strong>
+                    <% if r.description %>
+                      <br><span class="text-sm text-base-content/60"><%= r.description[0..59] %><%= '...' if r.description && r.description.length > 60 %></span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% badge_class = case r.severity
+                       when 'mild' then 'badge-success'
+                       when 'moderate' then 'badge-warning'
+                       when 'explicit' then 'badge-error'
+                       when 'extreme' then 'badge-neutral'
+                       else 'badge-ghost'
+                       end %>
+                    <span class="badge <%= badge_class %>"><%= r.severity&.capitalize %></span>
+                  </td>
+                  <td>
+                    <% if r.requires_mutual_consent %>
+                      <span class="badge badge-info">Yes</span>
+                    <% else %>
+                      <span class="badge badge-neutral">No</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if r.is_active %>
+                      <span class="badge badge-success">Active</span>
+                    <% else %>
+                      <span class="badge badge-neutral">Inactive</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <div class="join">
+                      <a href="/admin/content_restrictions/<%= r.id %>" class="btn btn-outline btn-sm join-item" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </a>
+                      <%= partial 'admin/delete_button', locals: { path: "/admin/content_restrictions/#{r.id}/delete", label: 'content restriction' } %>
+                    </div>
+                  </td>
+                </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% end %>
+<%= admin_content_end %>

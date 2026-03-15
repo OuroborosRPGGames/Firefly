@@ -1,0 +1,146 @@
+<% @page_title = 'Help System - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Help System', path: '/admin/help' }] %>
+
+<%= admin_content_start %>
+      <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+        <h2 class="text-2xl font-bold"><i class="bi bi-question-circle mr-2"></i>Help System</h2>
+        <div class="flex flex-wrap gap-2">
+          <form action="/admin/help/sync" method="post" class="inline">
+            <%= csrf_tag %>
+            <button type="submit" class="btn btn-outline btn-ghost">
+              <i class="bi bi-arrow-repeat mr-1"></i>Sync Commands
+            </button>
+          </form>
+          <a href="/admin/help/systems" class="btn btn-primary">
+            <i class="bi bi-collection mr-1"></i>Manage Systems
+          </a>
+        </div>
+      </div>
+
+      <!-- Stats Overview -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div class="card bg-base-200">
+          <div class="card-body text-center py-4">
+            <h3 class="text-3xl font-bold"><%= @helpfiles.count %></h3>
+            <small class="text-base-content/70">Command Helpfiles</small>
+          </div>
+        </div>
+        <div class="card bg-base-200">
+          <div class="card-body text-center py-4">
+            <h3 class="text-3xl font-bold"><%= @help_systems.count %></h3>
+            <small class="text-base-content/70">Help Systems</small>
+          </div>
+        </div>
+        <div class="card bg-base-200">
+          <div class="card-body text-center py-4">
+            <h3 class="text-3xl font-bold"><%= @categories.count %></h3>
+            <small class="text-base-content/70">Categories</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Help Systems Quick View -->
+      <% if @help_systems.any? %>
+        <div class="card bg-base-200 mb-4">
+          <div class="p-4 border-b border-base-content/10 flex justify-between items-center">
+            <h5 class="font-semibold"><i class="bi bi-collection mr-2"></i>Help Systems</h5>
+            <a href="/admin/help/systems" class="btn btn-sm btn-outline btn-ghost">View All</a>
+          </div>
+          <div class="card-body">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <% @help_systems.each do |sys| %>
+                <a href="/admin/help/systems/<%= sys.id %>" class="no-underline">
+                  <div class="p-2 rounded bg-base-300 border border-base-content/20 hover:border-primary transition-colors">
+                    <strong class="text-base-content"><%= sys.display_name || sys.name.capitalize %></strong>
+                    <br><small class="text-base-content/70"><%= sys.command_names&.to_a&.count || 0 %> commands</small>
+                  </div>
+                </a>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Filter by Category -->
+      <div class="card bg-base-200 mb-3">
+        <div class="card-body py-2">
+          <div class="flex flex-wrap gap-2 items-center">
+            <span class="text-base-content/70 mr-2">Filter:</span>
+            <a href="#" class="btn btn-sm btn-outline filter-btn btn-active" data-category="all">All</a>
+            <% @categories.each do |cat| %>
+              <a href="#" class="btn btn-sm btn-outline filter-btn" data-category="<%= cat %>"><%= cat&.capitalize || 'Uncategorized' %></a>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Helpfiles Table -->
+      <div class="card bg-base-200">
+        <div class="overflow-x-auto">
+          <table class="table table-zebra" id="helpfiles-table">
+            <thead>
+              <tr>
+                <th>Command</th>
+                <th>Category</th>
+                <th>Summary</th>
+                <th>Source</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @helpfiles.each do |hf| %>
+              <tr data-category="<%= hf.category || 'uncategorized' %>">
+                <td>
+                  <a href="/admin/help/commands/<%= hf.id %>" class="link link-hover text-base-content">
+                    <strong><%= hf.command_name %></strong>
+                  </a>
+                  <% if hf.auto_generated %>
+                    <span class="badge badge-info ml-1" title="Auto-generated from command DSL">Auto</span>
+                  <% end %>
+                  <% if hf.is_lore %>
+                    <span class="badge badge-warning ml-1" title="Included in NPC world knowledge">Lore</span>
+                  <% end %>
+                  <% if hf.aliases && !hf.aliases.to_a.empty? %>
+                    <br><small class="text-base-content/70">Aliases: <%= hf.aliases.to_a.join(', ') %></small>
+                  <% end %>
+                </td>
+                <td>
+                  <span class="badge badge-neutral"><%= hf.category || 'uncategorized' %></span>
+                </td>
+                <td>
+                  <small><%= hf.summary ? hf.summary[0..60] : '' %><%= '...' if hf.summary && hf.summary.length > 60 %></small>
+                </td>
+                <td>
+                  <% if hf.source_file %>
+                    <small class="text-base-content/70 font-mono">
+                      <%= hf.source_file.split('/').last %>:<%= hf.source_line %>
+                    </small>
+                  <% else %>
+                    <small class="text-base-content/70">-</small>
+                  <% end %>
+                </td>
+                <td>
+                  <a href="/admin/help/commands/<%= hf.id %>" class="btn btn-sm btn-outline btn-ghost" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                </td>
+              </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div class="card bg-base-200 mt-4">
+        <div class="p-4 border-b border-base-content/10">
+          <h5 class="font-semibold"><i class="bi bi-info-circle mr-2"></i>About the Help System</h5>
+        </div>
+        <div class="card-body">
+          <p><strong>Auto-sync:</strong> Command helpfiles are automatically synchronized from the command DSL on server startup. Staff notes and descriptions you add manually are preserved.</p>
+          <p><strong>Staff view:</strong> Staff characters see additional implementation details in-game including source file locations, requirements, and code references.</p>
+          <p class="mb-0"><strong>Help systems:</strong> Group related commands together with overviews. Use <code class="bg-base-300 px-1 rounded">help systems</code> in-game to list them, or <code class="bg-base-300 px-1 rounded">help system navigation</code> to view a specific system.</p>
+        </div>
+      </div>
+    
+<%= admin_content_end %>

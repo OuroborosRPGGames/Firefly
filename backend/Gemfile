@@ -1,0 +1,108 @@
+source 'https://rubygems.org'
+
+ruby '3.3.1'
+
+# Web framework
+gem 'roda', '~> 3.95'
+gem 'puma', '~> 6.6'
+gem 'tilt', '~> 2.6'
+gem 'erubi', '~> 1.12'
+
+# Database
+gem 'sequel', '~> 5.95'
+gem 'pg', '~> 1.6'
+
+# WebSockets
+gem 'faye-websocket', '~> 0.11'
+
+# Redis
+gem 'redis', '~> 5.4'
+gem 'connection_pool', '~> 2.5'
+gem 'sidekiq', '~> 7.3'
+
+# eventmachine is a transitive dependency of faye-websocket; resolved automatically by Bundler
+
+# Testing
+group :test, :development do
+  gem 'rspec', '~> 3.13'
+  gem 'factory_bot', '~> 6.5'
+  gem 'database_cleaner-sequel', '~> 2.0'
+  gem 'simplecov', '~> 0.22'
+  gem 'rack-test', '~> 2.2'
+  gem 'capybara', '~> 3.40'
+  gem 'cuprite', '~> 0.15'  # Headless Chrome driver for system specs
+  gem 'parallel_tests', '~> 4.7'
+end
+
+# Development tools
+group :development do
+  gem 'rubocop', '~> 1.80'
+  gem 'rubocop-rspec', '~> 3.5'
+  gem 'rubocop-sequel', '~> 0.3'
+  gem 'pry', '~> 0.15'
+  gem 'rerun', '~> 0.14'
+  gem 'guard', '~> 2.18'
+  gem 'guard-rspec', '~> 4.7'
+  gem 'benchmark-ips', '~> 2.10'
+  gem 'memory_profiler', '~> 1.0'
+end
+
+# JSON
+gem 'json', '~> 2.13'
+gem 'oj', '~> 3.16'
+
+# Binary serialization (weather grid data in Redis)
+gem 'msgpack', '~> 1.7'
+
+# Markdown rendering for help documentation
+gem 'kramdown', '~> 2.4'
+gem 'kramdown-parser-gfm', '~> 1.1'
+
+# ZIP file handling for content export/import
+gem 'rubyzip', '~> 2.3'
+
+# Earth data import - shapefile and raster processing (only needed for one-time import scripts)
+# Requires system libraries: libgdal-dev. Not needed on production game servers.
+group :import do
+  gem 'rgeo'
+  gem 'rgeo-shapefile'
+  gem 'gdal', '~> 3.0'       # Earth import only — requires libgdal-dev system library
+  gem 'parallel', '~> 1.26'  # Earth import parallel processing
+end
+
+# HTTP Client for LLM APIs
+gem 'faraday', '~> 2.9'
+# faraday-retry: retry logic is handled in LlmRequestProcessor; remove this if not activating Faraday middleware
+
+# Cloud Storage (Cloudflare R2 / S3-compatible)
+gem 'aws-sdk-s3', '~> 1.0'
+
+# Email (SendGrid)
+gem 'sendgrid-ruby', '~> 6.7'
+
+gem 'ruby-vips', '~> 2.2' # High-performance image processing for battle maps
+
+# Fast PNG generation for terrain textures (ChunkyPNG is pure Ruby, no dependencies)
+gem 'chunky_png', '~> 1.4'
+
+# Google Cloud TTS (Chirp 3 HD voices)
+gem 'google-cloud-text_to_speech', '~> 1.0'
+
+# Environment
+gem 'dotenv', '~> 2.8'
+
+# CORS: rack-cors removed — Rack::Cors middleware was never mounted in app.rb.
+# Re-add if CORS headers are needed for browser API consumers.
+
+# Rate limiting
+gem 'rack-attack', '~> 6.7'
+
+# Authentication
+gem 'bcrypt', '~> 3.1'
+
+# Type checking (optional gradual typing)
+# gem 'sorbet', '~> 0.5'
+# gem 'sorbet-runtime', '~> 0.5'
+
+gem 'csv'
+

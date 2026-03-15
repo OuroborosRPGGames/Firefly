@@ -1,0 +1,137 @@
+[
+  {
+    "id": "ls_1",
+    "type": "unknown",
+    "color": [
+      1.0,
+      0.9,
+      0.8
+    ],
+    "center_x": 320,
+    "center_y": 1218,
+    "intensity": 1.0,
+    "permanent": true,
+    "radius_px": 96,
+    "sam_mask_id": null
+  },
+  {
+    "id": "ls_4",
+    "type": "unknown",
+    "color": [
+      1.0,
+      0.9,
+      0.8
+    ],
+    "center_x": 245,
+    "center_y": 817,
+    "intensity": 0.92,
+    "permanent": true,
+    "radius_px": 95,
+    "sam_mask_id": null
+  },
+  {
+    "id": "ls_5",
+    "type": "unknown",
+    "color": [
+      1.0,
+      0.9,
+      0.8
+    ],
+    "center_x": 350,
+    "center_y": 668,
+    "intensity": 0.85,
+    "permanent": true,
+    "radius_px": 51,
+    "sam_mask_id": null
+  },
+  {
+    "id": "ls_7",
+    "type": "unknown",
+    "color": [
+      1.0,
+      0.9,
+      0.8
+    ],
+    "center_x": 440,
+    "center_y": 562,
+    "intensity": 0.86,
+    "permanent": true,
+    "radius_px": 96,
+    "sam_mask_id": null
+  },
+  {
+    "id": "ls_8",
+    "type": "unknown",
+    "color": [
+      1.0,
+      0.9,
+      0.8
+    ],
+    "center_x": 334,
+    "center_y": 507,
+    "intensity": 0.93,
+    "permanent": true,
+    "radius_px": 40,
+    "sam_mask_id": null
+  },
+  {
+    "id": "ls_10",
+    "type": "unknown",
+    "color": [
+      1.0,
+      0.9,
+      0.8
+    ],
+    "center_x": 196,
+    "center_y": 419,
+    "intensity": 0.9,
+    "permanent": true,
+    "radius_px": 39,
+    "sam_mask_id": null
+  },
+  {
+    "id": "ls_11",
+    "type": "unknown",
+    "color": [
+      1.0,
+      0.9,
+      0.8
+    ],
+    "center_x": 274,
+    "center_y": 392,
+    "intensity": 0.86,
+    "permanent": true,
+    "radius_px": 39,
+    "sam_mask_id": null
+  },
+  {
+    "id": "ls_12",
+    "type": "unknown",
+    "color": [
+      1.0,
+      0.9,
+      0.8
+    ],
+    "center_x": 140,
+    "center_y": 197,
+    "intensity": 0.85,
+    "permanent": true,
+    "radius_px": 32,
+    "sam_mask_id": null
+  },
+  {
+    "id": "ls_13",
+    "type": "unknown",
+    "color": [
+      1.0,
+      0.9,
+      0.8
+    ],
+    "center_x": 320,
+    "center_y": 98,
+    "intensity": 1.0,
+    "permanent": true,
+    "radius_px": 96,
+    "sam_mask_id": null
+  }
+]

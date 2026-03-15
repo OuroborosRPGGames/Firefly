@@ -1,0 +1,128 @@
+<% @page_title = @restriction.new? ? 'New Content Restriction - Admin' : "Edit #{@restriction.name} - Admin" %>
+<% @breadcrumbs = [
+  { label: 'Admin', path: '/admin' },
+  { label: 'Content Restrictions', path: '/admin/content_restrictions' },
+  { label: @restriction.new? ? 'New' : @restriction.name }
+] %>
+
+<%= admin_content_start %>
+      <h2 class="mb-4 text-2xl font-bold"><%= @restriction.new? ? 'New Content Restriction' : "Edit: #{h @restriction.name}" %></h2>
+
+      <div class="card bg-base-200 shadow-lg">
+        <div class="card-body">
+          <form action="<%= @restriction.new? ? '/admin/content_restrictions' : "/admin/content_restrictions/#{@restriction.id}" %>" method="post">
+            <%= csrf_tag %>
+
+            <div class="form-control mb-4">
+              <label class="label" for="name">
+                <span class="label-text">Name <span class="text-error">*</span></span>
+              </label>
+              <input type="text" class="input input-bordered w-full" id="name" name="name"
+                     value="<%= h @restriction.name %>" required maxlength="100"
+                     placeholder="e.g., Violence/Gore">
+              <label class="label">
+                <span class="label-text-alt text-base-content/60">Human-readable name for this content type.</span>
+              </label>
+            </div>
+
+            <div class="form-control mb-4">
+              <label class="label" for="code">
+                <span class="label-text">Code <span class="text-error">*</span></span>
+              </label>
+              <input type="text" class="input input-bordered w-full uppercase" id="code" name="code"
+                     value="<%= h @restriction.code %>" maxlength="20" required
+                     placeholder="e.g., VIOLENCE" pattern="[A-Za-z0-9_]+">
+              <label class="label">
+                <span class="label-text-alt text-base-content/60">Short code for commands (e.g., "consent set VIOLENCE on"). Auto-uppercased. Letters, numbers, and underscores only.</span>
+              </label>
+            </div>
+
+            <% if @universes && @universes.any? %>
+            <div class="form-control mb-4">
+              <label class="label" for="universe_id">
+                <span class="label-text">Universe</span>
+              </label>
+              <select class="select select-bordered w-full" id="universe_id" name="universe_id">
+                <% @universes.each do |u| %>
+                  <option value="<%= u.id %>" <%= @restriction.universe_id == u.id ? 'selected' : '' %>><%= h u.name %></option>
+                <% end %>
+              </select>
+            </div>
+            <% end %>
+
+            <div class="form-control mb-4">
+              <label class="label" for="description">
+                <span class="label-text">Description</span>
+              </label>
+              <textarea class="textarea textarea-bordered w-full" id="description" name="description" rows="3"
+                        placeholder="Describe what this content type includes..."><%= h @restriction.description %></textarea>
+              <label class="label">
+                <span class="label-text-alt text-base-content/60">Help players understand what this content type covers.</span>
+              </label>
+            </div>
+
+            <div class="form-control mb-4">
+              <label class="label" for="severity">
+                <span class="label-text">Severity</span>
+              </label>
+              <select class="select select-bordered w-full" id="severity" name="severity">
+                <% %w[mild moderate explicit extreme].each do |s| %>
+                  <option value="<%= s %>" <%= @restriction.severity == s ? 'selected' : '' %>><%= s.capitalize %></option>
+                <% end %>
+              </select>
+              <label class="label">
+                <span class="label-text-alt text-base-content/60">
+                  <strong>Mild:</strong> Common content most players accept.
+                  <strong>Moderate:</strong> May make some players uncomfortable.
+                  <strong>Explicit:</strong> Adult or graphic content.
+                  <strong>Extreme:</strong> Very intense content requiring clear consent.
+                </span>
+              </label>
+            </div>
+
+            <div class="form-control mb-4">
+              <label class="label cursor-pointer justify-start gap-2">
+                <input class="checkbox" type="checkbox" id="requires_mutual_consent" name="requires_mutual_consent"
+                       <%= @restriction.new? || @restriction.requires_mutual_consent ? 'checked' : '' %>>
+                <span class="label-text">Requires mutual consent</span>
+              </label>
+              <label class="label">
+                <span class="label-text-alt text-base-content/60">If checked, both parties in an interaction must consent for this content type to be allowed.</span>
+              </label>
+            </div>
+
+            <div class="form-control mb-4">
+              <label class="label cursor-pointer justify-start gap-2">
+                <input class="checkbox" type="checkbox" id="is_active" name="is_active"
+                       <%= @restriction.new? || @restriction.is_active ? 'checked' : '' %>>
+                <span class="label-text">Active</span>
+              </label>
+              <label class="label">
+                <span class="label-text-alt text-base-content/60">Inactive restrictions won't appear in player consent settings.</span>
+              </label>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="flex gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle mr-1"></i><%= @restriction.new? ? 'Create Restriction' : 'Update Restriction' %>
+              </button>
+              <a href="/admin/content_restrictions" class="btn btn-outline btn-ghost">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <% unless @restriction.new? %>
+      <div class="card bg-base-200 shadow-lg mt-4">
+        <div class="p-4 border-b border-error bg-error/10">
+          <h5 class="font-semibold text-error"><i class="bi bi-exclamation-triangle mr-2"></i>Danger Zone</h5>
+        </div>
+        <div class="card-body">
+          <p class="mb-4">Deleting this content restriction will also remove all player consent records for this type.</p>
+          <%= partial 'admin/delete_button', locals: { path: "/admin/content_restrictions/#{@restriction.id}/delete", label: 'content restriction' } %>
+        </div>
+      </div>
+      <% end %>
+<%= admin_content_end %>

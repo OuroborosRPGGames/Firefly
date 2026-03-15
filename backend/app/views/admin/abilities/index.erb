@@ -1,0 +1,126 @@
+<%= admin_content_start %>
+<div class="flex justify-between items-center mb-4">
+  <h2 class="text-2xl font-bold"><i class="bi bi-magic mr-2"></i>Abilities</h2>
+  <a href="/admin/abilities/new" class="btn btn-success">
+    <i class="bi bi-plus-lg mr-1"></i>New Ability
+  </a>
+</div>
+
+<%
+  _type_options = Ability::ABILITY_TYPES.map { |t|
+    "<option value=\"#{h t}\" #{@filter_type == t ? 'selected' : ''}>#{h t.capitalize}</option>"
+  }.join("\n")
+
+  _filter_content = <<~HTML
+    <div>
+      <label class="label"><span class="label-text">Type</span></label>
+      <select class="select select-bordered w-full" name="type">
+        <option value="">All Types</option>
+        #{_type_options}
+      </select>
+    </div>
+    <div>
+      <label class="label"><span class="label-text">User Type</span></label>
+      <select class="select select-bordered w-full" name="user_type">
+        <option value="">All</option>
+        <option value="pc" #{@filter_user == 'pc' ? 'selected' : ''}>PC Only</option>
+        <option value="npc" #{@filter_user == 'npc' ? 'selected' : ''}>NPC Only</option>
+      </select>
+    </div>
+    <div class="md:col-span-2">
+      <label class="label"><span class="label-text">Search</span></label>
+      <input type="text" class="input input-bordered w-full" name="q" value="#{h(@search || '')}" placeholder="Search by name...">
+    </div>
+    <div>
+      <button type="submit" class="btn btn-primary w-full">
+        <i class="bi bi-search mr-1"></i>Filter
+      </button>
+    </div>
+    <div>
+      <a href="/admin/abilities" class="btn btn-outline w-full">
+        <i class="bi bi-x-lg mr-1"></i>Clear
+      </a>
+    </div>
+  HTML
+%>
+<%= partial 'admin/filter_form', locals: {
+  action: '/admin/abilities',
+  form_class: 'grid grid-cols-1 md:grid-cols-6 gap-3 items-end',
+  content: _filter_content
+} %>
+
+<!-- Abilities Table -->
+<div class="overflow-x-auto">
+  <table class="table table-zebra">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Action</th>
+        <th>User</th>
+        <th>Damage</th>
+        <th>Power</th>
+        <th class="text-right">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @abilities.each do |ability| %>
+        <tr class="hover">
+          <td>
+            <a href="/admin/abilities/<%= ability.id %>" class="link link-hover">
+              <strong><%= h ability.name %></strong>
+            </a>
+            <% if ability.icon_name %>
+              <i class="bi bi-<%= ability.icon_name %> ml-1 text-base-content/50"></i>
+            <% end %>
+          </td>
+          <td><span class="badge badge-<%= ability_type_color(ability.ability_type) %>"><%= ability.ability_type %></span></td>
+          <td><span class="badge badge-neutral"><%= ability.action_type %></span></td>
+          <td>
+            <span class="badge badge-<%= ability.pc_ability? ? 'info' : 'warning' %>">
+              <%= ability.user_type&.upcase || 'NPC' %>
+            </span>
+          </td>
+          <td>
+            <% if ability.base_damage_dice %>
+              <code class="text-sm"><%= ability.base_damage_dice %></code> <span class="text-base-content/70"><%= ability.damage_type %></span>
+            <% elsif ability.healing_ability? %>
+              <span class="text-success"><i class="bi bi-heart-fill mr-1"></i>Healing</span>
+            <% else %>
+              <span class="text-base-content/50">-</span>
+            <% end %>
+          </td>
+          <td>
+            <% power = ability.power rescue 0 %>
+            <span class="badge badge-<%= power_color(power) %>" title="Power Rating">
+              <%= power %>
+            </span>
+          </td>
+          <td class="text-right">
+            <div class="join">
+              <a href="/admin/abilities/<%= ability.id %>" class="btn btn-sm btn-outline btn-primary join-item" title="Edit">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <form action="/admin/abilities/<%= ability.id %>/duplicate" method="post" class="inline">
+                <%= csrf_tag %>
+                <button type="submit" class="btn btn-sm btn-outline join-item" title="Duplicate">
+                  <i class="bi bi-copy"></i>
+                </button>
+              </form>
+              <%= partial 'admin/delete_button', locals: { path: "/admin/abilities/#{ability.id}/delete", label: 'ability' } %>
+            </div>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<% if @abilities.empty? %>
+  <%= partial 'shared/empty_state', locals: { message: 'No abilities found.', link: '/admin/abilities/new', link_text: 'Create one' } %>
+<% end %>
+
+<div class="text-base-content/70 text-sm mt-3">
+  Showing <%= @abilities.length %> abilities
+</div>
+<%= admin_content_end %>

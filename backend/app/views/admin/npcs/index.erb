@@ -1,0 +1,82 @@
+<%= admin_content_start %>
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-2xl font-bold flex items-center gap-2">
+    <i class="bi bi-robot"></i>NPC Archetypes
+  </h2>
+  <div class="flex gap-2">
+    <a href="/admin/npcs/locations" class="btn btn-outline btn-secondary">
+      <i class="bi bi-bookmark mr-1"></i>Saved Locations
+    </a>
+    <a href="/admin/npcs/new" class="btn btn-success">
+      <i class="bi bi-plus-lg mr-1"></i>New Archetype
+    </a>
+  </div>
+</div>
+
+<!-- Archetypes list -->
+<% if @archetypes.empty? %>
+  <%= partial 'shared/empty_state', locals: { message: 'No NPC archetypes found. Create one to get started!' } %>
+<% else %>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <% @archetypes.each do |archetype| %>
+      <div class="card bg-base-200 h-full">
+        <div class="p-4 border-b border-base-content/10 flex justify-between items-center">
+          <span class="flex items-center gap-2">
+            <i class="bi bi-<%= archetype.is_humanoid ? 'person' : 'bug' %>"></i>
+            <%= h(archetype.name) %>
+          </span>
+          <span class="badge badge-<%= behavior_badge_color(archetype.behavior_pattern) %>">
+            <%= h(archetype.behavior_pattern || 'neutral') %>
+          </span>
+        </div>
+        <div class="card-body">
+          <div class="mb-2">
+            <small class="text-base-content/70">Race:</small> <%= h(archetype.race || 'human') %><br>
+            <small class="text-base-content/70">Class:</small> <%= h(archetype.character_class || 'commoner') %>
+          </div>
+          <div class="mb-2">
+            <small class="text-base-content/70">Combat:</small>
+            HP <%= archetype.combat_max_hp || 5 %>,
+            DMG +<%= archetype.combat_damage_bonus || 0 %>,
+            DEF +<%= archetype.combat_defense_bonus || 0 %>
+          </div>
+          <div class="text-base-content/70">
+            <small>
+              <i class="bi bi-people mr-1"></i>
+              <%= archetype.characters_dataset.count %> NPCs
+            </small>
+          </div>
+        </div>
+        <div class="p-4 border-t border-base-content/10">
+          <a href="/admin/npcs/<%= archetype.id %>" class="btn btn-outline btn-primary btn-sm w-full">
+            <i class="bi bi-pencil mr-1"></i>Edit
+          </a>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% end %>
+
+<!-- Quick stats -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+  <div class="card bg-base-200">
+    <div class="card-body text-center">
+      <h3 class="text-2xl font-bold"><%= NpcArchetype.count %></h3>
+      <small class="text-base-content/70">Total Archetypes</small>
+    </div>
+  </div>
+  <div class="card bg-base-200">
+    <div class="card-body text-center">
+      <h3 class="text-2xl font-bold"><%= Character.where(is_npc: true).count %></h3>
+      <small class="text-base-content/70">Total NPCs</small>
+    </div>
+  </div>
+  <div class="card bg-base-200">
+    <div class="card-body text-center">
+      <h3 class="text-2xl font-bold"><%= NpcSchedule.where(is_active: true).count %></h3>
+      <small class="text-base-content/70">Active Schedules</small>
+    </div>
+  </div>
+</div>
+    
+<%= admin_content_end %>

@@ -1,0 +1,264 @@
+<div class="flex h-screen">
+  <!-- Left sidebar - Navigation & Tools -->
+  <div class="w-72 bg-base-300 border-r border-base-content/10 flex flex-col">
+    <div class="p-3 flex-1 overflow-y-auto">
+      <!-- Header with back button -->
+      <div class="flex items-center gap-2 mb-4">
+        <a href="/admin/city_builder" class="btn btn-sm btn-ghost" title="Back to city list">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <h5 class="font-semibold truncate" title="<%= h @location.city_name || @location.name %>">
+          <%= h(@location.city_name || @location.name) %>
+        </h5>
+      </div>
+
+      <!-- Navigation -->
+      <div class="card bg-base-200 mb-3">
+        <div class="p-3 border-b border-base-content/10">
+          <span class="text-xs uppercase font-bold text-base-content/50">Navigation</span>
+        </div>
+        <div class="p-3">
+          <% if @world %>
+            <a href="/admin/world_builder/<%= @world.id %>" class="btn btn-ghost btn-sm w-full mb-2">
+              <i class="bi bi-globe mr-2"></i>Back to World
+            </a>
+          <% end %>
+          <div class="text-base-content/50 text-sm mt-2">
+            <i class="bi bi-info-circle mr-1"></i>
+            Click a building to open Room Builder
+          </div>
+        </div>
+      </div>
+
+      <!-- Tools -->
+      <div class="card bg-base-200 mb-3">
+        <div class="p-3 border-b border-base-content/10">
+          <span class="text-xs uppercase font-bold text-base-content/50">Tools</span>
+        </div>
+        <div class="p-3">
+          <div class="flex flex-col gap-1">
+            <button class="btn btn-primary btn-sm tool-btn active" data-tool="select">
+              <i class="bi bi-cursor mr-2"></i>Select
+            </button>
+            <button class="btn btn-ghost btn-sm tool-btn" data-tool="building">
+              <i class="bi bi-building mr-2"></i>Create Building
+            </button>
+            <button class="btn btn-ghost btn-sm text-error tool-btn" data-tool="delete">
+              <i class="bi bi-trash mr-2"></i>Delete Building
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Building Types (shown when building tool selected) -->
+      <div id="building-palette-container" class="card bg-base-200 mb-3" style="display: none;">
+        <div class="p-3 border-b border-base-content/10">
+          <span class="text-xs uppercase font-bold text-base-content/50">Building Type</span>
+        </div>
+        <div class="p-3 max-h-96 overflow-y-auto">
+          <% @building_types.each do |category, types| %>
+            <div class="mb-3">
+              <span class="text-base-content/50 text-xs uppercase"><%= category.to_s.capitalize %></span>
+              <div class="flex flex-wrap gap-1 mt-1">
+                <% types.each do |type| %>
+                  <button class="btn btn-ghost btn-xs building-type-btn <%= type[:name] == :house ? 'btn-active' : '' %>"
+                          data-type="<%= type[:name] %>"
+                          title="<%= type[:display_name] %> (<%= type[:floors] %> floors)">
+                    <%= type[:display_name][0..2] %>
+                  </button>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Zoom Controls -->
+      <div class="card bg-base-200 mb-3">
+        <div class="p-3 border-b border-base-content/10">
+          <span class="text-xs uppercase font-bold text-base-content/50">View</span>
+        </div>
+        <div class="p-3">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-sm">Zoom</span>
+            <span id="zoom-level-display" class="badge badge-primary badge-sm">100%</span>
+          </div>
+          <div class="join w-full mb-2">
+            <button id="btn-zoom-out" class="btn btn-ghost btn-sm join-item">
+              <i class="bi bi-zoom-out"></i>
+            </button>
+            <button id="btn-zoom-reset" class="btn btn-ghost btn-sm join-item">
+              Reset
+            </button>
+            <button id="btn-zoom-in" class="btn btn-ghost btn-sm join-item">
+              <i class="bi bi-zoom-in"></i>
+            </button>
+          </div>
+          <button id="btn-fit-to-view" class="btn btn-ghost btn-sm w-full">
+            <i class="bi bi-arrows-fullscreen mr-2"></i>Fit to View
+          </button>
+        </div>
+      </div>
+
+      <!-- City Info -->
+      <div class="card bg-base-200">
+        <div class="p-3 border-b border-base-content/10">
+          <span class="text-xs uppercase font-bold text-base-content/50">City Info</span>
+        </div>
+        <div class="p-3 text-sm">
+          <div class="flex justify-between">
+            <span class="text-base-content/50">Grid Size:</span>
+            <span><%= @location.horizontal_streets || 10 %> x <%= @location.vertical_streets || 10 %></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-base-content/50">Cell Size:</span>
+            <span>175 ft</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-base-content/50">Max Height:</span>
+            <span><%= @location.max_building_height || 200 %> ft</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main map area -->
+  <div class="flex-1 bg-base-300 relative">
+    <div id="city-map-container" class="w-full h-full flex items-center justify-center"
+         style="background: #0d1117;">
+      <svg id="city-map" viewBox="0 0 1000 1000" style="max-width: 100%; max-height: 100vh;">
+        <!-- City map will be rendered by JS -->
+        <text x="500" y="500" text-anchor="middle" fill="#666" font-size="20">Loading city...</text>
+      </svg>
+    </div>
+
+    <!-- Coordinates display -->
+    <div class="absolute bottom-0 left-0 p-2 bg-base-300/80 text-sm">
+      <span id="coords-display">Position: (0, 0)</span>
+      <span class="ml-3" id="building-count">Buildings: 0</span>
+    </div>
+  </div>
+
+  <!-- Right sidebar - Selected element properties -->
+  <div class="w-72 bg-base-300 border-l border-base-content/10 overflow-y-auto">
+    <div class="p-3">
+      <h6 class="text-xs uppercase font-bold text-base-content/50 mb-4">Selected</h6>
+
+      <!-- No selection state -->
+      <div id="no-selection" class="text-base-content/50 text-sm">
+        <p>Click on a block or building to select it.</p>
+        <p class="mt-2">Use the "Create Building" tool to add buildings to empty blocks.</p>
+      </div>
+
+      <!-- Block selected (empty) -->
+      <div id="block-selection" style="display: none;">
+        <div class="card bg-base-200 mb-3">
+          <div class="p-3 border-b border-base-content/10">
+            <span class="font-semibold text-sm">Empty Block</span>
+          </div>
+          <div class="p-3">
+            <div class="text-sm">
+              <div class="flex justify-between mb-1">
+                <span class="text-base-content/50">Grid Position:</span>
+                <span id="block-grid-pos">-</span>
+              </div>
+              <div class="flex justify-between mb-1">
+                <span class="text-base-content/50">Street:</span>
+                <span id="block-street">-</span>
+              </div>
+              <div class="flex justify-between mb-1">
+                <span class="text-base-content/50">Avenue:</span>
+                <span id="block-avenue">-</span>
+              </div>
+            </div>
+            <div class="divider my-2"></div>
+            <p class="text-sm text-base-content/50">Select the "Create Building" tool and click this block to add a building.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Building selected -->
+      <div id="building-selection" style="display: none;">
+        <div class="card bg-base-200 mb-3">
+          <div class="p-3 border-b border-base-content/10 flex justify-between items-center">
+            <span class="font-semibold text-sm" id="building-name">Building</span>
+            <span class="badge badge-primary badge-sm" id="building-type-badge">House</span>
+          </div>
+          <div class="p-3">
+            <div class="text-sm">
+              <div class="flex justify-between mb-1">
+                <span class="text-base-content/50">Grid Position:</span>
+                <span id="building-grid-pos">-</span>
+              </div>
+              <div class="flex justify-between mb-1">
+                <span class="text-base-content/50">Floors:</span>
+                <span id="building-floors">-</span>
+              </div>
+              <div class="flex justify-between mb-1">
+                <span class="text-base-content/50">Rooms:</span>
+                <span id="building-rooms">-</span>
+              </div>
+              <div class="flex justify-between mb-1">
+                <span class="text-base-content/50">Address:</span>
+                <span id="building-address">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <a id="edit-rooms-btn" href="#" class="btn btn-primary w-full mb-2">
+          <i class="bi bi-door-open mr-2"></i>Edit Rooms
+        </a>
+        <button id="delete-building-btn" class="btn btn-outline btn-error w-full">
+          <i class="bi bi-trash mr-2"></i>Delete Building
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .tool-btn.active, .tool-btn.btn-active {
+    @apply btn-primary;
+  }
+  .building-type-btn.active, .building-type-btn.btn-active {
+    @apply btn-primary;
+  }
+  #city-map {
+    cursor: grab;
+  }
+  #city-map:active {
+    cursor: grabbing;
+  }
+  #city-map .block {
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  #city-map .block:hover {
+    opacity: 0.8;
+  }
+  #city-map .building {
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  #city-map .building:hover {
+    opacity: 0.8;
+  }
+  #city-map .building.selected {
+    stroke: oklch(var(--p));
+    stroke-width: 3;
+  }
+  #city-map .block.selected {
+    stroke: oklch(var(--p));
+    stroke-width: 2;
+  }
+</style>
+
+<script src="/js/city-builder/city-map.js?v=3"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const cityMap = new CityMap('city-map', <%= @location.id %>);
+    window.cityMap = cityMap; // For debugging
+  });
+</script>

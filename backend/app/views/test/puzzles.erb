@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Puzzle Test Page</title>
+<link rel="stylesheet" href="/css/play.css">
+<script src="/js/utils.js"></script>
+<style>
+  .test-page { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+  .test-page h1 { font-size: 2rem; margin-bottom: 1rem; }
+  .test-section { margin-bottom: 3rem; padding: 1.5rem; border: 1px solid #444; border-radius: 8px; background: #1a1a2e; }
+  .test-section h2 { font-size: 1.4rem; margin-bottom: 0.5rem; color: #e0e0ff; }
+  .test-section p.desc { color: #aaa; margin-bottom: 1rem; }
+  .test-result { margin-top: 1rem; padding: 1rem; border-radius: 6px; font-family: monospace; font-size: 0.9rem; white-space: pre-wrap; word-break: break-all; }
+  .test-result.pass { background: #0a3a0a; border: 1px solid #0f0; color: #0f0; }
+  .test-result.fail { background: #3a0a0a; border: 1px solid #f00; color: #f00; }
+  .test-result.pending { background: #2a2a0a; border: 1px solid #ff0; color: #ff0; }
+  .auto-solve-btn { margin-top: 0.5rem; padding: 0.5rem 1.5rem; background: #336; color: #fff; border: 1px solid #66a; border-radius: 4px; cursor: pointer; font-size: 0.95rem; }
+  .auto-solve-btn:hover { background: #448; }
+</style>
+</head>
+<body style="background: #0d1117; color: #c0c8d4; font-family: sans-serif;">
+
+<div class="test-page">
+  <h1>Puzzle Test Page</h1>
+  <p style="color:#aaa; margin-bottom:2rem;">Renders all three delve puzzle types with known solutions and local validation. No server required.</p>
+
+  <div class="test-section">
+    <h2>Symbol Grid (Latin Square)</h2>
+    <p class="desc">Each symbol appears exactly once per row and column. Fill empty cells using clues and deduction.</p>
+    <div id="puzzle-symbol-grid"></div>
+    <button class="auto-solve-btn" onclick="autoSolveSymbolGrid(puzzleData['symbol_grid'])">Auto-Solve</button>
+    <div id="result-symbol-grid" class="test-result pending">Awaiting submission...</div>
+  </div>
+
+  <div class="test-section">
+    <h2>Pipe Network (Connected Path)</h2>
+    <p class="desc">Rotate pipes to connect source (S) to drain (D). A real path exists in the solution.</p>
+    <div id="puzzle-pipe-network"></div>
+    <button class="auto-solve-btn" onclick="autoSolvePipeNetwork(puzzleData['pipe_network'])">Auto-Solve</button>
+    <div id="result-pipe-network" class="test-result pending">Awaiting submission...</div>
+  </div>
+
+  <div class="test-section">
+    <h2>Toggle Matrix (Lights Out)</h2>
+    <p class="desc">Click cells to toggle them and their neighbors. Light up all cells.</p>
+    <div id="puzzle-toggle-matrix"></div>
+    <button class="auto-solve-btn" onclick="autoSolveToggleMatrix(puzzleData['toggle_matrix'])">Auto-Solve</button>
+    <div id="result-toggle-matrix" class="test-result pending">Awaiting submission...</div>
+  </div>
+</div>
+
+<script>
+// ====== UTILITY FUNCTIONS ======
+
+function appendMessage(type, msg, cls) {
+  var el = document.getElementById('result-symbol-grid');
+  if (el) {
+    el.className = 'test-result fail';
+    el.innerHTML = '<strong>VALIDATION:</strong> ' + escapeHtml(msg);
+  }
+}
+
+// ====== SEEDED RNG + PUZZLE GENERATORS ======
+
+function SeededRNG(seed) {
+  var s = seed >>> 0;
+  return function() {
+    s = (s + 0x6D2B79F5) >>> 0;
+    var t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Helper: shuffle array in-place using rng
+function shuffle(arr, rng) {
+  for (var i = arr.length - 1; i > 0; i--) {
+    var j = Math.floor(rng() * (i + 1));
+    var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  }
+  return arr;
+}
+
+// ====== SYMBOL GRID: Latin Square ======
+
+function generateSymbolGrid(seed) {
+  var rng = SeededRNG(seed);
+  var size = 4;
+  var symbols = ['A', 'B', 'C', 'D'];
+
+  // Generate a valid Latin square
+  var solution = generateLatinSquare(size, symbols, rng);
+
+  // Reveal ~60% of cells as clues
+  var clueCount = Math.round(size * size * 0.6);
+  var allPositions = [];
+  for (var y = 0; y < size; y++)
+    for (var x = 0; x < size; x++)
+      allPositions.push([x, y]);
+  shuffle(allPositions, rng);
+  var clues = allPositions.slice(0, clueCount).map(function(pos) {
+    return { x: pos[0], y: pos[1], symbol: solution[pos[1]][pos[0]] };
+  });
+
+  return {
+    puzzle_type: 'symbol_grid',
+    size: size,
+    symbols: symbols,
+    solution: solution,
+    clues: clues,
+    puzzle_id: 'test-sg',
+    description: 'Fill the grid so each symbol appears once per row and column.',
+    grid: solution
+  };
+}
+
+function generateLatinSquare(size, symbols, rng) {
+  // Build base Latin square by rotating rows
+  var base = [];
+  for (var i = 0; i < size; i++) base.push(i);
+
+  var rows = [];
+  for (var i = 0; i < size; i++) {
+    var row = [];
+    for (var j = 0; j < size; j++) row.push(base[(i + j) % size]);
+    rows.push(row);
+  }
+
+  // Shuffle row order
+  shuffle(rows, rng);
+
+  // Shuffle column order
+  var colOrder = [];
+  for (var i = 0; i < size; i++) colOrder.push(i);
+  shuffle(colOrder, rng);
+  rows = rows.map(function(row) {
+    return colOrder.map(function(c) { return row[c]; });
+  });
+
+  // Shuffle symbol assignment
+  var shuffledSymbols = symbols.slice();
+  shuffle(shuffledSymbols, rng);
+
+  return rows.map(function(row) {
+    return row.map(function(v) { return shuffledSymbols[v]; });
+  });
+}
+
+// ====== PIPE NETWORK: Connected Path ======
+
+function generatePipeNetwork(seed) {
+  var rng = SeededRNG(seed);
+  var size = 4;
+
+  var sourceCol = Math.floor(rng() * size);
+  var drainCol = Math.floor(rng() * size);
+  var source = [0, sourceCol];
+  var drain = [size - 1, drainCol];
+
+  // Find a random winding path from source to drain
+  var path = findRandomPath(size, source, drain, rng);
+
+  // Build solution grid with correct pipe types/rotations
+  var solution = buildPipeSolution(size, path, rng);
+
+  // Scramble rotations for initial grid
+  var grid = scramblePipeRotations(solution, rng);
+
+  return {
+    puzzle_type: 'pipe_network',
+    size: size,
+    solution: solution,
+    grid: grid,
+    source: source,
+    drain: drain,
+    puzzle_id: 'test-pn',
+    description: 'Rotate pipes to connect source (S) to drain (D).'
+  };
+}
+
+function findRandomPath(size, source, drain, rng) {
+  var visited = {};
+  var path = [];
+
+  function dfs(pos) {
+    path.push(pos);
+    visited[pos[0] + ',' + pos[1]] = true;
+    if (pos[0] === drain[0] && pos[1] === drain[1]) return true;
+
+    var dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+    shuffle(dirs, rng);
+
+    for (var i = 0; i < dirs.length; i++) {
+      var ny = pos[0] + dirs[i][0], nx = pos[1] + dirs[i][1];
+      if (ny < 0 || ny >= size || nx < 0 || nx >= size) continue;
+      if (visited[ny + ',' + nx]) continue;
+      if (dfs([ny, nx])) return true;
+    }
+
+    path.pop();
+    delete visited[pos[0] + ',' + pos[1]];
+    return false;
+  }
+
+  dfs(source);
+  return path;
+}
+
+function buildPipeSolution(size, path, rng) {
+  var grid = [];
+  for (var y = 0; y < size; y++) {
+    var row = [];
+    for (var x = 0; x < size; x++) row.push(null);
+    grid.push(row);
+  }
+
+  for (var i = 0; i < path.length; i++) {
+    var pos = path[i];
+    var type, rotation;
+
+    if (i === 0) {
+      // Source: north (external) + direction to next
+      var nextDir = [path[i+1][0] - pos[0], path[i+1][1] - pos[1]];
+      var result = pipeTypeForDirections([-1, 0], nextDir);
+      type = result[0]; rotation = result[1];
+    } else if (i === path.length - 1) {
+      // Drain: direction from prev + south (external)
+      var prevDir = [path[i-1][0] - pos[0], path[i-1][1] - pos[1]];
+      var result = pipeTypeForDirections(prevDir, [1, 0]);
+      type = result[0]; rotation = result[1];
+    } else {
+      var prevDir = [path[i-1][0] - pos[0], path[i-1][1] - pos[1]];
+      var nextDir = [path[i+1][0] - pos[0], path[i+1][1] - pos[1]];
+      var result = pipeTypeForDirections(prevDir, nextDir);
+      type = result[0]; rotation = result[1];
+    }
+
+    grid[pos[0]][pos[1]] = { type: type, rotation: rotation };
+  }
+
+  // Fill non-path cells with random straight/bend
+  var pipeTypes = ['straight', 'bend'];
+  for (var y = 0; y < size; y++) {
+    for (var x = 0; x < size; x++) {
+      if (grid[y][x]) continue;
+      grid[y][x] = {
+        type: pipeTypes[Math.floor(rng() * 2)],
+        rotation: Math.floor(rng() * 4)
+      };
+    }
+  }
+
+  return grid;
+}
+
+function pipeTypeForDirections(dir1, dir2) {
+  // Check if opposite (straight) or adjacent (bend)
+  if (dir1[0] === -dir2[0] && dir1[1] === -dir2[1]) {
+    // Opposite -> straight
+    return dir1[0] !== 0 ? ['straight', 0] : ['straight', 1];
+  }
+  // Adjacent -> bend
+  var key = dir1[0] + ',' + dir1[1] + '|' + dir2[0] + ',' + dir2[1];
+  var bendMap = {};
+  // N+E or E+N
+  bendMap['-1,0|0,1'] = ['bend', 0]; bendMap['0,1|-1,0'] = ['bend', 0];
+  // E+S or S+E
+  bendMap['0,1|1,0'] = ['bend', 1]; bendMap['1,0|0,1'] = ['bend', 1];
+  // S+W or W+S
+  bendMap['1,0|0,-1'] = ['bend', 2]; bendMap['0,-1|1,0'] = ['bend', 2];
+  // W+N or N+W
+  bendMap['0,-1|-1,0'] = ['bend', 3]; bendMap['-1,0|0,-1'] = ['bend', 3];
+
+  return bendMap[key] || ['straight', 0];
+}
+
+function scramblePipeRotations(solution, rng) {
+  return solution.map(function(row) {
+    return row.map(function(pipe) {
+      var type = pipe.type;
+      var solRot = pipe.rotation;
+      var period = (type === 'straight') ? 2 : 4;
+
+      var options = [];
+      for (var r = 0; r < 4; r++) {
+        if ((r % period) !== (solRot % period)) options.push(r);
+      }
+      return { type: type, rotation: options[Math.floor(rng() * options.length)] };
+    });
+  });
+}
+
+// ====== TOGGLE MATRIX ======
+
+function generateToggleMatrix(seed) {
+  var rng = SeededRNG(seed);
+  var size = 3;
+
+  // Start with all true (target state), then scramble
+  var grid = [];
+  for (var y = 0; y < size; y++) {
+    var row = [];
+    for (var x = 0; x < size; x++) row.push(true);
+    grid.push(row);
+  }
+
+  var moveCount = 3 + Math.floor(rng() * 4);
+  var moves = [];
+  for (var i = 0; i < moveCount; i++) {
+    var mx = Math.floor(rng() * size);
+    var my = Math.floor(rng() * size);
+    moves.push([mx, my]);
+    applyToggle(grid, mx, my, size);
+  }
+
+  return {
+    puzzle_type: 'toggle_matrix',
+    size: size,
+    solution: moves,
+    grid: grid,
+    target_state: true,
+    puzzle_id: 'test-tm',
+    description: 'Toggle all cells to the ON state.'
+  };
+}
+
+function applyToggle(grid, x, y, size) {
+  var offsets = [[0,0], [0,1], [0,-1], [1,0], [-1,0]];
+  for (var i = 0; i < offsets.length; i++) {
+    var nx = x + offsets[i][0];
+    var ny = y + offsets[i][1];
+    if (nx >= 0 && nx < size && ny >= 0 && ny < size) {
+      grid[ny][nx] = !grid[ny][nx];
+    }
+  }
+}
+
+// ====== PUZZLE RENDERERS (from webclient/index.erb) ======
+
+function renderPuzzleDisplay(data) {
+    const puzzleType = data.puzzle_type || data.type;
+    switch (puzzleType) {
+        case 'symbol_grid': return renderSymbolGridPuzzle(data);
+        case 'pipe_network': return renderPipeNetworkPuzzle(data);
+        case 'toggle_matrix': return renderToggleMatrixPuzzle(data);
+        default:
+            return '<div class="puzzle-container"><p class="puzzle-desc">' + escapeHtml(data.description || 'A puzzle blocks the way.') + '</p></div>';
+    }
+}
+
+// --- Symbol Grid ---
+function renderSymbolGridPuzzle(data) {
+    const size = data.size || 4;
+    const symbols = data.symbols || ['A', 'B', 'C', 'D'];
+    const clues = data.clues || [];
+    const pid = data.puzzle_id || 0;
+
+    const clueMap = {};
+    clues.forEach(c => { clueMap[c.x + ',' + c.y] = c.symbol; });
+
+    let html = '<div class="puzzle-container">';
+    html += '<p class="puzzle-desc">' + escapeHtml(data.description || 'Fill the grid with symbols.') + '</p>';
+    html += '<p class="puzzle-info">Symbols: ' + symbols.map(s => '<span class="puzzle-symbol">' + escapeHtml(s) + '</span>').join(' ') + '</p>';
+    html += '<div class="symbol-grid" id="sgrid-' + pid + '" style="grid-template-columns: repeat(' + size + ', 1fr);" data-symbols=\'' + JSON.stringify(symbols) + '\' data-size="' + size + '">';
+
+    for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+            const key = x + ',' + y;
+            if (clueMap[key]) {
+                html += '<div class="puzzle-cell clue" data-x="' + x + '" data-y="' + y + '">' + escapeHtml(clueMap[key]) + '</div>';
+            } else {
+                html += '<div class="puzzle-cell editable" data-x="' + x + '" data-y="' + y + '" data-idx="0" onclick="cyclePuzzleSymbol(this, \'' + pid + '\')"></div>';
+            }
+        }
+    }
+
+    html += '</div>';
+    html += '<div class="puzzle-actions">';
+    html += '<button class="puzzle-btn submit" onclick="submitSymbolGrid(\'' + pid + '\', ' + size + ')">Submit</button>';
+    html += '<button class="puzzle-btn reset" onclick="resetSymbolGrid(\'' + pid + '\')">Reset</button>';
+    html += '</div></div>';
+    return html;
+}
+
+function cyclePuzzleSymbol(el, pid) {
+    const grid = document.getElementById('sgrid-' + pid);
+    if (!grid) return;
+    const symbols = JSON.parse(grid.dataset.symbols);
+    let idx = parseInt(el.dataset.idx || '0');
+    idx = (idx + 1) % (symbols.length + 1);
+    el.dataset.idx = idx;
+    el.textContent = idx === 0 ? '' : symbols[idx - 1];
+    el.classList.toggle('filled', idx > 0);
+}
+
+function submitSymbolGrid(pid, size) {
+    const grid = document.getElementById('sgrid-' + pid);
+    if (!grid) return;
+    const symbols = JSON.parse(grid.dataset.symbols);
+    const answer = [];
+    const cells = grid.querySelectorAll('.puzzle-cell');
+
+    for (let y = 0; y < size; y++) {
+        const row = [];
+        for (let x = 0; x < size; x++) {
+            const cell = cells[y * size + x];
+            if (cell.classList.contains('clue')) {
+                row.push(cell.textContent);
+            } else {
+                const idx = parseInt(cell.dataset.idx || '0');
+                if (idx === 0) {
+                    appendMessage('system', 'Fill in all cells before submitting.', 'error');
+                    return;
+                }
+                row.push(symbols[idx - 1]);
+            }
+        }
+        answer.push(row);
+    }
+    submitPuzzleAnswer(answer);
+}
+
+function resetSymbolGrid(pid) {
+    const grid = document.getElementById('sgrid-' + pid);
+    if (!grid) return;
+    grid.querySelectorAll('.puzzle-cell.editable').forEach(cell => {
+        cell.dataset.idx = '0';
+        cell.textContent = '';
+        cell.classList.remove('filled');
+    });
+}
+
+// --- Pipe Network ---
+function renderPipeNetworkPuzzle(data) {
+    const size = data.size || 4;
+    const grid = data.grid || [];
+    const source = data.source || [0, 0];
+    const drain = data.drain || [size - 1, size - 1];
+    const pid = data.puzzle_id || 0;
+
+    let html = '<div class="puzzle-container">';
+    html += '<p class="puzzle-desc">' + escapeHtml(data.description || 'Rotate pipes to connect source to drain.') + '</p>';
+    html += '<div class="pipe-grid" id="pgrid-' + pid + '" style="grid-template-columns: repeat(' + size + ', 1fr);" data-size="' + size + '">';
+
+    for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+            const pipe = grid[y] && grid[y][x] ? grid[y][x] : { type: 'straight', rotation: 0 };
+            const ptype = pipe.type || 'straight';
+            const rot = pipe.rotation || 0;
+            const isSource = (y === source[0] && x === source[1]);
+            const isDrain = (y === drain[0] && x === drain[1]);
+            const marker = isSource ? '<div class="pipe-marker source">S</div>' : isDrain ? '<div class="pipe-marker drain">D</div>' : '';
+
+            html += '<div class="pipe-cell' + (isSource ? ' source' : '') + (isDrain ? ' drain' : '') + '" data-x="' + x + '" data-y="' + y + '" data-type="' + ptype + '" data-rot="' + rot + '" onclick="rotatePipe(this, \'' + pid + '\')">';
+            html += pipeSvg(ptype, rot);
+            html += marker;
+            html += '</div>';
+        }
+    }
+
+    html += '</div>';
+    html += '<div class="puzzle-actions">';
+    html += '<button class="puzzle-btn submit" onclick="submitPipeNetwork(\'' + pid + '\', ' + size + ')">Submit</button>';
+    html += '</div></div>';
+    return html;
+}
+
+function pipeSvg(type, rotation) {
+    const r = rotation * 90;
+    let paths = '';
+    switch (type) {
+        case 'straight':
+            paths = '<line x1="20" y1="0" x2="20" y2="40" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>';
+            break;
+        case 'bend':
+            paths = '<path d="M20 0 L20 20 L40 20" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>';
+            break;
+        case 'cross':
+            paths = '<line x1="20" y1="0" x2="20" y2="40" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>' +
+                    '<line x1="0" y1="20" x2="40" y2="20" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>';
+            break;
+        default:
+            paths = '<line x1="20" y1="0" x2="20" y2="40" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>';
+    }
+    return '<svg class="pipe-svg" viewBox="0 0 40 40" style="transform: rotate(' + r + 'deg)">' + paths + '</svg>';
+}
+
+function rotatePipe(el, pid) {
+    let rot = parseInt(el.dataset.rot || '0');
+    rot = (rot + 1) % 4;
+    el.dataset.rot = rot;
+    const type = el.dataset.type || 'straight';
+    const marker = el.querySelector('.pipe-marker');
+    const markerHtml = marker ? marker.outerHTML : '';
+    el.innerHTML = pipeSvg(type, rot) + markerHtml;
+}
+
+function submitPipeNetwork(pid, size) {
+    const grid = document.getElementById('pgrid-' + pid);
+    if (!grid) return;
+    const answer = [];
+    const cells = grid.querySelectorAll('.pipe-cell');
+
+    for (let y = 0; y < size; y++) {
+        const row = [];
+        for (let x = 0; x < size; x++) {
+            const cell = cells[y * size + x];
+            row.push({ type: cell.dataset.type, rotation: parseInt(cell.dataset.rot || '0') });
+        }
+        answer.push(row);
+    }
+    submitPuzzleAnswer(answer);
+}
+
+// --- Toggle Matrix ---
+function renderToggleMatrixPuzzle(data) {
+    const size = data.size || 3;
+    const grid = data.grid || [];
+    const pid = data.puzzle_id || 0;
+
+    let html = '<div class="puzzle-container">';
+    html += '<p class="puzzle-desc">' + escapeHtml(data.description || 'Toggle all cells to the same state.') + '</p>';
+    html += '<p class="puzzle-info">Goal: Light up all cells</p>';
+    html += '<div class="toggle-grid" id="tgrid-' + pid + '" style="grid-template-columns: repeat(' + size + ', 1fr);" data-size="' + size + '">';
+
+    for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+            const on = grid[y] && grid[y][x] ? true : false;
+            html += '<div class="toggle-cell ' + (on ? 'on' : 'off') + '" data-x="' + x + '" data-y="' + y + '" onclick="toggleMatrixCell(\'' + pid + '\', ' + x + ', ' + y + ', ' + size + ')"></div>';
+        }
+    }
+
+    html += '</div>';
+    html += '<div class="puzzle-actions">';
+    html += '<button class="puzzle-btn submit" onclick="submitToggleMatrix(\'' + pid + '\', ' + size + ')">Submit</button>';
+    html += '</div></div>';
+    return html;
+}
+
+function toggleMatrixCell(pid, x, y, size) {
+    const grid = document.getElementById('tgrid-' + pid);
+    if (!grid) return;
+    const cells = grid.querySelectorAll('.toggle-cell');
+
+    const toggleAt = (tx, ty) => {
+        if (tx < 0 || tx >= size || ty < 0 || ty >= size) return;
+        const cell = cells[ty * size + tx];
+        if (cell) {
+            cell.classList.toggle('on');
+            cell.classList.toggle('off');
+        }
+    };
+
+    toggleAt(x, y);
+    toggleAt(x - 1, y);
+    toggleAt(x + 1, y);
+    toggleAt(x, y - 1);
+    toggleAt(x, y + 1);
+
+    const allOn = Array.from(cells).every(c => c.classList.contains('on'));
+    if (allOn) {
+        submitToggleMatrix(pid, size);
+    }
+}
+
+function submitToggleMatrix(pid, size) {
+    const grid = document.getElementById('tgrid-' + pid);
+    if (!grid) return;
+    const cells = grid.querySelectorAll('.toggle-cell');
+    const answer = [];
+
+    for (let y = 0; y < size; y++) {
+        const row = [];
+        for (let x = 0; x < size; x++) {
+            row.push(cells[y * size + x].classList.contains('on'));
+        }
+        answer.push(row);
+    }
+    submitPuzzleAnswer(answer);
+}
+
+// ====== OVERRIDE submitPuzzleAnswer FOR LOCAL VALIDATION ======
+
+var lastSubmitType = '';
+
+function submitPuzzleAnswer(answer) {
+  var encoded = btoa(JSON.stringify(answer));
+  var type = lastSubmitType || 'unknown';
+  var resultEl = document.getElementById('result-' + type.replace('_', '-'));
+  if (!resultEl) return;
+  var valid = validateAnswer(type, answer);
+  resultEl.className = 'test-result ' + (valid ? 'pass' : 'fail');
+  resultEl.innerHTML = '<strong>' + (valid ? 'PASS' : 'FAIL') + '</strong>' +
+    '<pre>Encoded: ' + encoded.substring(0, 80) + (encoded.length > 80 ? '...' : '') +
+    '\nAnswer: ' + JSON.stringify(answer, null, 2).substring(0, 500) + '</pre>';
+}
+
+var _origSubmitSymbolGrid = submitSymbolGrid;
+submitSymbolGrid = function(pid, size) { lastSubmitType = 'symbol_grid'; _origSubmitSymbolGrid(pid, size); };
+var _origSubmitPipeNetwork = submitPipeNetwork;
+submitPipeNetwork = function(pid, size) { lastSubmitType = 'pipe_network'; _origSubmitPipeNetwork(pid, size); };
+var _origSubmitToggleMatrix = submitToggleMatrix;
+submitToggleMatrix = function(pid, size) { lastSubmitType = 'toggle_matrix'; _origSubmitToggleMatrix(pid, size); };
+
+// ====== LOCAL VALIDATION (mirrors server-side DelvePuzzleService) ======
+
+function validateAnswer(type, answer) {
+  var puzzle = puzzleData[type];
+  if (!puzzle) return false;
+
+  switch (type) {
+    case 'symbol_grid': return validateSymbolGrid(puzzle, answer);
+    case 'pipe_network': return validatePipeNetwork(puzzle, answer);
+    case 'toggle_matrix': return validateToggleMatrix(puzzle, answer);
+    default: return false;
+  }
+}
+
+function validateSymbolGrid(puzzle, answer) {
+  var solution = puzzle.solution;
+  if (!solution || !Array.isArray(answer)) return false;
+  if (answer.length !== solution.length) return false;
+
+  for (var y = 0; y < answer.length; y++) {
+    if (!Array.isArray(answer[y]) || answer[y].length !== solution[y].length) return false;
+    for (var x = 0; x < answer[y].length; x++) {
+      if (answer[y][x].toString().toLowerCase() !== solution[y][x].toString().toLowerCase()) return false;
+    }
+  }
+  return true;
+}
+
+// Connectivity-based validation: source must connect north, drain must connect south,
+// and there must be a connected pipe path from source to drain.
+function validatePipeNetwork(puzzle, answer) {
+  if (!Array.isArray(answer)) return false;
+  var size = puzzle.size;
+  var source = puzzle.source;
+  var drain = puzzle.drain;
+  if (!source || !drain || answer.length !== size) return false;
+
+  // Get pipe connection vectors for a type + rotation
+  function getConns(type, rot) {
+    var base;
+    if (type === 'straight') base = [[-1,0],[1,0]];
+    else if (type === 'bend') base = [[-1,0],[0,1]];
+    else if (type === 'cross') base = [[-1,0],[1,0],[0,-1],[0,1]];
+    else base = [[-1,0],[1,0]];
+
+    for (var r = 0; r < rot; r++) {
+      base = base.map(function(d) { return [d[1], -d[0]]; }); // CW rotation
+    }
+    return base;
+  }
+
+  function hasDir(conns, dy, dx) {
+    for (var i = 0; i < conns.length; i++) {
+      if (conns[i][0] === dy && conns[i][1] === dx) return true;
+    }
+    return false;
+  }
+
+  // Source must connect north
+  var sc = answer[source[0]] && answer[source[0]][source[1]];
+  if (!sc || typeof sc !== 'object') return false;
+  if (!hasDir(getConns(sc.type || 'straight', sc.rotation || 0), -1, 0)) return false;
+
+  // Drain must connect south
+  var dc = answer[drain[0]] && answer[drain[0]][drain[1]];
+  if (!dc || typeof dc !== 'object') return false;
+  if (!hasDir(getConns(dc.type || 'straight', dc.rotation || 0), 1, 0)) return false;
+
+  // BFS from source to drain
+  var visited = {};
+  visited[source[0] + ',' + source[1]] = true;
+  var queue = [source];
+
+  while (queue.length > 0) {
+    var pos = queue.shift();
+    var y = pos[0], x = pos[1];
+    if (y === drain[0] && x === drain[1]) return true;
+
+    var cell = answer[y] && answer[y][x];
+    if (!cell || typeof cell !== 'object') continue;
+
+    var conns = getConns(cell.type || 'straight', cell.rotation || 0);
+    for (var i = 0; i < conns.length; i++) {
+      var ny = y + conns[i][0], nx = x + conns[i][1];
+      if (ny < 0 || ny >= size || nx < 0 || nx >= size) continue;
+      var key = ny + ',' + nx;
+      if (visited[key]) continue;
+
+      var ncell = answer[ny] && answer[ny][nx];
+      if (!ncell || typeof ncell !== 'object') continue;
+      var nconns = getConns(ncell.type || 'straight', ncell.rotation || 0);
+
+      // Neighbor must connect back
+      if (!hasDir(nconns, -conns[i][0], -conns[i][1])) continue;
+
+      visited[key] = true;
+      queue.push([ny, nx]);
+    }
+  }
+
+  return false;
+}
+
+function validateToggleMatrix(puzzle, answer) {
+  if (!Array.isArray(answer)) return false;
+  var target = puzzle.target_state;
+  for (var y = 0; y < answer.length; y++) {
+    if (!Array.isArray(answer[y])) return false;
+    for (var x = 0; x < answer[y].length; x++) {
+      if (answer[y][x] !== target) return false;
+    }
+  }
+  return true;
+}
+
+// ====== AUTO-SOLVE FUNCTIONS ======
+
+function autoSolveSymbolGrid(puzzle) {
+  var pid = puzzle.puzzle_id;
+  var grid = document.getElementById('sgrid-' + pid);
+  if (!grid) return;
+  var symbols = JSON.parse(grid.dataset.symbols);
+  var size = puzzle.size;
+  var cells = grid.querySelectorAll('.puzzle-cell');
+
+  for (var y = 0; y < size; y++) {
+    for (var x = 0; x < size; x++) {
+      var cell = cells[y * size + x];
+      if (cell.classList.contains('editable')) {
+        var solSymbol = puzzle.solution[y][x];
+        var idx = symbols.indexOf(solSymbol) + 1;
+        cell.dataset.idx = idx;
+        cell.textContent = solSymbol;
+        cell.classList.add('filled');
+      }
+    }
+  }
+}
+
+function autoSolvePipeNetwork(puzzle) {
+  var pid = puzzle.puzzle_id;
+  var grid = document.getElementById('pgrid-' + pid);
+  if (!grid) return;
+  var size = puzzle.size;
+  var cells = grid.querySelectorAll('.pipe-cell');
+
+  for (var y = 0; y < size; y++) {
+    for (var x = 0; x < size; x++) {
+      var cell = cells[y * size + x];
+      var solRot = puzzle.solution[y][x].rotation;
+      cell.dataset.rot = solRot;
+      var type = cell.dataset.type || 'straight';
+      var marker = cell.querySelector('.pipe-marker');
+      var markerHtml = marker ? marker.outerHTML : '';
+      cell.innerHTML = pipeSvg(type, solRot) + markerHtml;
+    }
+  }
+}
+
+function autoSolveToggleMatrix(puzzle) {
+  var pid = puzzle.puzzle_id;
+  var size = puzzle.size;
+  var moves = puzzle.solution;
+
+  for (var i = 0; i < moves.length; i++) {
+    toggleMatrixCell(pid, moves[i][0], moves[i][1], size);
+  }
+}
+
+// ====== INIT ======
+
+var puzzleData = {};
+
+document.addEventListener('DOMContentLoaded', function() {
+  var seed = 42;
+  puzzleData['symbol_grid'] = generateSymbolGrid(seed);
+  puzzleData['pipe_network'] = generatePipeNetwork(seed);
+  puzzleData['toggle_matrix'] = generateToggleMatrix(seed);
+
+  document.getElementById('puzzle-symbol-grid').innerHTML = renderPuzzleDisplay(puzzleData['symbol_grid']);
+  document.getElementById('puzzle-pipe-network').innerHTML = renderPuzzleDisplay(puzzleData['pipe_network']);
+  document.getElementById('puzzle-toggle-matrix').innerHTML = renderPuzzleDisplay(puzzleData['toggle_matrix']);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<% @page_title = 'Abuse Checks' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Moderation', path: '/admin/moderation' }, { label: 'Abuse Checks', path: '/admin/moderation/abuse-checks' }] %>
+
+<%= admin_content_start %>
+      <h2 class="text-2xl font-bold mb-4"><i class="bi bi-list-check mr-2"></i>Abuse Checks</h2>
+
+      <%
+        _statuses = %w[pending gemini_checking flagged escalated confirmed cleared]
+        _status_options = _statuses.map { |s|
+          "<option value=\"#{s}\" #{@status_filter == s ? 'selected' : ''}>#{s.split('_').map(&:capitalize).join(' ')}</option>"
+        }.join("\n")
+
+        _filter_content = <<~HTML
+          <div class="form-control w-full md:w-auto">
+            <label class="label"><span class="label-text">Filter by Status</span></label>
+            <select name="status" class="select select-bordered w-full md:w-auto" onchange="this.form.submit()">
+              <option value="">All Statuses</option>
+              #{_status_options}
+            </select>
+          </div>
+        HTML
+      %>
+      <%= partial 'admin/filter_form', locals: {
+        action: '/admin/moderation/abuse-checks',
+        form_class: 'flex flex-wrap gap-4 items-end',
+        content: _filter_content
+      } %>
+
+      <!-- Checks List -->
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <% if @checks.empty? %>
+            <p class="text-base-content/70">No abuse checks found<%= @status_filter ? " with status '#{@status_filter}'" : '' %>.</p>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Time</th>
+                    <th>User</th>
+                    <th>IP</th>
+                    <th>Type</th>
+                    <th>Content Preview</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @checks.each do |check| %>
+                  <tr class="<%= check.status == 'confirmed' ? 'bg-error/20' : (check.status == 'flagged' ? 'bg-warning/20' : '') %>">
+                    <td><%= check.id %></td>
+                    <td><%= check.created_at&.strftime('%m-%d %H:%M') %></td>
+                    <td>
+                      <% if check.user %>
+                        <a href="/admin/moderation/connections/user/<%= check.user_id %>" class="link link-hover">
+                          <%= h check.user.username %>
+                        </a>
+                      <% else %>
+                        <span class="text-base-content/70">Unknown</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if check.ip_address %>
+                        <a href="/admin/moderation/connections/ip/<%= CGI.escape(check.ip_address) %>" class="link link-info">
+                          <code class="text-xs"><%= check.ip_address %></code>
+                        </a>
+                      <% else %>
+                        <span class="text-base-content/70">-</span>
+                      <% end %>
+                    </td>
+                    <td><span class="badge badge-neutral"><%= check.message_type %></span></td>
+                    <td>
+                      <span title="<%= CGI.escapeHTML(check.message_content.to_s) %>" class="text-sm">
+                        <%= h check.message_content.to_s[0, 40] %><%= check.message_content.to_s.length > 40 ? '...' : '' %>
+                      </span>
+                    </td>
+                    <td>
+                      <% case check.status %>
+                      <% when 'pending', 'gemini_checking' %>
+                        <span class="badge badge-info"><%= check.status %></span>
+                      <% when 'flagged' %>
+                        <span class="badge badge-warning">Flagged</span>
+                      <% when 'escalated' %>
+                        <span class="badge" style="background-color: #fd7e14; color: white;">Escalated</span>
+                      <% when 'confirmed' %>
+                        <span class="badge badge-error">Confirmed</span>
+                      <% when 'cleared' %>
+                        <span class="badge badge-success">Cleared</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <div class="join">
+                        <a href="/admin/moderation/abuse-checks/<%= check.id %>" class="btn btn-sm btn-outline btn-info join-item" title="View Details">
+                          <i class="bi bi-eye"></i>
+                        </a>
+                        <% if %w[flagged escalated].include?(check.status) %>
+                          <form action="/admin/moderation/abuse-checks/<%= check.id %>/clear" method="post" class="inline">
+                            <button type="submit" class="btn btn-sm btn-outline btn-success join-item" title="Clear" onclick="return confirm('Mark as cleared?')">
+                              <i class="bi bi-check"></i>
+                            </button>
+                          </form>
+                          <form action="/admin/moderation/abuse-checks/<%= check.id %>/confirm" method="post" class="inline">
+                            <button type="submit" class="btn btn-sm btn-outline btn-error join-item" title="Confirm Abuse" onclick="return confirm('Confirm abuse and execute moderation actions?')">
+                              <i class="bi bi-x"></i>
+                            </button>
+                          </form>
+                        <% end %>
+                      </div>
+                    </td>
+                  </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+      </div>
+<%= admin_content_end %>

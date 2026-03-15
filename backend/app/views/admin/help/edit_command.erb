@@ -1,0 +1,157 @@
+<% @page_title = "Edit: #{@helpfile.command_name} - Admin" %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Help System', path: '/admin/help' }, { label: @helpfile.command_name, path: "/admin/help/commands/#{@helpfile.id}" }] %>
+
+<%= admin_content_start %>
+      <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+        <h2 class="text-2xl font-bold"><i class="bi bi-pencil mr-2"></i>Edit: <%= @helpfile.command_name.upcase %></h2>
+        <a href="/admin/help" class="btn btn-outline btn-ghost">
+          <i class="bi bi-arrow-left mr-1"></i>Back to List
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <!-- Edit Form -->
+        <div class="lg:col-span-8">
+          <div class="card bg-base-200 mb-4">
+            <div class="p-4 border-b border-base-content/10">
+              <h5 class="font-semibold"><i class="bi bi-file-text mr-2"></i>Helpfile Content</h5>
+            </div>
+            <div class="card-body">
+              <form action="/admin/help/commands/<%= @helpfile.id %>" method="post">
+                <%= csrf_tag %>
+
+                <div class="form-control mb-3">
+                  <label class="label">
+                    <span class="label-text">Command Name</span>
+                  </label>
+                  <input type="text" class="input input-bordered w-full bg-base-300" value="<%= @helpfile.command_name %>" readonly>
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/70">Command name is auto-generated from the command DSL and cannot be changed here.</span>
+                  </label>
+                </div>
+
+                <div class="form-control mb-3">
+                  <label class="label">
+                    <span class="label-text">Summary</span>
+                  </label>
+                  <input type="text" name="summary" class="input input-bordered w-full" value="<%= @helpfile.summary %>">
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/70">One-line description shown in command lists.</span>
+                  </label>
+                </div>
+
+                <div class="form-control mb-3">
+                  <label class="label">
+                    <span class="label-text">Description</span>
+                  </label>
+                  <textarea name="description" class="textarea textarea-bordered w-full" rows="5"><%= @helpfile.description %></textarea>
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/70">Detailed help text. Supports markdown formatting.</span>
+                  </label>
+                </div>
+
+                <div class="divider"></div>
+                <h6 class="text-base-content/70 mb-3"><i class="bi bi-shield mr-1"></i>Staff-Only Information</h6>
+
+                <div class="form-control mb-3">
+                  <label class="label cursor-pointer justify-start gap-2">
+                    <input type="checkbox" class="checkbox" name="is_lore" id="is_lore"
+                           value="true" <%= 'checked' if @helpfile.is_lore %>>
+                    <span class="label-text font-semibold">Lore Entry</span>
+                  </label>
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/70">Include in NPC world knowledge. Lore entries are embedded for semantic search and provided to AI NPCs as context.</span>
+                  </label>
+                </div>
+
+                <div class="form-control mb-3">
+                  <label class="label">
+                    <span class="label-text">Staff Notes</span>
+                  </label>
+                  <textarea name="staff_notes" class="textarea textarea-bordered w-full" rows="4"><%= @helpfile.staff_notes %></textarea>
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/70">Implementation notes, gotchas, architecture details. Only visible to staff characters.</span>
+                  </label>
+                </div>
+
+                <div class="form-control mb-3">
+                  <label class="label">
+                    <span class="label-text">Code References (JSON)</span>
+                  </label>
+                  <textarea name="code_references" class="textarea textarea-bordered w-full font-mono" rows="4"><%= @helpfile.parsed_code_references.to_json %></textarea>
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/70">Related files as JSON array: [{"file": "app/services/foo.rb", "line": 42, "desc": "Main logic"}]</span>
+                  </label>
+                </div>
+
+                <div class="flex justify-end gap-2">
+                  <a href="/admin/help" class="btn btn-ghost">Cancel</a>
+                  <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg mr-1"></i>Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info Panel -->
+        <div class="lg:col-span-4">
+          <!-- Auto-generated Info -->
+          <div class="card bg-base-200 mb-3">
+            <div class="p-4 border-b border-base-content/10">
+              <h6 class="font-semibold"><i class="bi bi-info-circle mr-2"></i>Command Info</h6>
+            </div>
+            <div class="card-body">
+              <dl class="space-y-2">
+                <dt class="font-semibold">Category</dt>
+                <dd><span class="badge badge-neutral"><%= @helpfile.category || 'uncategorized' %></span></dd>
+
+                <dt class="font-semibold">Plugin</dt>
+                <dd><%= @helpfile.plugin || 'core' %></dd>
+
+                <% if @helpfile.aliases && !@helpfile.aliases.to_a.empty? %>
+                  <dt class="font-semibold">Aliases</dt>
+                  <dd><%= @helpfile.aliases.to_a.join(', ') %></dd>
+                <% end %>
+
+                <% if @helpfile.syntax && !@helpfile.syntax.empty? %>
+                  <dt class="font-semibold">Syntax</dt>
+                  <dd><code class="bg-base-300 px-1 rounded"><%= @helpfile.syntax %></code></dd>
+                <% end %>
+
+                <% if @helpfile.requirements_summary && !@helpfile.requirements_summary.empty? %>
+                  <dt class="font-semibold">Requirements</dt>
+                  <dd><small><%= @helpfile.requirements_summary %></small></dd>
+                <% end %>
+
+                <dt class="font-semibold">Auto-generated</dt>
+                <dd><%= @helpfile.auto_generated ? 'Yes' : 'No' %></dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- Source Location -->
+          <% if @helpfile.source_file %>
+            <div class="card bg-base-200 mb-3">
+              <div class="p-4 border-b border-base-content/10">
+                <h6 class="font-semibold"><i class="bi bi-code-slash mr-2"></i>Source Location</h6>
+              </div>
+              <div class="card-body">
+                <code class="break-all text-sm"><%= @helpfile.source_file %><%= ":#{@helpfile.source_line}" if @helpfile.source_line %></code>
+              </div>
+            </div>
+          <% end %>
+
+          <!-- Preview -->
+          <div class="card bg-base-200">
+            <div class="p-4 border-b border-base-content/10">
+              <h6 class="font-semibold"><i class="bi bi-eye mr-2"></i>In-Game Preview</h6>
+            </div>
+            <div class="card-body">
+              <pre class="bg-base-300 text-base-content p-2 rounded text-sm whitespace-pre-wrap"><%= @helpfile.to_staff_display %></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+<%= admin_content_end %>

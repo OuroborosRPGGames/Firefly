@@ -1,0 +1,444 @@
+<% @page_title = 'Battle Map Test Gallery - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Battle Maps', path: '/admin/battle_maps' }, { label: 'Test Gallery' }] %>
+
+<%= admin_content_start %>
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold">Battle Map Test Gallery</h2>
+        <div class="flex gap-2">
+          <a href="/admin/battle_maps" class="btn btn-ghost btn-sm">
+            <i class="bi bi-arrow-left"></i> Back to Battle Maps
+          </a>
+          <form method="post" action="/admin/battle_maps/test_gallery/cleanup">
+            <%= csrf_tag if respond_to?(:csrf_tag) %>
+            <button type="submit" class="btn btn-error btn-sm" onclick="return confirm('Delete all test rooms and images?')">
+              <i class="bi bi-trash"></i> Cleanup All
+            </button>
+          </form>
+          <form method="post" action="/admin/battle_maps/test_gallery/generate_all">
+            <%= csrf_tag if respond_to?(:csrf_tag) %>
+            <button type="submit" class="btn btn-primary" onclick="this.classList.add('loading'); this.disabled = true;">
+              <i class="bi bi-images"></i> Generate All
+            </button>
+          </form>
+          <form method="post" action="/admin/battle_maps/test_gallery/classify_all">
+            <%= csrf_tag if respond_to?(:csrf_tag) %>
+            <button type="submit" class="btn btn-secondary" onclick="this.classList.add('loading'); this.disabled = true;">
+              <i class="bi bi-grid-3x3"></i> Classify All
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="alert alert-info mb-6">
+        <i class="bi bi-info-circle"></i>
+        <span>Creates real rooms via PlaceGeneratorService, then uses the production AIBattleMapGeneratorService prompt builder. Each test creates Room records with Places, Decorations, and RoomFeatures (doors/windows) to match production exactly.</span>
+      </div>
+
+      <div class="grid grid-cols-1 gap-6">
+        <% @configs.each_with_index do |config, index| %>
+          <% result = @results[index.to_s] %>
+          <% room = @rooms[index] %>
+          <div class="card bg-base-200 shadow-lg">
+            <div class="card-body">
+              <div class="flex items-start justify-between mb-2">
+                <div>
+                  <h3 class="card-title text-lg">
+                    <span class="badge badge-neutral mr-2">#<%= index + 1 %></span>
+                    <%= config[:label] %>
+                  </h3>
+                  <div class="flex flex-wrap gap-2 mt-1">
+                    <% if config[:mode] == :standalone %>
+                      <span class="badge badge-accent badge-sm">standalone</span>
+                      <span class="badge badge-outline badge-sm"><%= config[:room_type] %></span>
+                    <% else %>
+                      <span class="badge badge-info badge-sm">building</span>
+                      <span class="badge badge-outline badge-sm"><%= config[:place_type] %></span>
+                      <span class="badge badge-outline badge-sm">target: <%= config[:target_room] %></span>
+                    <% end %>
+                    <% if config[:generation_mode] == :blueprint %>
+                      <span class="badge badge-accent badge-sm">blueprint</span>
+                    <% end %>
+                    <% if config[:model_tier] && config[:model_tier] != :default %>
+                      <span class="badge badge-warning badge-sm"><%= config[:model_tier] %></span>
+                    <% end %>
+                    <span class="badge badge-outline badge-sm"><%= config[:width] %>x<%= config[:height] %>ft</span>
+                    <% if room %>
+                      <span class="badge badge-primary badge-sm">Room #<%= room.id %></span>
+                    <% end %>
+                    <% ratio = config[:width].to_f / config[:height]
+                       ar = ratio > 1.5 ? '16:9' : (ratio < 0.67 ? '9:16' : '1:1') %>
+                    <span class="badge badge-outline badge-sm">aspect: <%= ar %></span>
+                  </div>
+                </div>
+                <div class="flex gap-1">
+                  <form method="post" action="/admin/battle_maps/test_gallery/generate">
+                    <%= csrf_tag if respond_to?(:csrf_tag) %>
+                    <input type="hidden" name="index" value="<%= index %>">
+                    <button type="submit" class="btn btn-sm btn-primary" onclick="this.classList.add('loading'); this.disabled = true;">
+                      <i class="bi bi-arrow-repeat"></i> Generate
+                    </button>
+                  </form>
+                  <% if result && result['labeled_url'] %>
+                    <div class="dropdown dropdown-end">
+                      <div tabindex="0" role="button" class="btn btn-sm btn-secondary">
+                        <i class="bi bi-grid-3x3"></i> Classify <i class="bi bi-chevron-down text-xs"></i>
+                      </div>
+                      <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
+                        <li>
+                          <form method="post" action="/admin/battle_maps/test_gallery/classify_overview">
+                            <%= csrf_tag if respond_to?(:csrf_tag) %>
+                            <input type="hidden" name="index" value="<%= index %>">
+                            <button type="submit" class="w-full text-left" onclick="this.closest('.dropdown').querySelector('[role=button]').classList.add('loading');">
+                              <i class="bi bi-eye"></i> Overview (B)
+                            </button>
+                          </form>
+                        </li>
+                        <li>
+                          <form method="post" action="/admin/battle_maps/test_gallery/classify_simple">
+                            <%= csrf_tag if respond_to?(:csrf_tag) %>
+                            <input type="hidden" name="index" value="<%= index %>">
+                            <button type="submit" class="w-full text-left" onclick="this.closest('.dropdown').querySelector('[role=button]').classList.add('loading');">
+                              <i class="bi bi-list-check"></i> Simple (A)
+                            </button>
+                          </form>
+                        </li>
+                        <li>
+                          <form method="post" action="/admin/battle_maps/test_gallery/classify">
+                            <%= csrf_tag if respond_to?(:csrf_tag) %>
+                            <input type="hidden" name="index" value="<%= index %>">
+                            <button type="submit" class="w-full text-left" onclick="this.closest('.dropdown').querySelector('[role=button]').classList.add('loading');">
+                              <i class="bi bi-grid-3x3"></i> Legacy
+                            </button>
+                          </form>
+                        </li>
+                      </ul>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-2">
+                <!-- Room Details -->
+                <div>
+                  <% if room %>
+                    <% if room.long_description && !room.long_description.to_s.empty? %>
+                      <div class="mb-3">
+                        <h4 class="text-xs font-semibold uppercase text-base-content/50 mb-1">Room Description</h4>
+                        <div class="bg-base-300 rounded-lg p-3 text-sm italic text-base-content/80">
+                          <%= h(room.long_description.to_s[0..400]) %>
+                        </div>
+                      </div>
+                    <% end %>
+
+                    <% places = room.places rescue [] %>
+                    <% if places.any? %>
+                      <div class="mb-2">
+                        <h4 class="text-xs font-semibold uppercase text-base-content/50 mb-1">Furniture (<%= places.count %>)</h4>
+                        <div class="flex flex-wrap gap-1">
+                          <% places.each do |p| %>
+                            <span class="badge badge-sm badge-ghost"><%= p.name %> (<%= p.x.to_i %>,<%= p.y.to_i %>)</span>
+                          <% end %>
+                        </div>
+                      </div>
+                    <% end %>
+
+                    <% features = room.room_features rescue [] %>
+                    <% if features.any? %>
+                      <div class="mb-2">
+                        <h4 class="text-xs font-semibold uppercase text-base-content/50 mb-1">Features (<%= features.count %>)</h4>
+                        <div class="flex flex-wrap gap-1">
+                          <% features.each do |f| %>
+                            <span class="badge badge-sm badge-ghost"><%= f.feature_type %><%= f.name ? ": #{f.name}" : '' %> (<%= f.x.to_i %>,<%= f.y.to_i %>)</span>
+                          <% end %>
+                        </div>
+                      </div>
+                    <% end %>
+
+                    <% decos = room.decorations rescue [] %>
+                    <% if decos.any? %>
+                      <div class="mb-2">
+                        <h4 class="text-xs font-semibold uppercase text-base-content/50 mb-1">Decorations (<%= decos.count %>)</h4>
+                        <p class="text-sm text-base-content/70"><%= decos.map(&:name).join(', ') %></p>
+                      </div>
+                    <% end %>
+                  <% else %>
+                    <div class="text-base-content/50 text-sm italic">
+                      No room generated yet. Click "Generate" to create.
+                    </div>
+                  <% end %>
+
+                  <% if result && result['prompt'] %>
+                    <div class="mt-3">
+                      <details>
+                        <summary class="text-xs font-semibold uppercase text-base-content/50 cursor-pointer">Image Prompt (click to expand)</summary>
+                        <div class="bg-base-300 rounded-lg p-3 text-xs max-h-40 overflow-y-auto font-mono mt-1">
+                          <%= h(result['prompt']) %>
+                        </div>
+                      </details>
+                      <% if result['model_used'] %>
+                        <p class="text-xs text-base-content/50 mt-1">Model: <%= result['model_used'] %> | Generated: <%= result['generated_at'] %></p>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+
+                <!-- Image Result -->
+                <div>
+                  <% blueprint_url = result && result['blueprint_url'] %>
+                  <% if blueprint_url || room %>
+                    <div class="mb-3">
+                      <h4 class="text-xs font-semibold uppercase text-base-content/50 mb-1">Blueprint</h4>
+                      <% bp_src = blueprint_url || (room ? "/admin/battle_maps/test_gallery/blueprint/#{room.id}" : nil) %>
+                      <% if bp_src %>
+                        <div class="rounded-lg overflow-hidden border border-base-content/10 bg-white">
+                          <img src="<%= bp_src %>" alt="Blueprint: <%= config[:label] %>" class="w-full h-auto" loading="lazy">
+                        </div>
+                      <% end %>
+                    </div>
+                  <% end %>
+                  <% if result && result['image_url'] %>
+                    <% if result['blueprint_url'] %>
+                      <h4 class="text-xs font-semibold uppercase text-base-content/50 mb-1">Generated Battle Map</h4>
+                    <% end %>
+                    <div class="rounded-lg overflow-hidden border border-base-content/10 relative">
+                      <img src="<%= result['image_url'] %>" alt="Battle map: <%= config[:label] %>" class="w-full h-auto" loading="lazy">
+                      <% if result['model_used'] %>
+                        <span class="badge badge-sm badge-neutral absolute top-2 right-2 opacity-80"><%= result['model_used'] %></span>
+                      <% end %>
+                    </div>
+                  <% else %>
+                    <div class="flex items-center justify-center bg-base-300 rounded-lg border border-dashed border-base-content/20 h-64">
+                      <div class="text-center text-base-content/40">
+                        <i class="bi bi-image text-4xl block mb-2"></i>
+                        <p class="text-sm">Not generated yet</p>
+                        <p class="text-xs">Click "Generate" to create an image</p>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+
+              <% if result && (result['resized_url'] || result['upscaled_url'] || result['labeled_url']) %>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+                  <% if result['resized_url'] %>
+                    <div>
+                      <h4 class="text-xs font-semibold uppercase text-base-content/50 mb-1">Resized (1024px)</h4>
+                      <div class="rounded-lg overflow-hidden border border-base-content/10">
+                        <img src="<%= result['resized_url'] %>" alt="Resized: <%= config[:label] %>" class="w-full h-auto" loading="lazy">
+                      </div>
+                    </div>
+                  <% end %>
+                  <% if result['upscaled_url'] %>
+                    <div>
+                      <h4 class="text-xs font-semibold uppercase text-base-content/50 mb-1">Upscaled (4x Crystal)</h4>
+                      <div class="rounded-lg overflow-hidden border border-base-content/10">
+                        <img src="<%= result['upscaled_url'] %>" alt="Upscaled: <%= config[:label] %>" class="w-full h-auto" loading="lazy">
+                      </div>
+                    </div>
+                  <% end %>
+                  <% if result['labeled_url'] %>
+                    <div>
+                      <h4 class="text-xs font-semibold uppercase text-base-content/50 mb-1">
+                        Hex Grid (<%= result['hex_size_feet'] || 4 %>ft)
+                      </h4>
+                      <div class="rounded-lg overflow-hidden border border-base-content/10">
+                        <img src="<%= result['labeled_url'] %>" alt="Hex grid: <%= config[:label] %>" class="w-full h-auto" loading="lazy">
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+
+              <%# === Classification Results — Side by Side Comparison === %>
+              <%
+                # Collect all available approach results
+                approach_results = {}
+                %w[simple overview].each do |approach|
+                  ad = result && result[approach]
+                  approach_results[approach] = ad if ad && ad['classified_url']
+                end
+                # Legacy fallback (old top-level keys)
+                if result && result['classified_url'] && !result['simple'] && !result['overview']
+                  approach_results['legacy'] = {
+                    'hex_classifications' => result['hex_classifications'],
+                    'classified_url' => result['classified_url'],
+                    'classification_model' => result['classification_model'],
+                    'classified_at' => result['classified_at'],
+                    'other_count' => result['other_count'],
+                    'overview_data' => result['overview_data'],
+                    'chunk_urls' => result['chunk_urls']
+                  }
+                end
+              %>
+              <% unless approach_results.empty? %>
+                <div class="mt-4">
+                  <h4 class="text-xs font-semibold uppercase text-base-content/50 mb-2">
+                    <i class="bi bi-grid-3x3"></i> Classification Results
+                    <% approach_results.each do |aname, _| %>
+                      <span class="badge badge-xs badge-accent ml-1"><%= aname %></span>
+                    <% end %>
+                  </h4>
+
+                  <div class="grid grid-cols-1 <%= approach_results.size > 1 ? 'lg:grid-cols-2' : '' %> gap-4">
+                    <% approach_results.each do |approach_name, adata| %>
+                      <div class="border border-base-content/10 rounded-lg p-3">
+                        <div class="flex items-center justify-between mb-2">
+                          <h5 class="font-semibold text-sm">
+                            <%= approach_name == 'simple' ? 'Approach A — Simple Enum' : (approach_name == 'overview' ? 'Approach B — Overview Pre-Pass' : 'Legacy') %>
+                            <% if adata['classification_model'] %>
+                              <span class="badge badge-xs badge-neutral ml-1"><%= adata['classification_model'] %></span>
+                            <% end %>
+                          </h5>
+                        </div>
+
+                        <%# Stats badges %>
+                        <% if adata['hex_classifications'] %>
+                          <%
+                            hexes = adata['hex_classifications']
+                            total = hexes.length
+                            walls = hexes.count { |h| h['is_wall'] }
+                            off_map = hexes.count { |h| h['is_off_map'] }
+                            cover = hexes.count { |h| h['provides_cover'] }
+                            concealment = hexes.count { |h| h['provides_concealment'] }
+                            exits = hexes.count { |h| h['is_exit'] }
+                            windows = hexes.count { |h| h['is_window'] }
+                            water = hexes.count { |h| h['water_depth'] && h['water_depth'] != 'none' }
+                            hazards = hexes.count { |h| h['hazards']&.any? }
+                            elevated = hexes.count { |h| h['elevation'].to_i != 0 }
+                            difficult = hexes.count { |h| h['difficult_terrain'] }
+                            open_count_val = total - walls - off_map
+                          %>
+                          <div class="flex flex-wrap gap-1 mb-2">
+                            <span class="badge badge-xs" style="background: rgba(0,200,0,0.5); color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">Open: <%= open_count_val %></span>
+                            <% if walls > 0 %><span class="badge badge-xs" style="background: rgba(80,80,80,0.8); color: white;">Wall: <%= walls %></span><% end %>
+                            <% if off_map > 0 %><span class="badge badge-xs" style="background: rgba(0,0,0,0.8); color: white;">Off: <%= off_map %></span><% end %>
+                            <% if cover > 0 %><span class="badge badge-xs" style="background: rgba(200,180,0,0.8); color: white;">Cover: <%= cover %></span><% end %>
+                            <% if concealment > 0 %><span class="badge badge-xs" style="background: rgba(120,200,80,0.8); color: white;">Conc: <%= concealment %></span><% end %>
+                            <% if exits > 0 %><span class="badge badge-xs" style="background: rgba(0,220,80,0.8); color: white;">Exit: <%= exits %></span><% end %>
+                            <% if windows > 0 %><span class="badge badge-xs" style="background: rgba(100,180,255,0.8); color: white;">Win: <%= windows %></span><% end %>
+                            <% if water > 0 %><span class="badge badge-xs" style="background: rgba(0,100,255,0.8); color: white;">Water: <%= water %></span><% end %>
+                            <% if hazards > 0 %><span class="badge badge-xs" style="background: rgba(200,0,200,0.8); color: white;">Hazard: <%= hazards %></span><% end %>
+                            <% if elevated > 0 %><span class="badge badge-xs" style="background: rgba(180,120,40,0.8); color: white;">Elev: <%= elevated %></span><% end %>
+                            <% if difficult > 0 %><span class="badge badge-xs" style="background: rgba(180,100,0,0.8); color: white;">Diff: <%= difficult %></span><% end %>
+                            <span class="badge badge-xs badge-ghost"><%= total %> total</span>
+                          </div>
+                        <% end %>
+
+                        <%# Classified overlay image %>
+                        <div class="rounded-lg overflow-hidden border border-base-content/10">
+                          <img src="<%= adata['classified_url'] %>" alt="<%= approach_name %>: <%= config[:label] %>" class="w-full h-auto" loading="lazy">
+                        </div>
+
+                        <%# Metadata %>
+                        <p class="text-xs text-base-content/50 mt-1">
+                          <%= adata['classified_at'] %>
+                          <% if adata['other_count'] && adata['other_count'] > 0 %>
+                            | <span class="text-warning"><%= adata['other_count'] %> "other"</span>
+                          <% end %>
+                        </p>
+
+                        <%# Overview scene description (Approach B only) %>
+                        <% if adata['overview_data'] && adata['overview_data']['scene_description'] %>
+                          <details class="mt-2">
+                            <summary class="text-xs font-semibold uppercase text-base-content/50 cursor-pointer">
+                              Overview (<%= (adata['overview_data']['present_types'] || []).length %> types)
+                            </summary>
+                            <div class="bg-base-300 rounded-lg p-2 mt-1">
+                              <p class="text-xs italic text-base-content/80 mb-1"><%= h(adata['overview_data']['scene_description']) %></p>
+                              <% if adata['overview_data']['map_layout'] %>
+                                <p class="text-xs text-base-content/60 mb-2"><%= h(adata['overview_data']['map_layout']) %></p>
+                              <% end %>
+                              <div class="flex flex-wrap gap-1">
+                                <% (adata['overview_data']['present_types'] || []).each do |pt| %>
+                                  <span class="badge badge-xs badge-ghost" title="<%= h(pt['visual_description'] || '') %>&#10;trav=<%= pt['traversable'] %> cover=<%= pt['provides_cover'] %> wall=<%= pt['is_wall'] %> elev=<%= pt['elevation'] %>">
+                                    <%= pt['type_name'] %>
+                                  </span>
+                                <% end %>
+                              </div>
+                            </div>
+                          </details>
+                        <% end %>
+
+                        <%# Hex type breakdown %>
+                        <% if adata['hex_classifications']&.any? { |h| h['hex_type'] } %>
+                          <details class="mt-2">
+                            <summary class="text-xs font-semibold uppercase text-base-content/50 cursor-pointer">Types</summary>
+                            <div class="flex flex-wrap gap-1 mt-1">
+                              <%
+                                type_counts = adata['hex_classifications']
+                                  .select { |h| h['hex_type'] }
+                                  .group_by { |h| h['hex_type'] }
+                                  .transform_values(&:count)
+                                  .sort_by { |_, v| -v }
+                              %>
+                              <% type_counts.each do |type_name, count| %>
+                                <span class="badge badge-xs badge-ghost"><%= type_name %>: <%= count %></span>
+                              <% end %>
+                            </div>
+                          </details>
+                        <% end %>
+
+                        <%# Chunk images %>
+                        <% if adata['chunk_urls'] && adata['chunk_urls'].any? %>
+                          <details class="mt-2">
+                            <summary class="text-xs font-semibold uppercase text-base-content/50 cursor-pointer">
+                              Chunks (<%= adata['chunk_urls'].length %>)
+                            </summary>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-1">
+                              <% adata['chunk_urls'].each_with_index do |chunk_entry, ci| %>
+                                <% chunk_url = chunk_entry.is_a?(Hash) ? chunk_entry['url'] : chunk_entry %>
+                                <div class="rounded border border-base-content/10 overflow-hidden">
+                                  <img src="<%= chunk_url %>" alt="Chunk <%= ci + 1 %>" class="w-full h-auto" loading="lazy">
+                                  <div class="text-center text-xs text-base-content/50 py-1"><%= ci + 1 %></div>
+                                </div>
+                              <% end %>
+                            </div>
+                          </details>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <%# Upscaler comparison section %>
+      <% upscaler_files = %w[lanczos recraft crystal google bria].select { |n| File.exist?(File.join('public/uploads/battle_map_tests', "upscale_#{n}.png")) || File.exist?(File.join('public/uploads/battle_map_tests', "upscale_#{n}.webp")) || File.exist?(File.join('public/uploads/battle_map_tests', "upscale_#{n}.jpg")) } %>
+      <% unless upscaler_files.empty? %>
+        <div class="card bg-base-200 shadow-lg mt-6">
+          <div class="card-body">
+            <h3 class="card-title text-lg mb-4">
+              <i class="bi bi-arrows-angle-expand"></i>
+              Upscaler Comparison (Tavern 1024x796 → 4x)
+            </h3>
+            <div class="grid grid-cols-1 gap-4">
+              <% upscaler_info = {
+                'lanczos' => { label: 'Lanczos3 (local, free)', ext: 'webp' },
+                'recraft' => { label: 'Recraft Crisp', ext: 'webp' },
+                'crystal' => { label: 'Crystal (philz1337x)', ext: 'webp' },
+                'google' => { label: 'Google Upscaler', ext: 'webp' },
+                'bria' => { label: 'Bria Increase Resolution', ext: 'webp' }
+              } %>
+              <% upscaler_files.each do |name| %>
+                <% info = upscaler_info[name] || { label: name, ext: 'png' } %>
+                <% file_path = "public/uploads/battle_map_tests/upscale_#{name}.#{info[:ext]}" %>
+                <% file_path = Dir.glob("public/uploads/battle_map_tests/upscale_#{name}.*").first unless File.exist?(file_path) %>
+                <% next unless file_path && File.exist?(file_path) %>
+                <% url = file_path.sub(/^public/, '') %>
+                <% size_kb = (File.size(file_path) / 1024.0).round %>
+                <div class="border border-base-content/10 rounded-lg p-3">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="font-semibold"><%= info[:label] %></span>
+                    <span class="badge badge-ghost badge-sm"><%= size_kb %>KB · <%= info[:ext].upcase %></span>
+                  </div>
+                  <img src="<%= url %>" alt="<%= info[:label] %>" class="w-full rounded-lg" loading="lazy">
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+<%= admin_content_end %>

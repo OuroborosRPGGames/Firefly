@@ -1,0 +1,186 @@
+<% @page_title = "#{h @target_user.username} - User Management" %>
+<% @breadcrumbs = [
+  { label: 'Admin', path: '/admin' },
+  { label: 'Users', path: '/admin/users' },
+  { label: @target_user.username, path: "/admin/users/#{@target_user.id}" }
+] %>
+
+<%= admin_content_start %>
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold">
+          <%= h @target_user.username %>
+          <% if @target_user.admin? %>
+            <span class="badge badge-error">Admin</span>
+          <% elsif @target_user.staff? %>
+            <span class="badge badge-primary">Staff</span>
+          <% end %>
+        </h2>
+        <a href="/admin/users" class="btn btn-outline btn-neutral">
+          <i class="bi bi-arrow-left mr-1"></i>Back to Users
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- User Info -->
+        <div class="mb-4">
+          <div class="card bg-base-200">
+            <div class="card-body p-0">
+              <div class="px-4 py-3 border-b border-base-content/10">
+                <h5 class="card-title mb-0"><i class="bi bi-person mr-2"></i>Account Details</h5>
+              </div>
+              <div class="p-4">
+                <dl class="grid grid-cols-3 gap-2 mb-0">
+                  <dt class="font-semibold">User ID</dt>
+                  <dd class="col-span-2"><%= @target_user.id %></dd>
+
+                  <dt class="font-semibold">Username</dt>
+                  <dd class="col-span-2"><%= h @target_user.username %></dd>
+
+                  <dt class="font-semibold">Email</dt>
+                  <dd class="col-span-2"><%= h @target_user.email %></dd>
+
+                  <dt class="font-semibold">Created</dt>
+                  <dd class="col-span-2"><%= @target_user.created_at&.strftime('%Y-%m-%d %H:%M') || 'Unknown' %></dd>
+
+                  <dt class="font-semibold">Last Login</dt>
+                  <dd class="col-span-2"><%= @target_user.last_login_at&.strftime('%Y-%m-%d %H:%M') || 'Never' %></dd>
+
+                  <dt class="font-semibold">Admin Status</dt>
+                  <dd class="col-span-2">
+                    <% if @target_user.admin? %>
+                      <span class="badge badge-error">Full Admin</span>
+                    <% else %>
+                      <span class="badge badge-neutral">Regular User</span>
+                    <% end %>
+                  </dd>
+                </dl>
+
+                <% if admin? && @target_user.id != current_user.id %>
+                <div class="divider"></div>
+                <form action="/admin/users/<%= @target_user.id %>/toggle_admin" method="post" class="inline">
+                  <% if @target_user.admin? %>
+                    <button type="submit" class="btn btn-outline btn-error" onclick="return confirm('Remove admin privileges from <%= h @target_user.username %>?')">
+                      <i class="bi bi-shield-x mr-1"></i>Remove Admin
+                    </button>
+                  <% else %>
+                    <button type="submit" class="btn btn-outline btn-success" onclick="return confirm('Grant full admin privileges to <%= h @target_user.username %>?')">
+                      <i class="bi bi-shield-check mr-1"></i>Grant Admin
+                    </button>
+                  <% end %>
+                </form>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Permissions -->
+        <div class="mb-4">
+          <div class="card bg-base-200">
+            <div class="card-body p-0">
+              <div class="px-4 py-3 border-b border-base-content/10">
+                <h5 class="card-title mb-0"><i class="bi bi-key mr-2"></i>Permissions</h5>
+              </div>
+              <div class="p-4">
+                <% if @target_user.admin? %>
+                  <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle mr-2"></i>
+                    This user is an admin and has all permissions implicitly.
+                  </div>
+                <% else %>
+                  <form action="/admin/users/<%= @target_user.id %>/permissions" method="post">
+                    <% @permissions.each do |perm_key, perm_info| %>
+                    <div class="form-control mb-2">
+                      <label class="label cursor-pointer justify-start gap-3">
+                        <input type="checkbox" id="<%= perm_key %>" name="<%= perm_key %>" value="1"
+                               class="checkbox checkbox-primary"
+                               <%= @target_user.has_permission?(perm_key) ? 'checked' : '' %>>
+                        <span class="label-text">
+                          <strong><%= perm_info[:name] %></strong>
+                          <br><small class="text-base-content/70"><%= perm_info[:description] %></small>
+                        </span>
+                      </label>
+                    </div>
+                    <% end %>
+
+                    <div class="divider"></div>
+                    <button type="submit" class="btn btn-primary">
+                      <i class="bi bi-check-lg mr-1"></i>Save Permissions
+                    </button>
+                  </form>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Characters -->
+      <div class="card bg-base-200">
+        <div class="card-body p-0">
+          <div class="flex justify-between items-center px-4 py-3 border-b border-base-content/10">
+            <h5 class="card-title mb-0"><i class="bi bi-people mr-2"></i>Characters</h5>
+            <span class="badge badge-neutral"><%= @user_characters.length %> characters</span>
+          </div>
+          <div class="p-4">
+            <% if @user_characters.empty? %>
+              <p class="text-base-content/70 mb-0">This user has no characters.</p>
+            <% else %>
+              <div class="overflow-x-auto">
+                <table class="table table-zebra">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Status</th>
+                      <th>Staff Character</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% @user_characters.each do |character| %>
+                    <tr>
+                      <td>
+                        <%= h character.full_name %>
+                        <% if character.staff_character? %>
+                          <span class="badge badge-primary ml-1">Staff</span>
+                        <% end %>
+                      </td>
+                      <td>
+                        <% if character.active %>
+                          <span class="badge badge-success">Active</span>
+                        <% else %>
+                          <span class="badge badge-neutral">Inactive</span>
+                        <% end %>
+                      </td>
+                      <td>
+                        <% if character.staff_character? %>
+                          <span class="text-success"><i class="bi bi-check-circle"></i> Yes</span>
+                        <% else %>
+                          <span class="text-base-content/70"><i class="bi bi-dash-circle"></i> No</span>
+                        <% end %>
+                      </td>
+                      <td>
+                        <% if admin? %>
+                        <form action="/admin/characters/<%= character.id %>/toggle_staff" method="post" class="inline">
+                          <% if character.staff_character? %>
+                            <button type="submit" class="btn btn-sm btn-outline btn-warning" onclick="return confirm('Remove staff status from <%= h character.full_name %>?')">
+                              <i class="bi bi-person-dash"></i> Remove Staff
+                            </button>
+                          <% else %>
+                            <button type="submit" class="btn btn-sm btn-outline btn-success" onclick="return confirm('Grant staff status to <%= h character.full_name %>?')">
+                              <i class="bi bi-person-badge"></i> Make Staff
+                            </button>
+                          <% end %>
+                        </form>
+                        <% end %>
+                      </td>
+                    </tr>
+                    <% end %>
+                  </tbody>
+                </table>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+<%= admin_content_end %>

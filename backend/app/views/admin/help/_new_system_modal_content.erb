@@ -1,0 +1,49 @@
+<form action="/admin/help/systems" method="post">
+  <%= csrf_tag %>
+
+  <div class="form-control mb-3">
+    <label class="label">
+      <span class="label-text">System Name</span>
+    </label>
+    <input type="text" name="name" class="input input-bordered w-full" required pattern="[a-z_]+" placeholder="e.g., navigation">
+    <label class="label">
+      <span class="label-text-alt text-base-content/70">Lowercase letters and underscores only. Used in commands like <code class="bg-base-300 px-1 rounded">help system &lt;name&gt;</code></span>
+    </label>
+  </div>
+
+  <div class="form-control mb-3">
+    <label class="label">
+      <span class="label-text">Display Name</span>
+    </label>
+    <input type="text" name="display_name" class="input input-bordered w-full" placeholder="e.g., Navigation System">
+    <label class="label">
+      <span class="label-text-alt text-base-content/70">Human-readable name shown in help output.</span>
+    </label>
+  </div>
+
+  <div class="form-control mb-3">
+    <label class="label">
+      <span class="label-text">Summary</span>
+    </label>
+    <input type="text" name="summary" class="input input-bordered w-full" placeholder="e.g., Commands for moving around the world">
+    <label class="label">
+      <span class="label-text-alt text-base-content/70">One-line description.</span>
+    </label>
+  </div>
+
+  <div class="form-control mb-3">
+    <label class="label">
+      <span class="label-text">Display Order</span>
+    </label>
+    <input type="number" name="display_order" class="input input-bordered w-full" value="100" min="1">
+    <label class="label">
+      <span class="label-text-alt text-base-content/70">Lower numbers appear first.</span>
+    </label>
+  </div>
+
+  <div class="modal-action">
+    <button type="button" class="btn btn-ghost"
+            onclick="document.getElementById('newSystemModal').close()">Cancel</button>
+    <button type="submit" class="btn btn-primary">Create System</button>
+  </div>
+</form>

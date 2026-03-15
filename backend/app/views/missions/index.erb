@@ -1,0 +1,96 @@
+<!-- Page Banner -->
+<section class="page-banner" style="background-image: url('/images/library.jpg');">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <div class="breadcrumbs text-sm mb-2">
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/dashboard">Dashboard</a></li>
+          <li>Mission Logs</li>
+        </ul>
+      </div>
+      <h1><i class="bi bi-journal-text mr-2"></i>Mission Logs</h1>
+      <p class="lead">Review your completed missions and adventures</p>
+    </div>
+  </div>
+</section>
+
+<section class="py-12">
+  <div class="container mx-auto px-4">
+    <% if @missions && @missions.any? %>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <% @missions.each do |mission| %>
+          <div class="card bg-base-200 shadow-xl h-full">
+            <div class="card-body">
+              <div class="flex justify-between items-center mb-2">
+                <h2 class="card-title">
+                  <i class="bi bi-flag mr-2"></i>
+                  <%= h(mission.activity&.name || "Mission ##{mission.id}") %>
+                </h2>
+                <span class="badge badge-<%= mission.completed_at ? 'success' : 'warning' %>">
+                  <%= mission.completed_at ? 'Completed' : 'In Progress' %>
+                </span>
+              </div>
+              <div class="mb-3">
+                <small class="text-base-content/70">
+                  <i class="bi bi-calendar mr-1"></i>
+                  <%= mission.completed_at&.strftime('%B %d, %Y at %I:%M %p') || 'In Progress' %>
+                </small>
+              </div>
+
+              <% if mission.activity&.description %>
+                <p class="text-base-content/70 text-sm mb-3">
+                  <%= h(mission.activity.description.length > 150 ? mission.activity.description[0..150] + '...' : mission.activity.description) %>
+                </p>
+              <% end %>
+
+              <div class="flex flex-wrap gap-2 mb-3">
+                <span class="badge badge-neutral">
+                  <i class="bi bi-arrow-repeat mr-1"></i>
+                  <%= mission.rounds_done || 0 %> rounds
+                </span>
+                <% if mission.activity&.activity_type %>
+                  <span class="badge badge-info">
+                    <%= mission.activity.activity_type.capitalize %>
+                  </span>
+                <% end %>
+                <% participant_count = mission.participants.count %>
+                <span class="badge badge-primary">
+                  <i class="bi bi-people mr-1"></i>
+                  <%= participant_count %> participant<%= participant_count != 1 ? 's' : '' %>
+                </span>
+              </div>
+
+              <% if mission.log_summary %>
+                <div class="alert bg-base-300 text-sm mb-3">
+                  <i class="bi bi-quote mr-1"></i>
+                  <%= h(mission.log_summary.length > 100 ? mission.log_summary[0..100] + '...' : mission.log_summary) %>
+                </div>
+              <% end %>
+
+              <div class="card-actions justify-start mt-auto">
+                <a href="/missions/<%= mission.id %>" class="btn btn-outline btn-primary btn-sm">
+                  <i class="bi bi-book mr-1"></i>Read Log
+                </a>
+                <a href="/missions/<%= mission.id %>/download" class="btn btn-ghost btn-sm">
+                  <i class="bi bi-download mr-1"></i>Download
+                </a>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="card bg-base-200 shadow-xl">
+        <div class="card-body text-center py-12">
+          <i class="bi bi-journal-x text-6xl text-base-content/50 mb-4"></i>
+          <h3 class="text-xl font-bold mb-2">No Mission Logs Yet</h3>
+          <p class="text-base-content/70 mb-4">Complete missions and activities to see them here.</p>
+          <a href="/dashboard" class="btn btn-primary">
+            <i class="bi bi-play-fill mr-1"></i>Start Playing
+          </a>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</section>

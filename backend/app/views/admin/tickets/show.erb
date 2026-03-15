@@ -1,0 +1,150 @@
+<% @page_title = "Ticket ##{@ticket.id} - Admin" %>
+<% @breadcrumbs = [
+  { label: 'Admin', path: '/admin' },
+  { label: 'Tickets', path: '/admin/tickets' },
+  { label: "##{@ticket.id}", path: "/admin/tickets/#{@ticket.id}" }
+] %>
+
+<%= admin_content_start %>
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold"><i class="bi bi-ticket-perforated mr-2"></i>Ticket #<%= @ticket.id %></h2>
+        <a href="/admin/tickets" class="btn btn-outline">
+          <i class="bi bi-arrow-left"></i> Back to Tickets
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-8">
+          <!-- Ticket Content -->
+          <div class="card bg-base-200 mb-4">
+            <div class="card-body">
+              <div class="flex justify-between items-center mb-4">
+                <span>
+                  <% case @ticket.category %>
+                  <% when 'bug' %>
+                    <span class="badge badge-error gap-1"><i class="bi bi-bug"></i> Bug</span>
+                  <% when 'typo' %>
+                    <span class="badge badge-info gap-1"><i class="bi bi-spellcheck"></i> Typo</span>
+                  <% when 'behaviour' %>
+                    <span class="badge badge-warning gap-1"><i class="bi bi-exclamation-triangle"></i> Behaviour</span>
+                  <% when 'request' %>
+                    <span class="badge badge-primary gap-1"><i class="bi bi-lightbulb"></i> Request</span>
+                  <% when 'suggestion' %>
+                    <span class="badge badge-success gap-1"><i class="bi bi-chat-dots"></i> Suggestion</span>
+                  <% when 'documentation' %>
+                    <span class="badge badge-accent gap-1"><i class="bi bi-book"></i> Docs</span>
+                  <% else %>
+                    <span class="badge badge-neutral"><%= @ticket.category_display %></span>
+                  <% end %>
+                </span>
+                <span>
+                  <% case @ticket.status %>
+                  <% when 'open' %>
+                    <span class="badge badge-error">Open</span>
+                  <% when 'resolved' %>
+                    <span class="badge badge-success">Resolved</span>
+                  <% when 'closed' %>
+                    <span class="badge badge-neutral">Closed</span>
+                  <% end %>
+                </span>
+              </div>
+              <h5 class="text-lg font-semibold"><%= h @ticket.subject %></h5>
+              <div class="divider my-2"></div>
+              <div class="ticket-content whitespace-pre-wrap"><%= h @ticket.content %></div>
+            </div>
+          </div>
+
+          <% if @ticket.investigated? %>
+          <!-- AI Investigation Notes -->
+          <div class="card bg-base-200 mb-4 border border-info">
+            <div class="card-body">
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-info font-semibold"><i class="bi bi-robot mr-2"></i>AI Investigation</span>
+                <span class="text-base-content/70 text-sm"><%= @ticket.investigated_at&.strftime('%Y-%m-%d %H:%M') %></span>
+              </div>
+              <pre class="investigation-notes mb-0 whitespace-pre-wrap font-sans"><%= h @ticket.investigation_notes %></pre>
+            </div>
+          </div>
+          <% end %>
+
+          <% if @ticket.resolved? || @ticket.closed? %>
+          <!-- Resolution -->
+          <div class="card bg-base-200 mb-4 border border-success">
+            <div class="card-body">
+              <div class="text-success font-semibold mb-2">
+                <i class="bi bi-check-circle mr-2"></i>Resolution
+              </div>
+              <p class="mb-1"><strong>Resolved by:</strong> <%= h(@ticket.resolved_by_user&.username || 'Unknown') %></p>
+              <p class="mb-3"><strong>Resolved at:</strong> <%= @ticket.resolved_at&.strftime('%Y-%m-%d %H:%M') %></p>
+              <% if @ticket.resolution_notes && !@ticket.resolution_notes.empty? %>
+                <div class="resolution-notes whitespace-pre-wrap"><%= h @ticket.resolution_notes %></div>
+              <% end %>
+            </div>
+          </div>
+          <% end %>
+
+          <% if @ticket.open? %>
+          <!-- Resolve Form -->
+          <div class="card bg-base-200 mb-4">
+            <div class="card-body">
+              <div class="font-semibold mb-4">
+                <i class="bi bi-check-lg mr-2"></i>Resolve Ticket
+              </div>
+              <form action="/admin/tickets/<%= @ticket.id %>/resolve" method="post">
+                <%= csrf_tag %>
+                <div class="form-control mb-4">
+                  <label for="notes" class="label">
+                    <span class="label-text">Resolution Notes *</span>
+                  </label>
+                  <textarea class="textarea textarea-bordered" id="notes" name="notes" rows="4" required
+                            placeholder="Describe how the issue was resolved..."></textarea>
+                </div>
+                <div class="flex gap-2">
+                  <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-lg"></i> Resolve
+                  </button>
+                  <button type="button" class="btn btn-outline" onclick="closeModal.showModal()">
+                    <i class="bi bi-x-lg"></i> Close Without Resolving
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+          <% else %>
+          <!-- Reopen Button -->
+          <form action="/admin/tickets/<%= @ticket.id %>/reopen" method="post" class="mb-4">
+            <%= csrf_tag %>
+            <button type="submit" class="btn btn-warning">
+              <i class="bi bi-arrow-counterclockwise"></i> Reopen Ticket
+            </button>
+          </form>
+          <% end %>
+        </div>
+
+        <div class="lg:col-span-4">
+          <!-- Ticket Info -->
+          <div class="card bg-base-200 mb-4">
+            <div class="card-body">
+              <div class="font-semibold mb-2">Details</div>
+              <p class="mb-2">
+                <strong>Submitted by:</strong>
+                <%= h(@ticket.system_generated ? 'System' : (@ticket.user&.username || 'Unknown')) %>
+                <% if @ticket.system_generated %>
+                  <span class="badge badge-xs badge-ghost ml-1">auto-generated</span>
+                <% end %>
+              </p>
+              <p class="mb-2"><strong>Submitted:</strong> <%= @ticket.created_at&.strftime('%Y-%m-%d %H:%M') %></p>
+              <% if @ticket.room %>
+                <p class="mb-2"><strong>Location:</strong> <%= h @ticket.room.name %></p>
+              <% end %>
+              <% if @ticket.game_context && !@ticket.game_context.empty? %>
+                <div class="divider my-2"></div>
+                <p class="mb-1"><strong>Context:</strong></p>
+                <pre class="text-base-content/70 text-sm"><%= h @ticket.game_context %></pre>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    
+<%= admin_content_end %>

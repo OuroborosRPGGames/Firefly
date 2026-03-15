@@ -1,0 +1,94 @@
+<% @title = 'News Management' %>
+<% @breadcrumbs = [
+  { label: 'Admin', path: '/admin' },
+  { label: 'News', path: '/admin/news' }
+] %>
+
+<%= admin_content_start %>
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold"><i class="bi bi-newspaper mr-2"></i>News Management</h2>
+        <a href="/admin/news/new" class="btn btn-primary">
+          <i class="bi bi-plus-lg mr-1"></i>New Article
+        </a>
+      </div>
+
+      <!-- Type Filter Tabs -->
+      <div class="tabs tabs-boxed mb-4 bg-base-200">
+        <a class="tab <%= @news_type.nil? || @news_type.empty? ? 'tab-active' : '' %>"
+           href="/admin/news">All</a>
+        <a class="tab <%= @news_type == 'announcement' ? 'tab-active' : '' %>"
+           href="/admin/news?type=announcement">
+          <span class="badge badge-error mr-1">!</span>Announcements
+        </a>
+        <a class="tab <%= @news_type == 'ic' ? 'tab-active' : '' %>"
+           href="/admin/news?type=ic">
+          <span class="badge badge-info mr-1">IC</span>IC News
+        </a>
+        <a class="tab <%= @news_type == 'ooc' ? 'tab-active' : '' %>"
+           href="/admin/news?type=ooc">
+          <span class="badge badge-neutral mr-1">OOC</span>OOC News
+        </a>
+      </div>
+
+      <% if @articles.empty? %>
+        <%= partial 'shared/empty_state', locals: { message: 'No news articles found.', link: '/admin/news/new', link_text: 'Create one' } %>
+      <% else %>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra bg-base-200">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Published</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @articles.each do |article| %>
+                <tr class="hover">
+                  <td><%= article.id %></td>
+                  <td>
+                    <span class="badge <%= article.type_badge_class %>">
+                      <%= article.type_display %>
+                    </span>
+                  </td>
+                  <td><%= h(article.title) %></td>
+                  <td><%= h(article.created_by_user&.username || 'Unknown') %></td>
+                  <td><%= article.published_at&.strftime('%Y-%m-%d %H:%M') || 'Not set' %></td>
+                  <td>
+                    <% if article.is_published %>
+                      <span class="badge badge-success">Published</span>
+                    <% else %>
+                      <span class="badge badge-warning">Draft</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <a href="/admin/news/<%= article.id %>" class="btn btn-sm btn-outline btn-primary">
+                      <i class="bi bi-pencil mr-1"></i>Edit
+                    </a>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+
+      <!-- Info Card -->
+      <div class="card bg-base-200 mt-4">
+        <div class="card-body">
+          <h5 class="card-title text-sm"><i class="bi bi-info-circle mr-2"></i>About News</h5>
+          <div class="text-sm text-base-content/70">
+            <p class="mb-2">News articles are staff-created announcements visible to all players.</p>
+            <div class="flex flex-wrap gap-2">
+              <span class="badge badge-error">Announcement</span> Important game updates
+              <span class="badge badge-info ml-2">IC</span> In-character world news
+              <span class="badge badge-neutral ml-2">OOC</span> Out-of-character community news
+            </div>
+          </div>
+        </div>
+      </div>
+<%= admin_content_end %>

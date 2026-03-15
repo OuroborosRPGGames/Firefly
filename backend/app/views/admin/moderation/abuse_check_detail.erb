@@ -1,0 +1,257 @@
+<% @page_title = "Abuse Check ##{@check.id}" %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Moderation', path: '/admin/moderation' }, { label: 'Abuse Checks', path: '/admin/moderation/abuse-checks' }, { label: "##{@check.id}", path: "/admin/moderation/abuse-checks/#{@check.id}" }] %>
+
+<%= admin_content_start %>
+      <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+        <h2 class="text-2xl font-bold"><i class="bi bi-file-text mr-2"></i>Abuse Check #<%= @check.id %></h2>
+        <% case @check.status %>
+        <% when 'pending', 'gemini_checking' %>
+          <span class="badge badge-info badge-lg"><%= @check.status %></span>
+        <% when 'flagged' %>
+          <span class="badge badge-warning badge-lg">Flagged</span>
+        <% when 'escalated' %>
+          <span class="badge badge-lg" style="background-color: #fd7e14; color: white;">Escalated</span>
+        <% when 'confirmed' %>
+          <span class="badge badge-error badge-lg">Confirmed</span>
+        <% when 'cleared' %>
+          <span class="badge badge-success badge-lg">Cleared</span>
+        <% end %>
+      </div>
+
+      <!-- Actions -->
+      <% if %w[flagged escalated].include?(@check.status) %>
+      <div class="card bg-base-200 mb-4">
+        <div class="p-4 border-b border-base-content/10">
+          <h5 class="font-semibold"><i class="bi bi-lightning mr-2"></i>Actions</h5>
+        </div>
+        <div class="card-body">
+          <div class="flex flex-wrap gap-2">
+            <form action="/admin/moderation/abuse-checks/<%= @check.id %>/clear" method="post" class="inline">
+              <button type="submit" class="btn btn-success" onclick="return confirm('Mark this content as safe?')">
+                <i class="bi bi-check-circle mr-1"></i> Clear (False Positive)
+              </button>
+            </form>
+            <form action="/admin/moderation/abuse-checks/<%= @check.id %>/confirm" method="post" class="inline">
+              <button type="submit" class="btn btn-error" onclick="return confirm('Confirm abuse and execute all moderation actions?\n\nThis will:\n- Ban IP for 3 months\n- Ban IP range for 24 hours\n- Freeze registrations for 1 hour\n- Suspend the account\n- Log out all characters')">
+                <i class="bi bi-exclamation-triangle mr-1"></i> Confirm Abuse & Execute Actions
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <% end %>
+
+      <!-- Message Content -->
+      <div class="card bg-base-200 mb-4">
+        <div class="p-4 border-b border-base-content/10">
+          <h5 class="font-semibold"><i class="bi bi-chat-text mr-2"></i>Message Content</h5>
+        </div>
+        <div class="card-body">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div class="font-semibold">Type:</div>
+            <div class="md:col-span-3"><span class="badge badge-neutral"><%= @check.message_type %></span></div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div class="font-semibold">Content:</div>
+            <div class="md:col-span-3">
+              <div class="bg-base-300 p-3 rounded">
+                <pre class="whitespace-pre-wrap text-sm"><%= CGI.escapeHTML(@check.message_content.to_s) %></pre>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div class="font-semibold">Category:</div>
+            <div class="md:col-span-3">
+              <% if @check.abuse_category %>
+                <span class="badge badge-error"><%= @check.abuse_category %></span>
+              <% else %>
+                <span class="text-base-content/70">Not categorized</span>
+              <% end %>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="font-semibold">Created:</div>
+            <div class="md:col-span-3"><%= @check.created_at&.strftime('%Y-%m-%d %H:%M:%S') %></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Info -->
+      <div class="card bg-base-200 mb-4">
+        <div class="p-4 border-b border-base-content/10">
+          <h5 class="font-semibold"><i class="bi bi-person mr-2"></i>User Information</h5>
+        </div>
+        <div class="card-body">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div class="font-semibold">Username:</div>
+            <div class="md:col-span-3">
+              <% if @check.user %>
+                <a href="/admin/moderation/connections/user/<%= @check.user_id %>" class="link link-hover">
+                  <%= h @check.user.username %>
+                </a>
+              <% else %>
+                <span class="text-base-content/70">Unknown</span>
+              <% end %>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div class="font-semibold">IP Address:</div>
+            <div class="md:col-span-3">
+              <% if @check.ip_address %>
+                <a href="/admin/moderation/connections/ip/<%= CGI.escape(@check.ip_address) %>" class="link link-info">
+                  <code class="bg-base-300 px-1 rounded"><%= @check.ip_address %></code>
+                </a>
+              <% else %>
+                <span class="text-base-content/70">Unknown</span>
+              <% end %>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div class="font-semibold">Character:</div>
+            <div class="md:col-span-3">
+              <% if @check.character_instance&.character %>
+                <%= h @check.character_instance.character.full_name %>
+              <% else %>
+                <span class="text-base-content/70">Unknown</span>
+              <% end %>
+            </div>
+          </div>
+          <% if @check.user %>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="font-semibold">Playtime:</div>
+            <div class="md:col-span-3">
+              <%= @check.user.total_playtime_hours.round(1) %> hours
+              <% if @check.user.exempt_from_abuse_checks? %>
+                <span class="badge badge-success ml-2">Exempt (100+ hrs)</span>
+              <% end %>
+            </div>
+          </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- AI Analysis -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div class="card bg-base-200 h-full">
+          <div class="p-4 border-b border-base-content/10">
+            <h5 class="font-semibold"><i class="bi bi-lightning mr-2"></i>Gemini Analysis (First Pass)</h5>
+          </div>
+          <div class="card-body">
+            <% if @check.gemini_flagged.nil? %>
+              <p class="text-base-content/70">Not yet analyzed by Gemini.</p>
+            <% else %>
+              <div class="grid grid-cols-2 gap-2 mb-4">
+                <div class="font-semibold">Flagged:</div>
+                <div>
+                  <% if @check.gemini_flagged %>
+                    <span class="badge badge-error">Yes</span>
+                  <% else %>
+                    <span class="badge badge-success">No</span>
+                  <% end %>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2 mb-4">
+                <div class="font-semibold">Confidence:</div>
+                <div>
+                  <progress class="progress <%= @check.gemini_flagged ? 'progress-error' : 'progress-success' %> w-full"
+                            value="<%= (@check.gemini_confidence.to_f * 100).round %>" max="100"></progress>
+                  <span class="text-sm"><%= (@check.gemini_confidence.to_f * 100).round %>%</span>
+                </div>
+              </div>
+              <% if @check.gemini_response %>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="font-semibold">Reasoning:</div>
+                <div>
+                  <small class="text-base-content/70"><%= @check.gemini_response['reasoning'] || 'No reasoning provided' %></small>
+                </div>
+              </div>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="card bg-base-200 h-full">
+          <div class="p-4 border-b border-base-content/10">
+            <h5 class="font-semibold"><i class="bi bi-stars mr-2"></i>Claude Analysis (Verification)</h5>
+          </div>
+          <div class="card-body">
+            <% if @check.claude_confirmed.nil? %>
+              <p class="text-base-content/70">Not yet verified by Claude.</p>
+            <% else %>
+              <div class="grid grid-cols-2 gap-2 mb-4">
+                <div class="font-semibold">Confirmed:</div>
+                <div>
+                  <% if @check.claude_confirmed %>
+                    <span class="badge badge-error">Yes - Abuse Confirmed</span>
+                  <% else %>
+                    <span class="badge badge-success">No - False Positive</span>
+                  <% end %>
+                </div>
+              </div>
+              <% if @check.claude_response %>
+              <div class="grid grid-cols-2 gap-2 mb-4">
+                <div class="font-semibold">Severity:</div>
+                <div>
+                  <span class="badge <%= @check.claude_response['severity'] == 'high' ? 'badge-error' : (@check.claude_response['severity'] == 'medium' ? 'badge-warning' : 'badge-neutral') %>">
+                    <%= @check.claude_response['severity'] || 'Unknown' %>
+                  </span>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="font-semibold">Reasoning:</div>
+                <div>
+                  <small class="text-base-content/70"><%= @check.claude_response['reasoning'] || 'No reasoning provided' %></small>
+                </div>
+              </div>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Related Checks from Same User -->
+      <% if @related_checks.any? %>
+      <div class="card bg-base-200">
+        <div class="p-4 border-b border-base-content/10">
+          <h5 class="font-semibold"><i class="bi bi-clock-history mr-2"></i>Other Checks from This User</h5>
+        </div>
+        <div class="card-body">
+          <div class="overflow-x-auto">
+            <table class="table table-zebra table-sm">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Time</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Content Preview</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @related_checks.each do |check| %>
+                <tr>
+                  <td><a href="/admin/moderation/abuse-checks/<%= check.id %>" class="link link-info">#<%= check.id %></a></td>
+                  <td><%= check.created_at&.strftime('%m-%d %H:%M') %></td>
+                  <td><span class="badge badge-neutral"><%= check.message_type %></span></td>
+                  <td>
+                    <% case check.status %>
+                    <% when 'confirmed' %>
+                      <span class="badge badge-error">Confirmed</span>
+                    <% when 'flagged' %>
+                      <span class="badge badge-warning">Flagged</span>
+                    <% when 'cleared' %>
+                      <span class="badge badge-success">Cleared</span>
+                    <% else %>
+                      <span class="badge badge-neutral"><%= check.status %></span>
+                    <% end %>
+                  </td>
+                  <td class="text-sm"><%= check.message_content.to_s[0, 40] %>...</td>
+                </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <% end %>
+<%= admin_content_end %>

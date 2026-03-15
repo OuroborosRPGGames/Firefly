@@ -1,0 +1,32 @@
+<h2>Character Creation</h2>
+
+<p>Welcome to <%= game_name %>! Before you can enter the world, you need to create a character.</p>
+
+<form action="/character/create" method="post">
+    <%= csrf_tag %>
+    
+    <div class="form-group">
+        <label for="name">Character Name:</label>
+        <input type="text" id="name" name="name" maxlength="50" required autofocus>
+    </div>
+    
+    <div class="form-group">
+        <button type="submit">Create Character</button>
+    </div>
+</form>
+
+<style>
+    input[type="text"] {
+        width: 300px;
+    }
+    
+    .form-group button {
+        padding: 12px 24px;
+        font-size: 16px;
+    }
+    
+    p {
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+</style>

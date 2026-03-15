@@ -1,0 +1,162 @@
+<% @page_title = "IP: #{@ip_address}" %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Moderation', path: '/admin/moderation' }, { label: 'Connections', path: '/admin/moderation/connections' }, { label: @ip_address, path: "/admin/moderation/connections/ip/#{CGI.escape(@ip_address)}" }] %>
+
+<%= admin_content_start %>
+      <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+        <i class="bi bi-geo-alt"></i>IP Address: <%= @ip_address %>
+        <% if @is_banned %>
+          <span class="badge badge-error">Banned</span>
+        <% end %>
+      </h2>
+
+      <!-- IP Actions -->
+      <div class="card bg-base-200 shadow-lg mb-4">
+        <div class="p-4 border-b border-base-content/10">
+          <h5 class="font-semibold"><i class="bi bi-lightning mr-2"></i>Quick Actions</h5>
+        </div>
+        <div class="card-body">
+          <% if @is_banned %>
+            <div class="alert alert-error">
+              <i class="bi bi-ban"></i>
+              <span>This IP address is currently banned.</span>
+              <a href="/admin/moderation/ip-bans" class="btn btn-sm btn-outline">Manage Bans</a>
+            </div>
+          <% else %>
+            <form action="/admin/moderation/ip-bans" method="post" class="flex flex-wrap gap-2 items-center">
+              <input type="hidden" name="ip_pattern" value="<%= @ip_address %>">
+              <input type="text" class="input input-bordered input-sm w-48" name="reason" placeholder="Ban reason">
+              <select class="select select-bordered select-sm w-32" name="duration">
+                <option value="permanent">Permanent</option>
+                <option value="1h">1 Hour</option>
+                <option value="24h">24 Hours</option>
+                <option value="7d">7 Days</option>
+                <option value="30d">30 Days</option>
+              </select>
+              <button type="submit" class="btn btn-sm btn-error">
+                <i class="bi bi-ban mr-1"></i>Ban This IP
+              </button>
+            </form>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Associated Users -->
+      <div class="card bg-base-200 shadow-lg mb-4">
+        <div class="p-4 border-b border-base-content/10">
+          <h5 class="font-semibold"><i class="bi bi-people mr-2"></i>Users from this IP</h5>
+        </div>
+        <div class="card-body">
+          <% if @users.empty? %>
+            <p class="text-base-content/70">No users have connected from this IP.</p>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra table-sm">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @users.each do |user| %>
+                  <tr>
+                    <td>
+                      <a href="/admin/moderation/connections/user/<%= user.id %>" class="link link-primary">
+                        <%= h user.username %>
+                      </a>
+                    </td>
+                    <td><%= h user.email %></td>
+                    <td>
+                      <% if user.suspended? %>
+                        <span class="badge badge-error">Suspended</span>
+                      <% elsif user.admin? %>
+                        <span class="badge badge-primary">Admin</span>
+                      <% else %>
+                        <span class="badge badge-success">Active</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <div class="flex gap-1">
+                        <a href="/admin/moderation/connections/user/<%= user.id %>" class="btn btn-sm btn-outline btn-info">
+                          <i class="bi bi-eye"></i> View
+                        </a>
+                        <% unless user.suspended? %>
+                          <form action="/admin/moderation/users/<%= user.id %>/suspend" method="post" class="inline">
+                            <input type="hidden" name="reason" value="Connection from banned IP: <%= @ip_address %>">
+                            <input type="hidden" name="duration" value="24h">
+                            <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Suspend this user for 24 hours?')">
+                              <i class="bi bi-person-x"></i>
+                            </button>
+                          </form>
+                        <% end %>
+                      </div>
+                    </td>
+                  </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Connection History -->
+      <div class="card bg-base-200 shadow-lg">
+        <div class="p-4 border-b border-base-content/10">
+          <h5 class="font-semibold"><i class="bi bi-clock-history mr-2"></i>Connection History from this IP</h5>
+        </div>
+        <div class="card-body">
+          <% if @logs.empty? %>
+            <p class="text-base-content/70">No connection logs found.</p>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra table-sm">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>User</th>
+                    <th>Type</th>
+                    <th>Outcome</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @logs.each do |log| %>
+                  <tr>
+                    <td class="whitespace-nowrap"><%= log.created_at&.strftime('%Y-%m-%d %H:%M:%S') %></td>
+                    <td>
+                      <% if log.user %>
+                        <a href="/admin/moderation/connections/user/<%= log.user_id %>" class="link link-primary">
+                          <%= h log.user.username %>
+                        </a>
+                      <% else %>
+                        <span class="text-base-content/70">-</span>
+                      <% end %>
+                    </td>
+                    <td><span class="badge badge-neutral"><%= log.connection_type %></span></td>
+                    <td>
+                      <% case log.outcome %>
+                      <% when 'success' %>
+                        <span class="badge badge-success">Success</span>
+                      <% when 'banned_ip' %>
+                        <span class="badge badge-error">IP Banned</span>
+                      <% when 'suspended' %>
+                        <span class="badge badge-warning">Suspended</span>
+                      <% when 'invalid_credentials' %>
+                        <span class="badge badge-error">Invalid Credentials</span>
+                      <% else %>
+                        <span class="badge badge-neutral"><%= log.outcome %></span>
+                      <% end %>
+                    </td>
+                    <td><small class="text-base-content/70"><%= log.failure_reason %></small></td>
+                  </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+      </div>
+<%= admin_content_end %>

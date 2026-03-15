@@ -1,0 +1,100 @@
+<%= admin_content_start %>
+<h1 class="text-2xl font-bold mb-6"><i class="bi bi-house-gear mr-2"></i>Room Builder</h1>
+
+<div class="card bg-base-200">
+  <div class="p-4 border-b border-base-content/10">
+    <div class="flex items-center justify-between">
+      <h5 class="font-semibold">Select a Room to Edit</h5>
+      <form class="flex gap-2" action="/admin/room_builder" method="get">
+        <input type="text" name="search" class="input input-sm input-bordered" placeholder="Search rooms..." value="<%= h(request.params['search'] || '') %>">
+        <select name="location_id" class="select select-sm select-bordered">
+          <option value="">All Locations</option>
+          <% @locations.each do |loc| %>
+            <option value="<%= loc.id %>" <%= request.params['location_id'].to_s == loc.id.to_s ? 'selected' : '' %>><%= h(loc.name) %></option>
+          <% end %>
+        </select>
+        <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+      </form>
+    </div>
+  </div>
+  <div class="card-body">
+    <% if @rooms.empty? %>
+      <%= partial 'shared/empty_state', locals: { message: 'No rooms found. Create rooms using the World Builder or in-game building commands.' } %>
+    <% else %>
+      <div class="overflow-x-auto">
+        <table class="table table-zebra">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Location</th>
+              <th>Owner</th>
+              <th>Dimensions</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @rooms.each do |room| %>
+              <tr>
+                <td><span class="text-base-content/50">#<%= room.id %></span></td>
+                <td>
+                  <a href="/admin/room_builder/<%= room.id %>" class="link link-hover">
+                    <i class="bi bi-house mr-1"></i><%= h(room.name) %>
+                  </a>
+                  <% if room.inside_room_id %>
+                    <span class="badge badge-info badge-sm ml-1" title="Nested inside another room">
+                      <i class="bi bi-box-arrow-in-right"></i>
+                    </span>
+                  <% end %>
+                </td>
+                <td><span class="badge badge-neutral"><%= room.room_type %></span></td>
+                <td><%= room.location ? h(room.location.name) : '-' %></td>
+                <td>
+                  <% if room.owner %>
+                    <span class="text-info"><%= h(room.owner.name) %></span>
+                  <% else %>
+                    <span class="text-base-content/50">Public</span>
+                  <% end %>
+                </td>
+                <td>
+                  <span class="text-base-content/50 text-sm">
+                    <%= room.max_x.to_i - room.min_x.to_i %>x<%= room.max_y.to_i - room.min_y.to_i %>
+                  </span>
+                </td>
+                <td class="text-right">
+                  <a href="/admin/room_builder/<%= room.id %>" class="btn btn-sm btn-outline btn-primary">
+                    <i class="bi bi-pencil"></i> Edit
+                  </a>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="card bg-base-200 mt-6">
+  <div class="p-4 border-b border-base-content/10">
+    <h5 class="font-semibold"><i class="bi bi-lightbulb mr-2"></i>Quick Tips</h5>
+  </div>
+  <div class="card-body">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <h6 class="font-medium"><i class="bi bi-cursor text-primary mr-2"></i>Select Tool</h6>
+        <p class="text-base-content/70 text-sm">Click items to select them, drag to move. Use the property panel on the right to edit details.</p>
+      </div>
+      <div>
+        <h6 class="font-medium"><i class="bi bi-bounding-box text-success mr-2"></i>Sub-room Tool</h6>
+        <p class="text-base-content/70 text-sm">Draw rectangles to create nested rooms like closets or bathrooms inside the main room.</p>
+      </div>
+      <div>
+        <h6 class="font-medium"><i class="bi bi-couch text-warning mr-2"></i>Furniture Tool</h6>
+        <p class="text-base-content/70 text-sm">Click to place furniture from the catalog, or create custom pieces with your own specifications.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<%= admin_content_end %>

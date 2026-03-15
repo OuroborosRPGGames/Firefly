@@ -1,0 +1,222 @@
+<% @page_title = (@clue.id ? 'Edit Clue' : 'New Clue') + ' - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Clues', path: '/admin/clues' }, { label: @clue.id ? 'Edit' : 'New' }] %>
+
+<%= admin_content_start %>
+      <h2 class="mb-4 text-2xl font-bold"><%= @clue.id ? 'Edit Clue' : 'New Clue' %></h2>
+
+      <form action="<%= @clue.id ? "/admin/clues/#{@clue.id}" : '/admin/clues/create' %>" method="post">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2">
+            <div class="card bg-base-200 shadow-lg mb-4">
+              <div class="p-4 border-b border-base-content/10 font-semibold">Clue Information</div>
+              <div class="card-body">
+                <div class="form-control mb-4">
+                  <label class="label" for="name">
+                    <span class="label-text">Name *</span>
+                  </label>
+                  <input type="text" class="input input-bordered w-full" id="name" name="name"
+                         value="<%= h @clue.name %>" required>
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/60">Internal reference name for this clue</span>
+                  </label>
+                </div>
+
+                <div class="form-control mb-4">
+                  <label class="label" for="content">
+                    <span class="label-text">Content *</span>
+                  </label>
+                  <textarea class="textarea textarea-bordered w-full" id="content" name="content" rows="4" required><%= h @clue.content %></textarea>
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/60">The actual information NPCs know. Will be added to their RAG context.</span>
+                  </label>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="form-control mb-4">
+                    <label class="label" for="share_likelihood">
+                      <span class="label-text">Share Likelihood</span>
+                    </label>
+                    <div class="flex items-center gap-2">
+                      <input type="range" class="range range-primary flex-1" id="share_likelihood_slider" min="0" max="100" step="5"
+                             value="<%= (@clue.share_likelihood || 0.5) * 100 %>" oninput="updateLikelihood(this.value)">
+                      <input type="number" class="input input-bordered w-20" id="share_likelihood" name="share_likelihood"
+                             value="<%= @clue.share_likelihood || 0.5 %>" min="0" max="1" step="0.05">
+                    </div>
+                    <label class="label">
+                      <span class="label-text-alt text-base-content/60">Base probability (0.0-1.0) NPCs will share this clue</span>
+                    </label>
+                  </div>
+                  <div class="form-control mb-4">
+                    <label class="label" for="min_trust_required">
+                      <span class="label-text">Minimum Trust Required</span>
+                    </label>
+                    <input type="number" class="input input-bordered w-full" id="min_trust_required" name="min_trust_required"
+                           value="<%= @clue.min_trust_required || 0 %>" min="0" max="1" step="0.1">
+                    <label class="label">
+                      <span class="label-text-alt text-base-content/60">Trust level (0.0-1.0) required from PC for NPC to share</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="form-control mb-4">
+                    <label class="label" for="topic_keywords">
+                      <span class="label-text">Topic Keywords</span>
+                    </label>
+                    <input type="text" class="input input-bordered w-full" id="topic_keywords" name="topic_keywords"
+                           value="<%= h((@clue.topic_keywords || []).join(', ')) %>" placeholder="murder, suspect, alibi">
+                    <label class="label">
+                      <span class="label-text-alt text-base-content/60">Comma-separated keywords that trigger this clue in conversation</span>
+                    </label>
+                  </div>
+                  <div class="form-control mb-4">
+                    <label class="label" for="share_context">
+                      <span class="label-text">Share Context</span>
+                    </label>
+                    <input type="text" class="input input-bordered w-full" id="share_context" name="share_context"
+                           value="<%= h @clue.share_context %>" placeholder="Only when asked about the crime">
+                    <label class="label">
+                      <span class="label-text-alt text-base-content/60">When/how the NPC should share this information</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label class="label cursor-pointer justify-start gap-2">
+                    <input type="checkbox" class="checkbox" id="is_active" name="is_active" value="1"
+                           <%= @clue.is_active != false ? 'checked' : '' %>>
+                    <span class="label-text">Active</span>
+                  </label>
+                  <label class="label cursor-pointer justify-start gap-2">
+                    <input type="checkbox" class="checkbox" id="is_secret" name="is_secret" value="1"
+                           <%= @clue.is_secret ? 'checked' : '' %>>
+                    <span class="label-text">
+                      <i class="bi bi-eye-slash mr-1"></i> Secret (staff only visibility)
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- NPC Assignments -->
+            <div class="card bg-base-200 shadow-lg mb-4">
+              <div class="p-4 border-b border-base-content/10 font-semibold">NPC Assignments</div>
+              <div class="card-body">
+                <p class="text-base-content/70 mb-4">Select which NPCs know this clue. You can override share likelihood per NPC.</p>
+
+                <% if @npcs.empty? %>
+                  <div class="alert alert-warning">No NPCs available. Create NPCs first.</div>
+                <% else %>
+                  <div class="overflow-x-auto">
+                    <table class="table table-zebra table-sm">
+                      <thead>
+                        <tr>
+                          <th class="w-10"></th>
+                          <th>NPC</th>
+                          <th class="w-36">Likelihood Override</th>
+                          <th class="w-36">Trust Override</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <%
+                          npc_assignments = {}
+                          if @clue.id
+                            @clue.npc_clues.each do |nc|
+                              npc_assignments[nc.character_id] = nc
+                            end
+                          end
+                        %>
+                        <% @npcs.each do |npc| %>
+                          <% assignment = npc_assignments[npc.id] %>
+                          <tr>
+                            <td>
+                              <input type="checkbox" class="checkbox checkbox-sm" name="npc_ids[]" value="<%= npc.id %>"
+                                     <%= assignment ? 'checked' : '' %> onchange="toggleNpcOverrides(this, <%= npc.id %>)">
+                            </td>
+                            <td><%= h npc.full_name %></td>
+                            <td>
+                              <input type="number" class="input input-bordered input-sm w-full"
+                                     name="npc_likelihood_<%= npc.id %>" id="npc_likelihood_<%= npc.id %>"
+                                     value="<%= assignment&.share_likelihood_override %>"
+                                     min="0" max="1" step="0.1" placeholder="Default"
+                                     <%= assignment ? '' : 'disabled' %>>
+                            </td>
+                            <td>
+                              <input type="number" class="input input-bordered input-sm w-full"
+                                     name="npc_trust_<%= npc.id %>" id="npc_trust_<%= npc.id %>"
+                                     value="<%= assignment&.min_trust_override %>"
+                                     min="0" max="1" step="0.1" placeholder="Default"
+                                     <%= assignment ? '' : 'disabled' %>>
+                            </td>
+                          </tr>
+                        <% end %>
+                      </tbody>
+                    </table>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-1">
+            <div class="card bg-base-200 shadow-lg mb-4">
+              <div class="p-4 border-b border-base-content/10 font-semibold">Actions</div>
+              <div class="card-body">
+                <button type="submit" class="btn btn-primary w-full mb-2">
+                  <i class="bi bi-check-lg mr-1"></i>Save Clue
+                </button>
+                <a href="/admin/clues" class="btn btn-outline btn-ghost w-full">Cancel</a>
+              </div>
+            </div>
+
+            <% if @clue.id %>
+            <div class="card bg-base-200 shadow-lg mb-4">
+              <div class="p-4 border-b border-base-content/10 font-semibold">Info</div>
+              <div class="card-body text-sm">
+                <p class="mb-1"><strong>Created:</strong> <%= @clue.created_at&.strftime('%Y-%m-%d %H:%M') %></p>
+                <p class="mb-1"><strong>NPCs:</strong> <%= @clue.npc_clues_dataset.count %></p>
+                <p class="mb-1"><strong>Times Shared:</strong> <%= @clue.clue_shares_dataset.count %></p>
+                <a href="/admin/clues/<%= @clue.id %>/shares" class="btn btn-sm btn-outline btn-info mt-2">
+                  <i class="bi bi-clock-history mr-1"></i>View Share History
+                </a>
+              </div>
+            </div>
+            <% end %>
+
+            <div class="card bg-base-200 shadow-lg">
+              <div class="p-4 border-b border-base-content/10 font-semibold">Tips</div>
+              <div class="card-body">
+                <ul class="text-sm text-base-content/70 list-disc list-inside space-y-1">
+                  <li>Low likelihood = NPCs rarely volunteer info</li>
+                  <li>High trust = PC must build relationship first</li>
+                  <li>Keywords help NPCs know when clue is relevant</li>
+                  <li>Per-NPC overrides let you customize behavior</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+
+      <script>
+      function updateLikelihood(val) {
+        document.getElementById('share_likelihood').value = (val / 100).toFixed(2);
+      }
+
+      function toggleNpcOverrides(checkbox, npcId) {
+        const likelihoodInput = document.getElementById('npc_likelihood_' + npcId);
+        const trustInput = document.getElementById('npc_trust_' + npcId);
+        likelihoodInput.disabled = !checkbox.checked;
+        trustInput.disabled = !checkbox.checked;
+        if (!checkbox.checked) {
+          likelihoodInput.value = '';
+          trustInput.value = '';
+        }
+      }
+
+      // Sync slider with input
+      document.getElementById('share_likelihood').addEventListener('input', function() {
+        document.getElementById('share_likelihood_slider').value = this.value * 100;
+      });
+      </script>
+<%= admin_content_end %>

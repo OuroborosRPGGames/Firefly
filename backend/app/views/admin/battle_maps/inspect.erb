@@ -1,0 +1,821 @@
+<% @page_title = "Inspect: #{@room.name} - Battle Maps" %>
+
+<%= admin_content_start %>
+
+<!-- Header / Stats Bar -->
+<div class="flex items-center justify-between mb-4">
+  <div>
+    <h2 class="text-2xl font-bold"><%= h @room.name %> — Generation Inspector</h2>
+    <div class="flex gap-4 text-sm text-base-content/70 mt-1">
+      <% if @room.min_x && @room.max_x && @room.min_y && @room.max_y %>
+        <span>Bounds: (<%= @room.min_x %>,<%= @room.min_y %>) to (<%= @room.max_x %>,<%= @room.max_y %>)</span>
+        <span>Size: <%= @room.max_x - @room.min_x + 1 %> x <%= @room.max_y - @room.min_y + 1 %> ft</span>
+      <% end %>
+      <% if @inspect_data['hex_count'] %>
+        <span>Hexes: <%= @inspect_data['hex_count'] %></span>
+      <% end %>
+      <% if @inspect_data['generated_at'] %>
+        <span>Generated: <%= @inspect_data['generated_at'] %></span>
+      <% end %>
+    </div>
+  </div>
+  <div class="flex gap-2">
+    <a href="/admin/battle_maps/<%= @room.id %>/edit" class="btn btn-ghost">
+      <i class="bi bi-pencil-square"></i> Editor
+    </a>
+    <a href="/admin/battle_maps" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Back
+    </a>
+  </div>
+</div>
+
+<% if @inspect_data.empty? && @artifacts.empty? %>
+  <div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle mr-2"></i>
+    No inspection data found. The battle map may have been generated before artifact saving was enabled.
+  </div>
+<% else %>
+
+  <%
+    pipeline_images = @artifacts.select { |a| a[:filename].match?(/\A0[123]_/) }
+    final_images = @artifacts.select { |a| a[:filename].match?(/\A(10|99)_/) }
+    edge_depth = @artifacts.select { |a| a[:filename].match?(/\A05[ab]_/) }
+    depth_map_artifact = @artifacts.find { |a| a[:filename] == 'depth_map.png' }
+    depth_elevation_artifact = @artifacts.find { |a| a[:filename] == 'depth_elevation.png' }
+    elevation_results = begin
+      path = File.join('public', 'uploads', 'battle_map_debug', "room_#{@room.id}", 'elevation_results.json')
+      File.exist?(path) ? JSON.parse(File.read(path)) : nil
+    rescue StandardError
+      nil
+    end
+    zone_images = @artifacts.select { |a| a[:filename].start_with?('zone_') }
+    l1_images = @artifacts.select { |a| a[:filename].match?(/l1|grid_l1/i) }
+    classify_images = @artifacts.select { |a| a[:filename].start_with?('06_') }
+    norm_images = @artifacts.select { |a| a[:filename].match?(/\A0[78]_norm/) }
+    sam_images = @artifacts.select { |a| a[:filename].match?(/\Asam_/) && a[:filename] != 'sam_composite.png' }
+    wall_images = @artifacts.select { |a| a[:filename].match?(/\Awall_/) && a[:filename] != 'wall_gaps.png' }
+    wall_gaps_artifact = @artifacts.find { |a| a[:filename] == 'wall_gaps.png' }
+    grounded_images = @artifacts.select { |a| a[:filename].start_with?('grounded_') }
+    lang_sam_images = @artifacts.select { |a| a[:filename].start_with?('lang_sam_') }
+    hex_images = @artifacts.select { |a| a[:filename].start_with?('hex_') }
+    sam_composite = @artifacts.find { |a| a[:filename] == 'sam_composite.png' }
+    sam_model_composite = @artifacts.find { |a| a[:filename] == 'sam_model_composite.png' }
+    wall_gaps_data = begin
+      path = File.join('public', 'uploads', 'battle_map_debug', "room_#{@room.id}", 'wall_gaps_data.json')
+      File.exist?(path) ? JSON.parse(File.read(path)) : nil
+    rescue StandardError => e
+      warn "[BattleMapInspectView] Failed to parse wall_gaps_data for room #{@room&.id}: #{e.message}"
+      nil
+    end
+    sam_results_meta = @inspect_data['sam_results'] || {}
+    grounded_meta = @inspect_data['sam_grounded'] || []
+  %>
+
+  <!-- Timing bar (V2 pipeline only) -->
+  <% if (t = @inspect_data['timing']) %>
+    <div class="stats stats-horizontal shadow w-full mb-4 bg-base-200 text-sm">
+      <div class="stat py-2 px-4">
+        <div class="stat-title text-xs">L1 + Recolor</div>
+        <div class="stat-value text-lg"><%= t['l1_and_recolor_s'] %>s</div>
+      </div>
+      <div class="stat py-2 px-4">
+        <div class="stat-title text-xs">SAM Segmentation</div>
+        <div class="stat-value text-lg"><%= t['sam_segmentation_s'] %>s</div>
+      </div>
+      <div class="stat py-2 px-4">
+        <div class="stat-title text-xs">Wall + Hex</div>
+        <div class="stat-value text-lg"><%= t['wall_and_hex_s'] || t['wall_analysis_s'] %>s</div>
+      </div>
+      <div class="stat py-2 px-4 bg-base-300">
+        <div class="stat-title text-xs">Total</div>
+        <div class="stat-value text-lg font-bold"><%= t['total_s'] %>s</div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- 0. Image Generation Prompt & Validation -->
+  <% if @inspect_data['image_prompt'] || @inspect_data['validation'] || @inspect_data['shadow_check'] %>
+    <div class="collapse collapse-arrow bg-base-200 mb-3">
+      <input type="checkbox" checked />
+      <div class="collapse-title font-semibold flex items-center gap-2">
+        <span class="badge badge-primary badge-sm">0</span>
+        Image Generation
+      </div>
+      <div class="collapse-content space-y-4">
+        <% if @inspect_data['image_prompt'] %>
+          <div>
+            <div class="text-xs font-semibold text-base-content/60 mb-1">Prompt Sent</div>
+            <pre class="bg-base-300 p-3 rounded text-xs overflow-x-auto whitespace-pre-wrap max-h-64"><%= h @inspect_data['image_prompt'] %></pre>
+          </div>
+        <% end %>
+        <% if @inspect_data['validation'] %>
+          <% v = @inspect_data['validation'] %>
+          <div>
+            <div class="text-xs font-semibold text-base-content/60 mb-1">Verifier Response</div>
+            <div class="flex items-start gap-2">
+              <span class="badge <%= v['pass'] ? 'badge-success' : 'badge-error' %>"><%= v['pass'] ? 'PASS' : 'FAIL' %></span>
+              <span class="text-sm"><%= h v['reason'] %></span>
+            </div>
+          </div>
+        <% end %>
+        <% if @inspect_data['shadow_check'] %>
+          <% s = @inspect_data['shadow_check'] %>
+          <div>
+            <div class="text-xs font-semibold text-base-content/60 mb-1">Shadow Check</div>
+            <div class="flex items-start gap-2">
+              <span class="badge <%= s['has_shadows'] ? 'badge-warning' : 'badge-success' %>"><%= s['has_shadows'] ? 'SHADOWS' : 'CLEAN' %></span>
+              <span class="text-sm"><%= h s['reason'] %></span>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- 1. Image Pipeline -->
+  <% unless pipeline_images.empty? && final_images.empty? %>
+    <div class="collapse collapse-arrow bg-base-200 mb-3">
+      <input type="checkbox" checked />
+      <div class="collapse-title font-semibold flex items-center gap-2">
+        <span class="badge badge-primary badge-sm">1</span>
+        Image Pipeline
+      </div>
+      <div class="collapse-content">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <% (pipeline_images + final_images).each do |artifact| %>
+            <div>
+              <img src="<%= artifact[:url] %>" class="rounded cursor-pointer hover:ring-2 hover:ring-primary w-full" onclick="showLightbox(this.src)" />
+              <div class="text-xs text-base-content/50 mt-1 text-center truncate"><%= artifact[:filename] %></div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- 2. Edge & Depth -->
+  <% unless edge_depth.empty? %>
+    <div class="collapse collapse-arrow bg-base-200 mb-3">
+      <input type="checkbox" checked />
+      <div class="collapse-title font-semibold flex items-center gap-2">
+        <span class="badge badge-primary badge-sm">2</span>
+        Edge &amp; Depth Maps
+      </div>
+      <div class="collapse-content">
+        <div class="grid grid-cols-2 gap-4">
+          <% edge_depth.each do |artifact| %>
+            <div>
+              <img src="<%= artifact[:url] %>" class="rounded cursor-pointer hover:ring-2 hover:ring-primary w-full" onclick="showLightbox(this.src)" />
+              <div class="text-xs text-base-content/50 mt-1 text-center"><%= artifact[:filename] %></div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- 3. Zone Map -->
+  <% unless zone_images.empty? %>
+    <div class="collapse collapse-arrow bg-base-200 mb-3">
+      <input type="checkbox" checked />
+      <div class="collapse-title font-semibold flex items-center gap-2">
+        <span class="badge badge-primary badge-sm">3</span>
+        Zone Map
+      </div>
+      <div class="collapse-content">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <% zone_images.each do |artifact| %>
+            <%
+              label = artifact[:filename]
+                .sub(/\Azone_/, '')
+                .sub(/\.(png|jpg|webp)\z/, '')
+                .gsub('_', ' ')
+                .split.map(&:capitalize).join(' ')
+            %>
+            <div>
+              <img src="<%= artifact[:url] %>" class="rounded cursor-pointer hover:ring-2 hover:ring-primary w-full" onclick="showLightbox(this.src)" />
+              <div class="text-xs text-base-content/50 mt-1 text-center"><%= label %></div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- 4. Grid Classification (L1) -->
+  <% l1_data = @inspect_data['l1'] %>
+  <% unless l1_images.empty? && l1_data.nil? %>
+    <div class="collapse collapse-arrow bg-base-200 mb-3">
+      <input type="checkbox" checked />
+      <div class="collapse-title font-semibold flex items-center gap-2">
+        <span class="badge badge-primary badge-sm">4</span>
+        Grid Classification (L1)
+      </div>
+      <div class="collapse-content">
+        <% unless l1_images.empty? %>
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <% l1_images.each do |artifact| %>
+              <div>
+                <img src="<%= artifact[:url] %>" class="rounded cursor-pointer hover:ring-2 hover:ring-primary w-full" onclick="showLightbox(this.src)" />
+                <div class="text-xs text-base-content/50 mt-1 text-center"><%= artifact[:filename] %></div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <% if l1_data %>
+          <%# Wall structure flags + scene row %>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+            <% if l1_data['scene_description'] %>
+              <div>
+                <div class="text-xs font-semibold text-base-content/60 mb-1">Scene Description</div>
+                <p class="text-sm"><%= h l1_data['scene_description'] %></p>
+              </div>
+            <% end %>
+            <div class="space-y-2">
+              <%# Perimeter / inner wall flags %>
+              <div class="flex flex-wrap gap-2 items-center">
+                <% pw = l1_data['has_perimeter_wall'] %>
+                <% unless pw.nil? %>
+                  <span class="badge <%= pw ? 'badge-success' : 'badge-ghost' %>">
+                    <i class="bi bi-bounding-box mr-1"></i> perimeter wall: <%= pw ? 'yes' : 'no' %>
+                  </span>
+                <% end %>
+                <% iw = l1_data['has_inner_walls'] %>
+                <% unless iw.nil? %>
+                  <span class="badge <%= iw ? 'badge-warning' : 'badge-ghost' %>">
+                    <i class="bi bi-layout-split mr-1"></i> inner walls: <%= iw ? 'yes' : 'no' %>
+                  </span>
+                <% end %>
+              </div>
+              <%# Perimeter doors hint %>
+              <% if l1_data['perimeter_wall_doors'] && !l1_data['perimeter_wall_doors'].empty? %>
+                <div>
+                  <span class="text-xs text-base-content/50 mr-1">perimeter doors:</span>
+                  <% l1_data['perimeter_wall_doors'].each do |d| %>
+                    <span class="badge badge-xs badge-outline"><%= h d %></span>
+                  <% end %>
+                </div>
+              <% end %>
+              <%# Internal walls hint %>
+              <% if l1_data['internal_walls'] && !l1_data['internal_walls'].empty? %>
+                <div>
+                  <span class="text-xs text-base-content/50 mr-1">internal walls:</span>
+                  <% l1_data['internal_walls'].each do |iwall| %>
+                    <span class="badge badge-xs badge-outline">
+                      <%= h iwall['location'] %>
+                      <% if iwall['has_door'] %>→ door <%= h iwall['door_side'] %><% end %>
+                    </span>
+                  <% end %>
+                </div>
+              <% end %>
+              <%# Visuals %>
+              <% if l1_data['wall_visual'] %>
+                <div><span class="text-xs text-base-content/50">walls: </span><span class="text-xs"><%= h l1_data['wall_visual'] %></span></div>
+              <% end %>
+              <% if l1_data['floor_visual'] %>
+                <div><span class="text-xs text-base-content/50">floor: </span><span class="text-xs"><%= h l1_data['floor_visual'] %></span></div>
+              <% end %>
+              <% if l1_data['lighting_direction'] %>
+                <div><span class="text-xs text-base-content/50">lighting: </span><span class="text-xs"><%= h l1_data['lighting_direction'] %></span></div>
+              <% end %>
+            </div>
+          </div>
+
+          <%# Standard types %>
+          <% if l1_data['standard_types'] && !l1_data['standard_types'].empty? %>
+            <div class="mt-2">
+              <div class="text-xs font-semibold text-base-content/60 mb-1">Standard Types</div>
+              <div class="flex flex-col gap-1">
+                <% l1_data['standard_types'].each do |t| %>
+                  <% name = t.is_a?(Hash) ? t['type_name'] : t.to_s %>
+                  <div class="flex flex-wrap items-baseline gap-2 text-xs">
+                    <span class="badge badge-sm badge-info"><%= h name %></span>
+                    <% if t.is_a?(Hash) %>
+                      <% if t['short_description'] %>
+                        <span class="font-mono text-warning/80">"<%= h t['short_description'] %>"</span>
+                      <% end %>
+                      <% if t['visual_description'] %>
+                        <span class="text-base-content/50"><%= h t['visual_description'] %></span>
+                      <% end %>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <%# Custom types %>
+          <% if l1_data['custom_types'] && !l1_data['custom_types'].empty? %>
+            <div class="mt-2">
+              <div class="text-xs font-semibold text-base-content/60 mb-1">Custom Types</div>
+              <div class="flex flex-col gap-2">
+                <% l1_data['custom_types'].each do |t| %>
+                  <% type_name = t.is_a?(Hash) ? t['type_name'] : t.to_s %>
+                  <div class="bg-base-300 rounded p-2 text-xs">
+                    <div class="flex flex-wrap items-center gap-1 mb-1">
+                      <span class="badge badge-sm badge-warning"><%= h type_name %></span>
+                      <% if t.is_a?(Hash) %>
+                        <% if t['provides_cover'] %>    <span class="badge badge-xs badge-info">cover</span>        <% end %>
+                        <% if t['provides_concealment'] %><span class="badge badge-xs badge-success">concealment</span><% end %>
+                        <% if t['difficult_terrain'] %> <span class="badge badge-xs badge-ghost">difficult</span>    <% end %>
+                        <% if t['elevation'].to_i != 0 %><span class="badge badge-xs badge-ghost">elev <%= h t['elevation'] %>ft</span><% end %>
+                        <% if t['is_exit'] %>           <span class="badge badge-xs badge-error">exit</span>         <% end %>
+                        <% if t['hazards'] && !t['hazards'].empty? %><span class="badge badge-xs badge-error"><%= h t['hazards'].join(', ') %></span><% end %>
+                      <% end %>
+                    </div>
+                    <% if t.is_a?(Hash) %>
+                      <% if t['short_description'] %>
+                        <span class="font-mono text-warning/80">"<%= h t['short_description'] %>"</span>
+                      <% end %>
+                      <% if t['visual_description'] %>
+                        <span class="text-base-content/50 ml-1"><%= h t['visual_description'] %></span>
+                      <% end %>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <%# Light sources %>
+          <% if l1_data['light_sources'] && !l1_data['light_sources'].empty? %>
+            <div class="mt-2">
+              <div class="text-xs font-semibold text-base-content/60 mb-1">Light Sources</div>
+              <div class="flex flex-col gap-1">
+                <% l1_data['light_sources'].each do |ls| %>
+                  <% if ls.is_a?(Hash) %>
+                    <div class="flex flex-wrap items-baseline gap-2 text-xs">
+                      <span class="badge badge-xs badge-ghost"><i class="bi bi-lightbulb mr-1"></i><%= h ls['source_type'] %></span>
+                      <% if ls['short_description'] %>
+                        <span class="font-mono text-warning/80">"<%= h ls['short_description'] %>"</span>
+                      <% end %>
+                      <% if ls['description'] %>
+                        <span class="text-base-content/50"><%= h ls['description'] %></span>
+                      <% end %>
+                      <% if ls['squares'] && !ls['squares'].empty? %>
+                        <span class="text-base-content/40">sq <%= ls['squares'].join(',') %></span>
+                      <% end %>
+                    </div>
+                  <% else %>
+                    <span class="badge badge-sm badge-ghost text-xs"><i class="bi bi-lightbulb mr-1"></i><%= h ls.to_s %></span>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- 5. Raw Classification -->
+  <% pre_norm = @inspect_data['pre_normalization'] %>
+  <% pre_norm = pre_norm['distribution'] if pre_norm.is_a?(Hash) && pre_norm.key?('distribution') %>
+  <% unless classify_images.empty? && pre_norm.nil? %>
+    <div class="collapse collapse-arrow bg-base-200 mb-3">
+      <input type="checkbox" checked />
+      <div class="collapse-title font-semibold flex items-center gap-2">
+        <span class="badge badge-primary badge-sm">5</span>
+        Raw Classification
+      </div>
+      <div class="collapse-content">
+        <% unless classify_images.empty? %>
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <% classify_images.each do |artifact| %>
+              <div>
+                <img src="<%= artifact[:url] %>" class="rounded cursor-pointer hover:ring-2 hover:ring-primary w-full" onclick="showLightbox(this.src)" />
+                <div class="text-xs text-base-content/50 mt-1 text-center"><%= artifact[:filename] %></div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <% if pre_norm && !pre_norm.empty? %>
+          <div class="text-xs font-semibold text-base-content/60 mb-2">Pre-Normalization Distribution</div>
+          <div class="flex flex-wrap gap-1">
+            <% pre_norm.sort_by { |_type, count| -count.to_i }.each do |type, count| %>
+              <span class="badge badge-sm"><%= h type %>: <%= count %></span>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- 6. Normalization Passes -->
+  <% norm_passes = @inspect_data['normalization_passes'] %>
+  <% unless norm_images.empty? && norm_passes.nil? %>
+    <div class="collapse collapse-arrow bg-base-200 mb-3">
+      <input type="checkbox" checked />
+      <div class="collapse-title font-semibold flex items-center gap-2">
+        <span class="badge badge-primary badge-sm">6</span>
+        Normalization Passes
+      </div>
+      <div class="collapse-content">
+        <% if norm_passes && !norm_passes.empty? %>
+          <div class="mb-4">
+            <div class="text-xs font-semibold text-base-content/60 mb-2">Pass Summary</div>
+            <div class="flex flex-wrap gap-1">
+              <% norm_passes.each do |pass| %>
+                <% pass_name = pass.is_a?(Hash) ? (pass['name'] || pass['pass']) : pass.to_s %>
+                <% pass_count = pass.is_a?(Hash) ? pass['changes'] : nil %>
+                <span class="badge badge-sm badge-outline">
+                  <%= h pass_name %>
+                  <% if pass_count %>
+                    <span class="ml-1 badge badge-xs badge-accent"><%= pass_count %></span>
+                  <% end %>
+                </span>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <% unless norm_images.empty? %>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <% norm_images.each_with_index do |artifact, idx| %>
+              <div class="<%= idx == norm_images.length - 1 ? 'ring-2 ring-success rounded' : '' %>">
+                <img src="<%= artifact[:url] %>" class="rounded cursor-pointer hover:ring-2 hover:ring-primary w-full" onclick="showLightbox(this.src)" />
+                <div class="text-xs text-base-content/50 mt-1 text-center">
+                  <%= artifact[:filename] %>
+                  <% if idx == norm_images.length - 1 %>
+                    <span class="badge badge-xs badge-success ml-1">final</span>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- 7. Post-Normalization Distribution -->
+  <% post_norm = @inspect_data['post_normalization'] %>
+  <% post_norm = post_norm['distribution'] if post_norm.is_a?(Hash) && post_norm.key?('distribution') %>
+  <% if post_norm && !post_norm.empty? %>
+    <div class="collapse collapse-arrow bg-base-200 mb-3">
+      <input type="checkbox" checked />
+      <div class="collapse-title font-semibold flex items-center gap-2">
+        <span class="badge badge-primary badge-sm">7</span>
+        Post-Normalization Distribution
+      </div>
+      <div class="collapse-content">
+        <div class="flex flex-wrap gap-1">
+          <% post_norm.sort_by { |_type, count| -count.to_i }.each do |type, count| %>
+            <span class="badge badge-sm"><%= h type %>: <%= count %></span>
+          <% end %>
+        </div>
+        <% if pre_norm && !pre_norm.empty? %>
+          <div class="mt-3 text-xs text-base-content/50">
+            <span class="font-semibold">Delta from raw:</span>
+            <% all_types = (pre_norm.keys + post_norm.keys).uniq.sort %>
+            <% all_types.each do |type| %>
+              <% before = pre_norm[type].to_i %>
+              <% after = post_norm[type].to_i %>
+              <% diff = after - before %>
+              <% next if diff == 0 %>
+              <span class="inline-block mr-2">
+                <%= type %>:
+                <span class="<%= diff > 0 ? 'text-success' : 'text-error' %>">
+                  <%= diff > 0 ? "+#{diff}" : diff %>
+                </span>
+              </span>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- 8. SAM Object Segmentation -->
+  <% unless sam_images.empty? && sam_composite.nil? && lang_sam_images.empty? %>
+    <div class="collapse collapse-arrow bg-base-200 mb-3">
+      <input type="checkbox" checked />
+      <div class="collapse-title font-semibold flex items-center gap-2">
+        <span class="badge badge-primary badge-sm">8</span>
+        SAM Object Segmentation
+      </div>
+      <div class="collapse-content space-y-4">
+        <% if sam_composite || sam_model_composite %>
+          <%
+            processed_map = @artifacts.find { |a| a[:filename] == '03_processed_battlemap.png' }
+          %>
+          <% if processed_map %>
+            <div class="text-xs text-base-content/50 mb-2">All composites below are overlaid on the shadow-removed battlemap (<code>03_processed_battlemap.png</code>).</div>
+          <% end %>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <% if processed_map %>
+              <div>
+                <div class="text-xs font-semibold text-base-content/60 mb-1">Base map (shadow-removed)</div>
+                <img src="<%= processed_map[:url] %>" class="rounded cursor-pointer hover:ring-2 hover:ring-base-content w-full" onclick="showLightbox(this.src)" />
+              </div>
+            <% end %>
+            <% if sam_composite %>
+              <div>
+                <div class="text-xs font-semibold text-base-content/60 mb-1">Composite (by object type)</div>
+                <img src="<%= sam_composite[:url] %>" class="rounded cursor-pointer hover:ring-2 hover:ring-primary w-full" onclick="showLightbox(this.src)" />
+              </div>
+            <% end %>
+            <% if sam_model_composite %>
+              <div>
+                <div class="text-xs font-semibold text-base-content/60 mb-1">Composite (by model) <span class="ml-2 badge badge-xs badge-success">SAM2G</span> <span class="badge badge-xs" style="background:#00ffff;color:#000">Lang-SAM</span> <span class="badge badge-xs badge-warning">Grounded</span></div>
+                <img src="<%= sam_model_composite[:url] %>" class="rounded cursor-pointer hover:ring-2 hover:ring-primary w-full" onclick="showLightbox(this.src)" />
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <% unless sam_images.empty? %>
+          <div>
+            <div class="text-xs font-semibold text-base-content/60 mb-2">Per-Object Masks</div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <% sam_images.each do |artifact| %>
+                <%
+                  type_key = artifact[:filename].sub(/\Asam_/, '').sub(/\.png\z/, '')
+                  # sam_results keys may use spaces (grounded labels) or underscores (type_names) — try both
+                  meta = sam_results_meta[type_key] || sam_results_meta[type_key.tr('_', ' ')] || {}
+                  model_str = meta['method']
+                  model_badge = case model_str
+                    when 'samg'        then ['badge-success', 'SAM2G']
+                    when 'lang_sam'    then ['badge-warning', 'Lang-SAM']
+                    when 'sam2grounded'then ['badge-info',    'Grounded']
+                    else                    ['badge-neutral',  '?']
+                  end
+                  coverage_pct = meta['coverage'] ? "#{(meta['coverage'].to_f * 100).round(1)}%" : nil
+                %>
+                <div>
+                  <div class="relative">
+                    <img src="<%= artifact[:url] %>" class="rounded cursor-pointer hover:ring-2 hover:ring-primary w-full" onclick="showLightbox(this.src)" />
+                    <span class="absolute top-1 right-1 badge <%= model_badge[0] %> badge-xs"><%= model_badge[1] %></span>
+                  </div>
+                  <div class="text-xs text-base-content/50 mt-1 text-center">
+                    <%= type_key.gsub('_', ' ') %>
+                    <% if coverage_pct %><span class="text-base-content/30">(<%= coverage_pct %>)</span><% end %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <% unless lang_sam_images.empty? %>
+          <div>
+            <div class="text-xs font-semibold text-base-content/60 mb-2">Lang-SAM Fallback Masks</div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <% lang_sam_images.each do |artifact| %>
+                <%
+                  type_key = artifact[:filename].sub(/\Alang_sam_/, '').sub(/\.png\z/, '')
+                  meta = sam_results_meta[type_key] || {}
+                  coverage_pct = meta['coverage'] ? "#{(meta['coverage'].to_f * 100).round(1)}%" : nil
+                %>
+                <div>
+                  <div class="relative">
+                    <img src="<%= artifact[:url] %>" class="rounded cursor-pointer hover:ring-2 hover:ring-primary w-full" onclick="showLightbox(this.src)" />
+                    <span class="absolute top-1 right-1 badge badge-warning badge-xs">Lang-SAM</span>
+                  </div>
+                  <div class="text-xs text-base-content/50 mt-1 text-center">
+                    <%= type_key.gsub('_', ' ') %>
+                    <% if coverage_pct %><span class="text-base-content/30">(<%= coverage_pct %>)</span><% end %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- 8b. SAM2Grounded Raw Detections -->
+  <% unless grounded_images.empty? && grounded_meta.empty? %>
+    <div class="collapse collapse-arrow bg-base-200 mb-3">
+      <input type="checkbox" checked />
+      <div class="collapse-title font-semibold flex items-center gap-2">
+        <span class="badge badge-info badge-sm">G</span>
+        SAM2Grounded Raw Detections
+      </div>
+      <div class="collapse-content space-y-3">
+        <% unless grounded_meta.empty? %>
+          <div>
+            <div class="text-xs font-semibold text-base-content/60 mb-2">All Detections (threshold 0.25)</div>
+            <div class="flex flex-wrap gap-1">
+              <% grounded_meta.sort_by { |d| -(d['confidence'] || 0) }.each do |d| %>
+                <span class="badge badge-sm badge-outline">
+                  <%= h d['label'] %>
+                  <span class="ml-1 opacity-70"><%= (d['confidence'].to_f * 100).round(0) %>%</span>
+                  <% if d['coverage'] %>
+                    <span class="ml-1 opacity-50 text-xs">cov <%= (d['coverage'].to_f * 100).round(1) %>%</span>
+                  <% end %>
+                </span>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <% unless grounded_images.empty? %>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <% grounded_images.each do |artifact| %>
+              <%
+                # Filename: grounded_{label}_{conf}pct.png
+                parts = artifact[:filename].sub(/\Agrounded_/, '').sub(/\.png\z/, '').split('_')
+                conf_part = parts.last&.match?(/\d+pct/) ? parts.pop : nil
+                label_display = parts.join(' ')
+              %>
+              <div>
+                <img src="<%= artifact[:url] %>" class="rounded cursor-pointer hover:ring-2 hover:ring-info w-full" onclick="showLightbox(this.src)" />
+                <div class="text-xs text-base-content/50 mt-1 text-center">
+                  <%= h label_display %>
+                  <% if conf_part %><span class="text-info/60 ml-1"><%= conf_part.sub('pct','%') %></span><% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Wall Gap Detections (V2) -->
+  <% if wall_gaps_artifact || wall_gaps_data %>
+    <div class="collapse collapse-arrow bg-base-200 mb-3">
+      <input type="checkbox" checked />
+      <div class="collapse-title font-semibold flex items-center gap-2">
+        <span class="badge badge-secondary badge-sm">G</span>
+        Wall Gap Detections
+        <% if wall_gaps_data %>
+          <%
+            outer_count = (wall_gaps_data['outer_gaps'] || []).length
+            inner_count = (wall_gaps_data['inner_gaps'] || []).length
+          %>
+          <span class="badge badge-sm badge-outline"><%= outer_count %> outer</span>
+          <span class="badge badge-sm badge-outline"><%= inner_count %> inner</span>
+        <% end %>
+      </div>
+      <div class="collapse-content space-y-3">
+        <% if wall_gaps_artifact %>
+          <img src="<%= wall_gaps_artifact[:url] %>" class="rounded cursor-pointer hover:ring-2 hover:ring-secondary w-full max-w-2xl" onclick="showLightbox(this.src)" />
+          <div class="text-xs text-base-content/50">Cyan = outer perimeter gaps (doors), Blue = inner wall gaps</div>
+        <% end %>
+        <% if wall_gaps_data %>
+          <% ['outer_gaps', 'inner_gaps'].each do |key| %>
+            <% gaps = wall_gaps_data[key] || [] %>
+            <% next if gaps.empty? %>
+            <div>
+              <div class="text-xs font-semibold text-base-content/60 mb-1"><%= key.gsub('_', ' ').capitalize %></div>
+              <div class="flex flex-wrap gap-1">
+                <% gaps.each do |g| %>
+                  <span class="badge badge-sm badge-outline font-mono">
+                    (<%= g['cx'] %>, <%= g['cy'] %>) len=<%= g['length'] %>px
+                    <% if g['axis'] %>
+                      <span class="ml-1 opacity-60"><%= g['axis'] == 1 ? 'vert' : 'horiz' %></span>
+                    <% end %>
+                  </span>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+          <% if wall_gaps_data['label_counts'] %>
+            <div class="text-xs text-base-content/50">
+              <% wall_gaps_data['label_counts'].each do |label, count| %>
+                <span class="mr-3"><%= label.gsub('_', ' ') %>: <%= count %>px</span>
+              <% end %>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Wall Analysis (V2) -->
+  <% unless wall_images.empty? %>
+    <div class="collapse collapse-arrow bg-base-200 mb-3">
+      <input type="checkbox" checked />
+      <div class="collapse-title font-semibold flex items-center gap-2">
+        <span class="badge badge-secondary badge-sm">W</span>
+        Wall Analysis
+      </div>
+      <div class="collapse-content">
+        <% if depth_map_artifact %>
+          <div class="mb-4">
+            <div class="text-xs font-semibold text-base-content/60 mb-1">Depth Map (used as wall classification signal)</div>
+            <img src="<%= depth_map_artifact[:url] %>" class="rounded cursor-pointer hover:ring-2 hover:ring-primary w-full max-w-xl" onclick="showLightbox(this.src)" />
+            <div class="text-xs text-base-content/50 mt-1">Pixels near median brightness (floor) get a higher classification threshold; pixels far from median (walls/edges) get a lower threshold.</div>
+          </div>
+        <% end %>
+        <% if depth_elevation_artifact %>
+          <div class="mb-4">
+            <div class="text-xs font-semibold text-base-content/60 mb-1">Elevation Bands (from depth clustering)</div>
+            <img src="<%= depth_elevation_artifact[:url] %>" class="rounded cursor-pointer hover:ring-2 hover:ring-primary w-full max-w-xl" onclick="showLightbox(this.src)" />
+            <% if elevation_results && !elevation_results['skipped'] %>
+              <div class="text-xs text-base-content/50 mt-1">
+                k=<%= elevation_results['k_chosen'] %> bands
+                (silhouette=<%= elevation_results['silhouette_score'] %>).
+                <% (elevation_results['platforms'] || []).each do |p| %>
+                  Band <%= p['band'] %>: elev=<%= p['elevation'] %> (<%= p['hex_count'] %> hexes).
+                <% end %>
+                <% if (elevation_results['anchors_used'] || []).any? %>
+                  Anchors: <%= elevation_results['anchors_used'].join('; ') %>.
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+        <div class="grid grid-cols-2 gap-4">
+          <% wall_images.each do |artifact| %>
+            <%
+              label = artifact[:filename]
+                .sub(/\Awall_/, '')
+                .sub(/\.(png|jpg|webp)\z/, '')
+                .gsub('_', ' ')
+                .split.map(&:capitalize).join(' ')
+            %>
+            <div>
+              <div class="text-xs font-semibold text-base-content/60 mb-1"><%= label %></div>
+              <img src="<%= artifact[:url] %>" class="rounded cursor-pointer hover:ring-2 hover:ring-primary w-full" onclick="showLightbox(this.src)" />
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Hex Visualizations (V2) -->
+  <% unless hex_images.empty? %>
+    <div class="collapse collapse-arrow bg-base-200 mb-3">
+      <input type="checkbox" checked />
+      <div class="collapse-title font-semibold flex items-center gap-2">
+        <span class="badge badge-accent badge-sm">H</span>
+        Hex Visualizations
+      </div>
+      <div class="collapse-content">
+        <div class="grid grid-cols-2 gap-4">
+          <% hex_images.each do |artifact| %>
+            <%
+              label = artifact[:filename]
+                .sub(/\Ahex_/, '')
+                .sub(/\.png\z/, '')
+                .gsub('_', ' ')
+                .split.map(&:capitalize).join(' ')
+            %>
+            <div>
+              <div class="text-xs font-semibold text-base-content/60 mb-1"><%= label %></div>
+              <img src="<%= artifact[:url] %>" class="rounded cursor-pointer hover:ring-2 hover:ring-accent w-full" onclick="showLightbox(this.src)" />
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- 9. All Artifacts -->
+  <div class="collapse collapse-arrow bg-base-200 mb-3">
+    <input type="checkbox" />
+    <div class="collapse-title font-semibold flex items-center gap-2">
+      <span class="badge badge-neutral badge-sm"><%= @artifacts.length %></span>
+      All Artifacts
+    </div>
+    <div class="collapse-content">
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <% @artifacts.each do |artifact| %>
+          <div>
+            <img src="<%= artifact[:url] %>" class="rounded cursor-pointer hover:ring-2 hover:ring-primary w-full" onclick="showLightbox(this.src)" />
+            <div class="text-xs text-base-content/50 mt-1 text-center truncate"><%= artifact[:filename] %></div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Raw JSON Data -->
+  <% unless @inspect_data.empty? %>
+    <div class="collapse collapse-arrow bg-base-200 mb-3">
+      <input type="checkbox" />
+      <div class="collapse-title font-semibold flex items-center gap-2">
+        <span class="badge badge-neutral badge-sm">JSON</span>
+        Raw Inspection Data
+      </div>
+      <div class="collapse-content">
+        <pre class="bg-base-300 p-4 rounded text-xs overflow-x-auto max-h-96"><%= h JSON.pretty_generate(@inspect_data) %></pre>
+      </div>
+    </div>
+  <% end %>
+
+<% end %>
+
+<!-- Lightbox Modal -->
+<dialog id="lightbox_modal" class="modal">
+  <div class="modal-box max-w-6xl bg-base-300 p-2">
+    <img id="lightbox_img" src="" class="w-full" />
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<script>
+function showLightbox(src) {
+  document.getElementById('lightbox_img').src = src;
+  document.getElementById('lightbox_modal').showModal();
+}
+</script>
+
+<%= admin_content_end %>

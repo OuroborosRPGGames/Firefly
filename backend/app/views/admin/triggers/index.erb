@@ -1,0 +1,97 @@
+<% @page_title = 'Triggers - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Triggers', path: '/admin/triggers' }] %>
+
+<%= admin_content_start %>
+      <h2 class="text-2xl font-bold mb-6">Triggers</h2>
+
+      <div class="flex justify-between mb-4">
+        <a href="/admin/triggers/new" class="btn btn-primary">
+          <i class="bi bi-plus-lg mr-1"></i>New Trigger
+        </a>
+        <a href="/admin/trigger-activations" class="btn btn-outline btn-secondary">
+          <i class="bi bi-clock-history mr-1"></i>View All Activations
+        </a>
+      </div>
+
+      <% if @triggers.empty? %>
+        <%= partial 'shared/empty_state', locals: { message: 'No triggers defined yet.', link: '/admin/triggers/new', link_text: 'Create your first trigger' } %>
+      <% else %>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Condition</th>
+                <th>Action</th>
+                <th>Status</th>
+                <th>Activations</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @triggers.each do |trigger| %>
+                <tr>
+                  <td><%= h trigger.name %></td>
+                  <td>
+                    <%
+                      color = case trigger.trigger_type
+                              when 'mission' then 'primary'
+                              when 'npc' then 'warning'
+                              when 'world_memory' then 'info'
+                              when 'clue_share' then 'success'
+                              else 'neutral'
+                              end
+                    %>
+                    <span class="badge badge-<%= color %>">
+                      <%= trigger.trigger_type %>
+                    </span>
+                  </td>
+                  <td>
+                    <span class="text-base-content/70 text-sm"><%= trigger.condition_type %></span>
+                    <% if trigger.condition_value && !trigger.condition_value.empty? %>
+                      <%
+                        cv = trigger.condition_value
+                        truncated_cv = cv.length > 30 ? cv[0, 30] + '...' : cv
+                      %>
+                      <br><code class="text-xs"><%= truncated_cv %></code>
+                    <% end %>
+                  </td>
+                  <td>
+                    <span class="badge badge-neutral"><%= trigger.action_type %></span>
+                    <% if trigger.send_discord %><i class="bi bi-discord ml-1" title="Discord"></i><% end %>
+                    <% if trigger.send_email %><i class="bi bi-envelope ml-1" title="Email"></i><% end %>
+                  </td>
+                  <td>
+                    <% if trigger.is_active %>
+                      <span class="badge badge-success">Active</span>
+                    <% else %>
+                      <span class="badge badge-neutral">Inactive</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <a href="/admin/triggers/<%= trigger.id %>/activations" class="link link-hover">
+                      <%= trigger.activation_count %>
+                    </a>
+                  </td>
+                  <td>
+                    <div class="join">
+                      <a href="/admin/triggers/<%= trigger.id %>" class="btn btn-outline btn-primary btn-sm join-item" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </a>
+                      <form action="/admin/triggers/<%= trigger.id %>/toggle" method="post" class="inline">
+                        <button type="submit" class="btn btn-outline btn-<%= trigger.is_active ? 'warning' : 'success' %> btn-sm join-item"
+                                title="<%= trigger.is_active ? 'Disable' : 'Enable' %>">
+                          <i class="bi bi-<%= trigger.is_active ? 'pause' : 'play' %>"></i>
+                        </button>
+                      </form>
+                      <%= partial 'admin/delete_button', locals: { path: "/admin/triggers/#{trigger.id}/delete", label: 'trigger' } %>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+<%= admin_content_end %>

@@ -1,0 +1,280 @@
+<% @page_title = 'Mission Generator - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Mission Generator' }] %>
+
+<%= admin_content_start %>
+      <div class="mb-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <h1 class="text-2xl font-bold"><i class="bi bi-bullseye mr-2"></i>Mission Generator</h1>
+            <p class="text-base-content/70">LLM-powered mission creation with multi-model pipeline</p>
+          </div>
+          <div>
+            <% if @models_available && @models_available[:available] %>
+              <span class="badge badge-success"><i class="bi bi-check-circle mr-1"></i>AI Available</span>
+            <% else %>
+              <span class="badge badge-error"><i class="bi bi-x-circle mr-1"></i>AI Unavailable</span>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <!-- Generation Form -->
+        <div class="lg:col-span-2">
+          <div class="card bg-base-200 shadow-lg">
+            <div class="p-4 border-b border-base-content/10 bg-primary text-primary-content font-semibold">
+              <i class="bi bi-magic mr-2"></i>Create New Mission
+            </div>
+            <div class="card-body">
+              <form action="/admin/mission_generator" method="post">
+                <!-- Mission Description -->
+                <div class="form-control mb-4">
+                  <label class="label">
+                    <span class="label-text text-lg font-semibold">Mission Description</span>
+                  </label>
+                  <p class="text-base-content/70 text-sm mb-2">Describe the mission concept. Be creative - include themes, objectives, locations, and any key elements you want.</p>
+                  <textarea name="description" class="textarea textarea-bordered w-full"
+                            rows="5" placeholder="A heist to steal the Duke's secret ledger from his fortified manor. The party must infiltrate during a masquerade ball, navigate treacherous guards, and escape with the evidence of his corruption..."
+                            required minlength="10"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <!-- Universe -->
+                  <div class="form-control">
+                    <label class="label"><span class="label-text">Universe</span></label>
+                    <select name="universe_id" id="universe_select" class="select select-bordered w-full" onchange="loadStatBlocks()">
+                      <option value="">-- None (no stats) --</option>
+                      <% (@universes || []).each do |u| %>
+                        <option value="<%= u.id %>"><%= u.name %></option>
+                      <% end %>
+                    </select>
+                    <label class="label"><span class="label-text-alt text-base-content/60">Stats for dice rolls</span></label>
+                  </div>
+
+                  <!-- Stat Block (populated by JS) -->
+                  <div class="form-control">
+                    <label class="label"><span class="label-text">Stat Block</span></label>
+                    <select name="stat_block_id" id="stat_block_select" class="select select-bordered w-full">
+                      <option value="">-- Select Universe First --</option>
+                    </select>
+                  </div>
+
+                  <!-- Activity Type -->
+                  <div class="form-control">
+                    <label class="label"><span class="label-text">Activity Type</span></label>
+                    <select name="activity_type" class="select select-bordered w-full">
+                      <option value="mission" selected>Mission</option>
+                      <option value="adventure">Adventure</option>
+                      <option value="encounter">Encounter</option>
+                      <option value="survival">Survival</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <!-- Setting -->
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text">Setting</span>
+                    </label>
+                    <select name="setting" class="select select-bordered w-full">
+                      <% (@settings || [:fantasy]).each do |setting| %>
+                        <option value="<%= setting %>" <%= setting == :fantasy ? 'selected' : '' %>>
+                          <%= setting.to_s.split('_').map(&:capitalize).join(' ') %>
+                        </option>
+                      <% end %>
+                    </select>
+                  </div>
+
+                  <!-- Difficulty -->
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text">Difficulty</span>
+                    </label>
+                    <select name="difficulty" class="select select-bordered w-full">
+                      <% (@difficulties || [:normal]).each do |diff| %>
+                        <option value="<%= diff %>" <%= diff == :normal ? 'selected' : '' %>>
+                          <%= diff.to_s.capitalize %>
+                        </option>
+                      <% end %>
+                    </select>
+                    <label class="label">
+                      <span class="label-text-alt text-base-content/60">Affects NPC stats and challenge DCs</span>
+                    </label>
+                  </div>
+
+                  <!-- Location Mode -->
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text">Location Mode</span>
+                    </label>
+                    <select name="location_mode" id="location_mode" class="select select-bordered w-full" onchange="toggleRoomSelect()">
+                      <option value="mission_specific" selected>Mission-Specific (Create rooms for this mission)</option>
+                      <option value="reusable_asset">Reusable Asset (Create a full building)</option>
+                      <option value="existing">Existing Location (Use existing rooms)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Existing Room Select (hidden by default) -->
+                <div class="form-control mb-4" id="base_room_section" style="display: none;">
+                  <label class="label">
+                    <span class="label-text">Base Location</span>
+                  </label>
+                  <select name="base_room_id" class="select select-bordered w-full">
+                    <option value="">Select a room...</option>
+                    <% (@rooms || []).each do |room| %>
+                      <option value="<%= room.id %>"><%= room.name %> (#<%= room.id %>)</option>
+                    <% end %>
+                  </select>
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/60">The mission will take place in/around this location</span>
+                  </label>
+                </div>
+
+                <!-- Options -->
+                <div class="form-control mb-4">
+                  <label class="label">
+                    <span class="label-text">Options</span>
+                  </label>
+                  <label class="label cursor-pointer justify-start gap-2">
+                    <input type="checkbox" name="generate_images" class="checkbox" id="gen_images" checked>
+                    <span class="label-text">
+                      <i class="bi bi-image mr-1"></i>Generate Images
+                      <span class="text-base-content/60">(Room backgrounds, NPC portraits, battlemaps)</span>
+                    </span>
+                  </label>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- Pipeline Info -->
+                <div class="alert alert-info mb-4">
+                  <i class="bi bi-info-circle mr-2"></i>
+                  <div>
+                    <strong>Multi-Model Pipeline:</strong> Your mission will be processed through 3 phases:
+                    <ol class="list-decimal list-inside mt-2 space-y-1">
+                      <li><strong>Brainstorm</strong> - Kimi-k2 + GPT-5.2 generate creative ideas in parallel</li>
+                      <li><strong>Synthesize</strong> - Claude Opus combines and structures the best ideas</li>
+                      <li><strong>Build</strong> - Gemini Flash creates all database records iteratively</li>
+                    </ol>
+                  </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg w-full"
+                        <%= @models_available && @models_available[:available] ? '' : 'disabled' %>>
+                  <i class="bi bi-rocket mr-2"></i>Generate Mission
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status Panel -->
+        <div class="lg:col-span-1">
+          <!-- Model Status -->
+          <div class="card bg-base-200 shadow-lg mb-4">
+            <div class="p-4 border-b border-base-content/10 font-semibold">
+              <i class="bi bi-cpu mr-2"></i>Model Status
+            </div>
+            <div class="card-body p-0">
+              <ul class="menu">
+                <li class="flex flex-row justify-between items-center px-4 py-2 border-b border-base-content/10">
+                  <span>Kimi-k2 (Brainstorm A)</span>
+                  <% if @models_available && @models_available[:models][:brainstorm_a] %>
+                    <span class="badge badge-success">Ready</span>
+                  <% else %>
+                    <span class="badge badge-error">Unavailable</span>
+                  <% end %>
+                </li>
+                <li class="flex flex-row justify-between items-center px-4 py-2 border-b border-base-content/10">
+                  <span>GPT-5.2 (Brainstorm B)</span>
+                  <% if @models_available && @models_available[:models][:brainstorm_b] %>
+                    <span class="badge badge-success">Ready</span>
+                  <% else %>
+                    <span class="badge badge-error">Unavailable</span>
+                  <% end %>
+                </li>
+                <li class="flex flex-row justify-between items-center px-4 py-2 border-b border-base-content/10">
+                  <span>Claude Opus (Synthesis)</span>
+                  <% if @models_available && @models_available[:models][:synthesis] %>
+                    <span class="badge badge-success">Ready</span>
+                  <% else %>
+                    <span class="badge badge-error">Unavailable</span>
+                  <% end %>
+                </li>
+                <li class="flex flex-row justify-between items-center px-4 py-2">
+                  <span>Gemini Flash (Builder)</span>
+                  <% if @models_available && @models_available[:models][:builder] %>
+                    <span class="badge badge-success">Ready</span>
+                  <% else %>
+                    <span class="badge badge-error">Unavailable</span>
+                  <% end %>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Active Jobs -->
+          <% if @active_jobs && @active_jobs.any? %>
+            <div class="card bg-base-200 shadow-lg border border-warning mb-4">
+              <div class="p-4 border-b border-warning bg-warning/20 font-semibold">
+                <i class="bi bi-hourglass-split mr-2"></i>Active Jobs
+              </div>
+              <div class="card-body">
+                <% @active_jobs.each do |job| %>
+                  <div class="flex justify-between items-center mb-2">
+                    <a href="/admin/mission_generator/<%= job.id %>" class="link link-primary">
+                      Job #<%= job.id %>
+                    </a>
+                    <span class="badge badge-<%= job.status == 'running' ? 'primary' : 'neutral' %>">
+                      <%= job.status.capitalize %>
+                    </span>
+                  </div>
+                  <% if job.phase %>
+                    <p class="text-sm text-base-content/60">Phase: <%= job.phase.capitalize %></p>
+                  <% end %>
+                  <div class="divider my-2"></div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <!-- Recent Jobs -->
+          <div class="card bg-base-200 shadow-lg">
+            <div class="p-4 border-b border-base-content/10 font-semibold">
+              <i class="bi bi-clock-history mr-2"></i>Recent Missions
+            </div>
+            <div class="card-body p-0">
+              <% if @recent_jobs && @recent_jobs.any? %>
+                <ul class="menu">
+                  <% @recent_jobs.each do |job| %>
+                    <li class="flex flex-row justify-between items-center px-4 py-2 border-b border-base-content/10">
+                      <div>
+                        <a href="/admin/mission_generator/<%= job.id %>" class="link link-primary">
+                          Job #<%= job.id %>
+                        </a>
+                        <br>
+                        <span class="text-sm text-base-content/60"><%= job.created_at.strftime('%b %d, %H:%M') %></span>
+                      </div>
+                      <span class="badge badge-<%= case job.status
+                                               when 'completed' then 'success'
+                                               when 'failed' then 'error'
+                                               when 'running' then 'primary'
+                                               when 'cancelled' then 'warning'
+                                               else 'neutral'
+                                               end %>">
+                        <%= job.status.capitalize %>
+                      </span>
+                    </li>
+                  <% end %>
+                </ul>
+              <% else %>
+                <div class="p-4 text-base-content/70">No missions generated yet.</div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    
+<%= admin_content_end %>

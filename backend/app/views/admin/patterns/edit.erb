@@ -1,0 +1,55 @@
+<% @page_title = "Edit Pattern ##{@pattern.id} - Admin" %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Pattern Designer', path: '/admin/patterns' }, { label: "Pattern ##{@pattern.id}" }] %>
+
+<div class="container mx-auto px-4 py-6">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Sidebar -->
+    <div class="lg:col-span-2">
+      <div class="card bg-base-200 shadow-lg">
+        <div class="card-body p-0">
+          <div class="flex items-center gap-2 px-4 py-3 border-b border-base-content/10">
+            <i class="bi bi-shield-lock text-primary"></i>
+            <h5 class="font-semibold text-base-content">Admin Console</h5>
+          </div>
+          <%= partial 'admin/sidebar' %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="lg:col-span-10">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h2 class="text-2xl font-bold flex items-center gap-2">
+          <i class="bi bi-pencil"></i>Edit Pattern #<%= @pattern.id %>
+        </h2>
+        <a href="/admin/patterns?tab=<%= @pattern.clothing? ? 'clothing' : @pattern.jewelry? ? 'jewelry' : @pattern.weapon? ? 'weapons' : @pattern.other? ? 'other' : 'consumables' %>" class="btn btn-outline btn-neutral">
+          <i class="bi bi-arrow-left"></i>Back to Patterns
+        </a>
+      </div>
+
+      <!-- Pattern Info Card -->
+      <div class="alert mb-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
+          <div>
+            <span class="font-semibold">Type:</span>
+            <span class="badge badge-primary ml-2"><%= h @pattern.unified_object_type&.name %></span>
+          </div>
+          <div>
+            <span class="font-semibold">Category:</span>
+            <span class="ml-2"><%= @pattern.clothing? ? 'Clothing' : @pattern.jewelry? ? 'Jewelry' : @pattern.weapon? ? 'Weapon' : @pattern.other? ? 'Other' : 'Consumable' %></span>
+          </div>
+          <div>
+            <span class="font-semibold">Type:</span>
+            <code class="ml-2"><%= h(@pattern.unified_object_type&.name || 'Unknown') %></code>
+          </div>
+          <div>
+            <span class="font-semibold">Items Using:</span>
+            <span class="ml-2"><%= @pattern.objects.count %></span>
+          </div>
+        </div>
+      </div>
+
+      <%= partial 'admin/patterns/form' %>
+    </div>
+  </div>
+</div>

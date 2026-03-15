@@ -1,0 +1,16 @@
+[
+  {
+    "type": "torch",
+    "color": [
+      1.0,
+      0.75,
+      0.4
+    ],
+    "center_x": 880,
+    "center_y": 527,
+    "intensity": 0.8,
+    "radius_px": 53,
+    "description": "flames burning in iron sconces on the walls",
+    "source_type": "torch"
+  }
+]

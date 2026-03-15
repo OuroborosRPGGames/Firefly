@@ -1,0 +1,868 @@
+/* Media Sync CSS - Screen sharing and YouTube watch parties */
+
+/* NOTE: Old fullscreen overlay styles removed. Now using .media-widget-base classes
+   at bottom of file for the flexible widget system (large/small modes). */
+
+.screen-share-header {
+    position: absolute;
+    top: 10px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    color: #fff;
+    font-size: 14px;
+    z-index: 10001;
+}
+
+.screen-share-header .host-name {
+    color: #4fc3f7;
+}
+
+.screen-share-header .close-btn {
+    position: absolute;
+    right: 20px;
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.screen-share-header .close-btn:hover {
+    background: rgba(255, 0, 0, 0.3);
+}
+
+/* Host Controls Overlay (for screen sharing) */
+#hostControls {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 12px 20px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    z-index: 10002;
+    backdrop-filter: blur(10px);
+}
+
+#hostControls .viewer-count {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+}
+
+#hostControls .viewer-count span {
+    color: #4fc3f7;
+    font-weight: bold;
+}
+
+#hostControls button {
+    background: #e74c3c;
+    border: none;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.2s;
+}
+
+#hostControls button:hover {
+    background: #c0392b;
+}
+
+/* YouTube Player Container - Now using .media-widget-base classes */
+#ytPlayerContainer {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* YouTube Host Controls */
+#youtubeHostControls {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 12px 20px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    z-index: 10002;
+    backdrop-filter: blur(10px);
+}
+
+#youtubeHostControls button {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+#youtubeHostControls button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+#youtubeHostControls button.active {
+    background: #ff4444;
+    border-color: #ff4444;
+}
+
+#youtubeHostControls .playback-info {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    font-family: monospace;
+}
+
+#youtubeHostControls .viewer-count {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+}
+
+#youtubeHostControls .viewer-count span {
+    color: #ff4444;
+    font-weight: bold;
+}
+
+#youtubeHostControls .stop-btn {
+    background: #e74c3c;
+}
+
+#youtubeHostControls .stop-btn:hover {
+    background: #c0392b;
+}
+
+/* Sync Status Indicator */
+#syncStatusIndicator {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 11px;
+    z-index: 10001;
+    transition: opacity 0.3s;
+}
+
+#syncStatusIndicator.syncing {
+    color: #f39c12;
+}
+
+#syncStatusIndicator.synced {
+    color: #27ae60;
+}
+
+/* Media Session Notification */
+.media-notification {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    background: linear-gradient(135deg, rgba(40, 40, 40, 0.95), rgba(30, 30, 30, 0.95));
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 15px 20px;
+    z-index: 9000;
+    max-width: 300px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.media-notification .notification-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.media-notification .notification-icon {
+    font-size: 18px;
+}
+
+.media-notification .notification-title {
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.media-notification .notification-body {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+.media-notification .notification-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.media-notification .notification-actions button {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.media-notification .notification-actions .join-btn {
+    background: #4fc3f7;
+    border: none;
+    color: #000;
+}
+
+.media-notification .notification-actions .join-btn:hover {
+    background: #29b6f6;
+}
+
+.media-notification .notification-actions .dismiss-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.media-notification .notification-actions .dismiss-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Connecting Spinner */
+.connecting-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 10003;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+}
+
+.connecting-overlay .spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top-color: #4fc3f7;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.connecting-overlay .status-text {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* No Audio Warning */
+.no-audio-warning {
+    position: fixed;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(243, 156, 18, 0.2);
+    border: 1px solid rgba(243, 156, 18, 0.4);
+    color: #f39c12;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    z-index: 10001;
+}
+
+/* YouTube Buffering Indicator (for viewers when host is buffering) */
+.yt-buffering-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    padding: 16px 24px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 10000;
+    font-size: 14px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.yt-buffering-indicator .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-top-color: #ff4444;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+/* Playback Rate Indicator (briefly shown when rate changes) */
+.yt-rate-indicator {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 10000;
+    animation: fadeInOut 2s ease-out forwards;
+}
+
+@keyframes fadeInOut {
+    0% {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    15% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    85% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+/* Sync Status Badge */
+.yt-sync-status {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 11px;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.yt-sync-status .sync-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #27ae60;
+}
+
+.yt-sync-status.syncing .sync-dot {
+    background: #f39c12;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+.yt-sync-status.desynced .sync-dot {
+    background: #e74c3c;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.4;
+    }
+}
+
+/* ========================================
+   Widget Mode System - Large vs Small
+   ======================================== */
+
+/* Shared base for both modes */
+.media-widget-base {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.95);
+    transition: height 0.3s ease;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Large mode - ~50% viewport for video content */
+.media-widget-large {
+    height: 50vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.media-widget-large video {
+    max-width: 95%;
+    max-height: calc(50vh - 80px);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: #000;
+}
+
+.media-widget-large #youtubePlayer {
+    width: 80%;
+    max-width: 1000px;
+    max-height: calc(50vh - 80px);
+    aspect-ratio: 16 / 9;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: #000;
+}
+
+/* Small bar mode - compact for audio */
+.media-widget-small {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 15px;
+}
+
+.media-widget-small video {
+    display: none;
+}
+
+.media-widget-small #youtubePlayer {
+    display: none;
+}
+
+/* Header for widget modes */
+.media-widget-header {
+    position: absolute;
+    top: 10px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    z-index: 10001;
+}
+
+.media-widget-small .media-widget-header {
+    position: static;
+    flex: 1;
+}
+
+/* Info section in header */
+.media-widget-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.media-widget-info .host-name {
+    color: #4fc3f7;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.media-widget-info .media-title {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+}
+
+.media-widget-info .viewer-count {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+}
+
+.media-widget-info .viewer-count span {
+    color: #4fc3f7;
+    font-weight: bold;
+}
+
+/* Play state indicator for audio bar */
+.media-widget-play-state {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 13px;
+}
+
+.media-widget-play-state .play-icon {
+    font-size: 16px;
+}
+
+.media-widget-play-state.playing .play-icon::before {
+    content: '▶';
+    color: #27ae60;
+}
+
+.media-widget-play-state.paused .play-icon::before {
+    content: '⏸';
+    color: #f39c12;
+}
+
+/* Audio waveform animation for small bar */
+.audio-waveform {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 24px;
+}
+
+.media-widget-large .audio-waveform {
+    display: none;
+}
+
+.audio-waveform .bar {
+    width: 3px;
+    background: #4fc3f7;
+    border-radius: 2px;
+    animation: waveform 0.8s ease-in-out infinite;
+}
+
+.audio-waveform .bar:nth-child(1) { height: 8px; animation-delay: 0s; }
+.audio-waveform .bar:nth-child(2) { height: 16px; animation-delay: 0.1s; }
+.audio-waveform .bar:nth-child(3) { height: 12px; animation-delay: 0.2s; }
+.audio-waveform .bar:nth-child(4) { height: 20px; animation-delay: 0.3s; }
+.audio-waveform .bar:nth-child(5) { height: 10px; animation-delay: 0.4s; }
+
+.media-widget-play-state.paused .audio-waveform .bar {
+    animation: none;
+    height: 4px;
+}
+
+@keyframes waveform {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(0.5); }
+}
+
+/* Control buttons */
+.media-widget-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.media-widget-btn {
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.media-widget-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.media-widget-btn.toggle-btn:hover {
+    background: rgba(79, 195, 247, 0.3);
+    border-color: #4fc3f7;
+}
+
+.media-widget-btn.close-btn:hover {
+    background: rgba(255, 0, 0, 0.3);
+    border-color: #e74c3c;
+}
+
+/* Large mode controls at bottom */
+.media-widget-large .media-widget-controls {
+    position: absolute;
+    bottom: 15px;
+    right: 20px;
+}
+
+.media-widget-large .media-widget-header {
+    justify-content: space-between;
+}
+
+/* No audio warning in small mode */
+.media-widget-small .no-audio-badge {
+    background: rgba(243, 156, 18, 0.2);
+    border: 1px solid rgba(243, 156, 18, 0.4);
+    color: #f39c12;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+}
+
+/* YouTube specific badges and controls */
+.ysp-badge {
+    background: #ff4444;
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.ysp-controls {
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 8px 15px;
+    border-radius: 8px;
+    z-index: 10000;
+}
+
+.ysp-controls button {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.ysp-controls button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.ysp-controls input[type="range"] {
+    width: 150px;
+    cursor: pointer;
+}
+
+.ysp-controls #ytTimeDisplay {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 12px;
+    font-family: monospace;
+    min-width: 100px;
+}
+
+.media-widget-small .ysp-controls {
+    display: none;
+}
+
+/* ========================================
+   Lobserve Panel Rendering
+   Media renders inside #lobserve instead of floating widgets
+   ======================================== */
+
+/* When media is active, lobserve uses flex layout with explicit height */
+#lobserve.media-active {
+    display: flex !important;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* Small mode — compact 100px bar at bottom */
+#lobserve.media-active.media-size-small {
+    height: 100px;
+}
+
+/* Large mode — half the available viewport */
+#lobserve.media-active.media-size-large {
+    height: 50vh;
+    max-height: calc(100vh - 200px);
+}
+
+/* Raise left wrapper z-index when media is active (same pattern as battle maps) */
+#leftwrapper:has(#lobserve.media-active) {
+    z-index: 100 !important;
+}
+
+.media-lobserve-player {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    background: #000;
+    position: relative;
+}
+
+.media-lobserve-player .media-widget-header {
+    position: static;  /* Override base absolute positioning */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+    z-index: 1;
+}
+
+.media-lobserve-player .media-widget-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    flex: 1;
+}
+
+.media-lobserve-player .host-name {
+    color: #4fc3f7;
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.media-lobserve-player .media-title {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.media-lobserve-player .viewer-count {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.4);
+    flex-shrink: 0;
+}
+
+.media-lobserve-player .media-widget-controls {
+    flex-shrink: 0;
+}
+
+.media-lobserve-player .media-widget-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 6px;
+    transition: color 0.15s;
+}
+
+.media-lobserve-player .media-widget-btn:hover {
+    color: #fff;
+}
+
+.media-lobserve-player #ytPlayerContainer,
+.media-lobserve-player iframe {
+    width: 100% !important;
+    height: 100% !important;
+    flex: 1;
+    min-height: 0;
+}
+
+.media-lobserve-player video {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    object-fit: contain;
+    background: #000;
+}
+
+.media-lobserve-player .ysp-controls {
+    position: relative;
+    left: auto;
+    transform: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px;
+    background: rgba(0, 0, 0, 0.8);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+
+.media-lobserve-player .ysp-badge {
+    background: #ff4444;
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: bold;
+}
+
+.media-lobserve-player .no-audio-badge {
+    background: rgba(243, 156, 18, 0.2);
+    border: 1px solid rgba(243, 156, 18, 0.4);
+    color: #f39c12;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 9px;
+}
+
+.media-lobserve-player .audio-waveform {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 14px;
+}
+
+.media-lobserve-player .audio-waveform .bar {
+    width: 2px;
+    background: #4fc3f7;
+    border-radius: 1px;
+    animation: wave-bar 0.8s ease-in-out infinite alternate;
+}
+
+.media-lobserve-player .audio-waveform .bar:nth-child(1) { height: 4px; animation-delay: 0s; }
+.media-lobserve-player .audio-waveform .bar:nth-child(2) { height: 8px; animation-delay: 0.1s; }
+.media-lobserve-player .audio-waveform .bar:nth-child(3) { height: 12px; animation-delay: 0.2s; }
+.media-lobserve-player .audio-waveform .bar:nth-child(4) { height: 6px; animation-delay: 0.3s; }
+.media-lobserve-player .audio-waveform .bar:nth-child(5) { height: 10px; animation-delay: 0.4s; }
+
+@keyframes wave-bar {
+    to { height: 14px; }
+}
+
+.media-lobserve-player .media-widget-play-state {
+    flex-shrink: 0;
+}

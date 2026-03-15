@@ -1,0 +1,16 @@
+/* Tailwind CSS v4 - CSS-first configuration */
+@import "tailwindcss";
+
+/* Source detection for class scanning */
+@source "../../views/**/*.erb";
+@source "../../../public/js/**/*.js";
+
+/* Custom theme extensions */
+@theme {
+  --color-base-100: #272b30;
+  --color-base-200: #1c1e22;
+  --color-base-300: #151719;
+}
+
+/* Dark mode via class strategy */
+@custom-variant dark (&:where(.dark, .dark *));

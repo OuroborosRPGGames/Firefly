@@ -1,0 +1,95 @@
+<%
+  schedule ||= nil
+  saved_locations ||= []
+  locations ||= []
+%>
+
+<div class="mb-3">
+  <label class="label"><span class="label-text">Room <span class="text-error">*</span></span></label>
+  <select class="select select-bordered w-full" name="room_id" required>
+    <option value="">Select a room...</option>
+
+    <% if saved_locations.any? %>
+      <optgroup label="Your Saved Locations">
+        <% saved_locations.each do |loc| %>
+          <option value="<%= loc.room_id %>" <%= schedule&.room_id == loc.room_id ? 'selected' : '' %>>
+            <%= h(loc.name) %> - <%= h(loc.room&.name) %>
+          </option>
+        <% end %>
+      </optgroup>
+    <% end %>
+
+    <% locations.each do |loc| %>
+      <optgroup label="<%= h(loc.name) %>">
+        <% loc.rooms_dataset.order(:name).each do |room| %>
+          <option value="<%= room.id %>" <%= schedule&.room_id == room.id ? 'selected' : '' %>>
+            <%= h(room.name) %>
+          </option>
+        <% end %>
+      </optgroup>
+    <% end %>
+  </select>
+</div>
+
+<div class="mb-3">
+  <label class="label"><span class="label-text">Activity</span></label>
+  <input type="text" class="input input-bordered w-full" name="activity"
+         value="<%= h(schedule&.activity || '') %>"
+         placeholder="e.g., standing guard at the gate">
+  <label class="label"><span class="label-text-alt text-base-content/60">Shown as NPC's room title</span></label>
+</div>
+
+<div class="grid grid-cols-12 gap-4">
+  <div class="col-span-12 md:col-span-6 mb-3">
+    <label class="label"><span class="label-text">Start Hour</span></label>
+    <select class="select select-bordered w-full" name="start_hour">
+      <% (0..23).each do |h| %>
+        <option value="<%= h %>" <%= (schedule&.start_hour || 0) == h ? 'selected' : '' %>>
+          <%= '%02d:00' % h %>
+        </option>
+      <% end %>
+    </select>
+  </div>
+  <div class="col-span-12 md:col-span-6 mb-3">
+    <label class="label"><span class="label-text">End Hour</span></label>
+    <select class="select select-bordered w-full" name="end_hour">
+      <% (1..24).each do |h| %>
+        <option value="<%= h %>" <%= (schedule&.end_hour || 24) == h ? 'selected' : '' %>>
+          <%= h == 24 ? '24:00 (midnight)' : '%02d:00' % h %>
+        </option>
+      <% end %>
+    </select>
+  </div>
+</div>
+
+<div class="mb-3">
+  <label class="label"><span class="label-text">Days</span></label>
+  <select class="select select-bordered w-full" name="weekdays">
+    <% NpcSchedule::WEEKDAY_PATTERNS.each do |pattern| %>
+      <option value="<%= pattern %>" <%= (schedule&.weekdays || 'all') == pattern ? 'selected' : '' %>>
+        <%= pattern.capitalize %>
+      </option>
+    <% end %>
+  </select>
+</div>
+
+<div class="grid grid-cols-12 gap-4">
+  <div class="col-span-12 md:col-span-6 mb-3">
+    <label class="label"><span class="label-text">Spawn Probability %</span></label>
+    <input type="number" class="input input-bordered w-full" name="probability"
+           value="<%= schedule&.probability || 100 %>" min="0" max="100">
+    <label class="label"><span class="label-text-alt text-base-content/60">Chance NPC appears if conditions met</span></label>
+  </div>
+  <div class="col-span-12 md:col-span-6 mb-3">
+    <label class="label"><span class="label-text">Max Instances</span></label>
+    <input type="number" class="input input-bordered w-full" name="max_npcs"
+           value="<%= schedule&.max_npcs || 1 %>" min="1" max="10">
+    <label class="label"><span class="label-text-alt text-base-content/60">Max concurrent spawns from this schedule</span></label>
+  </div>
+</div>
+
+<label class="label cursor-pointer justify-start gap-3">
+  <input type="checkbox" class="checkbox checkbox-primary" name="is_active" value="1"
+         id="isActive<%= schedule&.id %>" <%= schedule.nil? || schedule.is_active ? 'checked' : '' %>>
+  <span class="label-text">Schedule is active</span>
+</label>

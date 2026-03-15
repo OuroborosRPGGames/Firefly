@@ -1,0 +1,116 @@
+<% @page_title = 'Tickets - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Tickets', path: '/admin/tickets' }] %>
+
+<%= admin_content_start %>
+      <h2 class="text-2xl font-bold mb-4"><i class="bi bi-ticket-perforated mr-2"></i>Player Tickets</h2>
+
+      <!-- Filters -->
+      <div class="card bg-base-200 mb-4">
+        <div class="card-body">
+          <div class="flex flex-wrap items-center gap-4">
+            <div>
+              <div class="join">
+                <a href="/admin/tickets?status=open" class="btn join-item <%= @status_filter == 'open' ? 'btn-primary' : 'btn-outline btn-primary' %>">
+                  Open <span class="badge badge-error ml-1"><%= @open_count %></span>
+                </a>
+                <a href="/admin/tickets?status=resolved" class="btn join-item <%= @status_filter == 'resolved' ? 'btn-success' : 'btn-outline btn-success' %>">
+                  Resolved <span class="badge badge-neutral ml-1"><%= @resolved_count %></span>
+                </a>
+                <a href="/admin/tickets?status=closed" class="btn join-item <%= @status_filter == 'closed' ? 'btn-neutral' : 'btn-outline' %>">
+                  Closed <span class="badge badge-neutral ml-1"><%= @closed_count %></span>
+                </a>
+                <a href="/admin/tickets?status=all" class="btn join-item <%= @status_filter == 'all' ? 'btn-info' : 'btn-outline btn-info' %>">
+                  All
+                </a>
+              </div>
+            </div>
+            <div>
+              <select class="select select-bordered select-sm" onchange="filterByCategory(this.value)">
+                <option value="">All Categories</option>
+                <% Ticket::CATEGORIES.each do |cat| %>
+                  <option value="<%= cat %>" <%= @category_filter == cat ? 'selected' : '' %>><%= cat.capitalize %></option>
+                <% end %>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tickets Table -->
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <% if @tickets.empty? %>
+            <p class="text-base-content/70 mb-0">No tickets found.</p>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>User</th>
+                    <th>Category</th>
+                    <th>Subject</th>
+                    <th>Submitted</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @tickets.each do |ticket| %>
+                  <tr class="hover">
+                    <td><%= ticket.id %></td>
+                    <td>
+                      <%= h(ticket.system_generated ? 'System' : (ticket.user&.username || 'Unknown')) %>
+                      <% if ticket.system_generated %>
+                        <span class="badge badge-xs badge-ghost ml-1">auto</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% case ticket.category
+                         when 'bug' %>
+                        <span class="badge badge-error gap-1"><i class="bi bi-bug"></i> Bug</span>
+                      <% when 'typo' %>
+                        <span class="badge badge-info gap-1"><i class="bi bi-spellcheck"></i> Typo</span>
+                      <% when 'behaviour' %>
+                        <span class="badge badge-warning gap-1"><i class="bi bi-exclamation-triangle"></i> Behaviour</span>
+                      <% when 'request' %>
+                        <span class="badge badge-primary gap-1"><i class="bi bi-lightbulb"></i> Request</span>
+                      <% when 'suggestion' %>
+                        <span class="badge badge-success gap-1"><i class="bi bi-chat-dots"></i> Suggestion</span>
+                      <% when 'documentation' %>
+                        <span class="badge badge-accent gap-1"><i class="bi bi-book"></i> Docs</span>
+                      <% else %>
+                        <span class="badge badge-neutral"><%= ticket.category_display %></span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <a href="/admin/tickets/<%= ticket.id %>" class="link link-hover">
+                        <%= ticket.subject.length > 50 ? ticket.subject[0, 50] + '...' : ticket.subject %>
+                      </a>
+                    </td>
+                    <td><%= ticket.created_at&.strftime('%m-%d %H:%M') %></td>
+                    <td>
+                      <% case ticket.status
+                         when 'open' %>
+                        <span class="badge badge-error">Open</span>
+                      <% when 'resolved' %>
+                        <span class="badge badge-success">Resolved</span>
+                      <% when 'closed' %>
+                        <span class="badge badge-neutral">Closed</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <a href="/admin/tickets/<%= ticket.id %>" class="btn btn-sm btn-outline btn-primary">
+                        <i class="bi bi-eye"></i>
+                      </a>
+                    </td>
+                  </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    
+<%= admin_content_end %>

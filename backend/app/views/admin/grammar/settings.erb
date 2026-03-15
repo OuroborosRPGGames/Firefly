@@ -1,0 +1,166 @@
+<%= admin_content_start %>
+
+<h2 class="text-2xl font-bold mb-6">Grammar &amp; Spell Check Settings</h2>
+
+<div class="space-y-6">
+  <!-- Service Status Card -->
+  <div class="card bg-base-200 shadow-xl">
+    <div class="card-body">
+      <h3 class="card-title">
+        <i class="bi bi-gear"></i> LanguageTool Service
+      </h3>
+      <div class="flex items-center gap-2">
+        <% if @service_healthy %>
+          <span class="badge badge-success">Running</span>
+          <span class="text-sm opacity-70">LanguageTool is responding on port 8742</span>
+        <% else %>
+          <span class="badge badge-error">Stopped</span>
+          <span class="text-sm opacity-70">Run <code>scripts/languagetool.sh start</code> to start the service</span>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Language Packs Table -->
+  <div class="card bg-base-200 shadow-xl">
+    <div class="card-body">
+      <h3 class="card-title">
+        <i class="bi bi-translate"></i> N-Gram Language Packs
+      </h3>
+      <p class="text-sm opacity-70 mb-4">
+        N-gram data improves grammar and spelling detection accuracy. Download packs for the languages your players use.
+      </p>
+
+      <div class="overflow-x-auto">
+        <table class="table" id="grammar-languages-table">
+          <thead>
+            <tr>
+              <th>Language</th>
+              <th>Status</th>
+              <th>Size</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @languages.each do |lang| %>
+              <tr data-language="<%= lang[:code] %>">
+                <td><%= lang[:name] %></td>
+                <td>
+                  <% case lang[:status] %>
+                  <% when 'ready' %>
+                    <span class="badge badge-success">Ready</span>
+                  <% when 'downloading' %>
+                    <span class="badge badge-warning">Downloading...</span>
+                  <% when 'error' %>
+                    <span class="badge badge-error" title="<%= h(lang[:error_message] || '') %>">Error</span>
+                  <% when 'pending' %>
+                    <span class="badge badge-ghost">Pending</span>
+                  <% else %>
+                    <span class="badge badge-ghost">Not installed</span>
+                  <% end %>
+                </td>
+                <td>
+                  <% if lang[:size_bytes] > 0 %>
+                    <%= format_bytes(lang[:size_bytes]) %>
+                  <% else %>
+                    <span class="opacity-50">~<%= lang[:estimated_size] %></span>
+                  <% end %>
+                </td>
+                <td>
+                  <% case lang[:status] %>
+                  <% when 'ready' %>
+                    <button class="btn btn-sm btn-error btn-outline"
+                            onclick="grammarAdmin.removeLang('<%= lang[:code] %>')">
+                      <i class="bi bi-trash"></i> Remove
+                    </button>
+                  <% when 'downloading' %>
+                    <button class="btn btn-sm btn-warning btn-outline"
+                            onclick="grammarAdmin.cancelDownload('<%= lang[:code] %>')">
+                      <i class="bi bi-x-circle"></i> Cancel
+                    </button>
+                  <% when 'error' %>
+                    <button class="btn btn-sm btn-primary btn-outline"
+                            onclick="grammarAdmin.downloadLang('<%= lang[:code] %>')">
+                      <i class="bi bi-arrow-clockwise"></i> Retry
+                    </button>
+                  <% else %>
+                    <button class="btn btn-sm btn-primary btn-outline"
+                            onclick="grammarAdmin.downloadLang('<%= lang[:code] %>')">
+                      <i class="bi bi-download"></i> Download
+                    </button>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const grammarAdmin = {
+  pollInterval: null,
+
+  async downloadLang(code) {
+    try {
+      const resp = await fetch(`/admin/grammar/languages/${code}/download`, { method: 'POST' });
+      const data = await resp.json();
+      if (data.success) {
+        location.reload();
+      } else {
+        alert(data.error || 'Download failed');
+      }
+    } catch (e) {
+      alert('Request failed: ' + e.message);
+    }
+  },
+
+  async removeLang(code) {
+    if (!confirm('Remove n-gram data for this language?')) return;
+    try {
+      const resp = await fetch(`/admin/grammar/languages/${code}`, { method: 'DELETE' });
+      const data = await resp.json();
+      if (data.success) location.reload();
+    } catch (e) {
+      alert('Request failed: ' + e.message);
+    }
+  },
+
+  async cancelDownload(code) {
+    try {
+      const resp = await fetch(`/admin/grammar/languages/${code}/cancel`, { method: 'POST' });
+      const data = await resp.json();
+      if (data.success) location.reload();
+    } catch (e) {
+      alert('Request failed: ' + e.message);
+    }
+  },
+
+  startPolling() {
+    if (this.pollInterval) return;
+    this.pollInterval = setInterval(async () => {
+      try {
+        const resp = await fetch('/admin/grammar/status');
+        const data = await resp.json();
+        const anyDownloading = data.languages.some(l => l.status === 'downloading');
+        if (!anyDownloading) {
+          clearInterval(this.pollInterval);
+          this.pollInterval = null;
+          location.reload();
+        }
+      } catch (e) {}
+    }, 5000);
+  },
+
+  init() {
+    const rows = document.querySelectorAll('#grammar-languages-table .badge-warning');
+    if (rows.length > 0) this.startPolling();
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => grammarAdmin.init());
+</script>
+
+<%= admin_content_end %>

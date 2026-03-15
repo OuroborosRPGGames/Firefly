@@ -1,0 +1,425 @@
+<% if @popout %>
+<!-- Popout Mode: chargen-style layout -->
+<div class="p-4">
+  <!-- Live Appearance Preview - Black background to mimic game client -->
+  <div class="card mb-4 border border-base-content/10">
+    <div class="card-body bg-base-300">
+      <div class="flex items-center gap-2 mb-4">
+        <i class="bi bi-eye"></i>
+        <h2 class="card-title mb-0">Live Appearance Preview</h2>
+        <span class="badge badge-secondary ml-2">As seen in-game</span>
+      </div>
+      <div class="bg-black text-white p-4 rounded-lg" style="min-height: 200px;">
+        <div id="liveDescriptionPreview" class="appearance-preview-content">
+          <p class="text-gray-500 text-center py-3">
+            <i class="bi bi-person-bounding-box text-4xl block mb-2"></i>
+            Loading preview...
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Description Manager - Full width -->
+  <div class="card bg-base-200 shadow-xl mb-4">
+    <div class="card-body">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="card-title"><i class="bi bi-list-ul mr-2"></i>Description Manager</h2>
+        <button type="button" class="btn btn-sm btn-primary" id="addDescriptionBtn">
+          <i class="bi bi-plus-lg mr-1"></i>Add Description
+        </button>
+      </div>
+      <div id="descriptionManagerContainer"
+           data-character-id="<%= @character.id %>"
+           data-show-preview="false"
+           data-compact="true">
+        <div class="desc-manager">
+          <div class="text-center py-8" id="descManagerLoading">
+            <span class="loading loading-spinner loading-lg text-primary"></span>
+            <p class="text-base-content/70 mt-2">Loading descriptions...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help - Collapsed -->
+  <div class="collapse collapse-arrow bg-base-200 shadow-xl">
+    <input type="checkbox" />
+    <div class="collapse-title font-medium">
+      <i class="bi bi-question-circle mr-2"></i>How Descriptions Work
+    </div>
+    <div class="collapse-content">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+        <div>
+          <h6 class="font-bold mb-2"><i class="bi bi-diagram-3 text-primary mr-2"></i>Body Positions</h6>
+          <p class="text-base-content/70 text-sm">
+            Each description is attached to a specific body position (e.g., eyes, chest, left hand).
+            You can have one description per position.
+          </p>
+        </div>
+        <div>
+          <h6 class="font-bold mb-2"><i class="bi bi-sort-numeric-down text-success mr-2"></i>Display Order</h6>
+          <p class="text-base-content/70 text-sm">
+            Drag descriptions to reorder how they appear. Descriptions are grouped by body region
+            and displayed in the order you set.
+          </p>
+        </div>
+        <div>
+          <h6 class="font-bold mb-2"><i class="bi bi-eye-slash text-warning mr-2"></i>Concealment</h6>
+          <p class="text-base-content/70 text-sm">
+            Mark descriptions as "concealed by clothing" to hide them when wearing clothes over that area.
+            Other players won't see concealed descriptions.
+          </p>
+        </div>
+        <div>
+          <h6 class="font-bold mb-2"><i class="bi bi-toggle-on text-info mr-2"></i>Active/Inactive</h6>
+          <p class="text-base-content/70 text-sm">
+            Deactivate descriptions you don't want to show without deleting them.
+            You can reactivate them later.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<% else %>
+<!-- Full Page Mode -->
+<!-- Page Banner -->
+<section class="page-banner" style="background-image: url('/images/library.jpg');">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <div class="breadcrumbs text-sm mb-2">
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/dashboard">Dashboard</a></li>
+          <li><a href="/characters/<%= @character.id %>"><%= h(@character.nickname || @character.forename) %></a></li>
+          <li>Descriptions</li>
+        </ul>
+      </div>
+      <h1><i class="bi bi-body-text mr-2"></i>Manage Descriptions</h1>
+      <p class="text-base-content/70 text-lg"><%= h @character.full_name %></p>
+    </div>
+  </div>
+</section>
+
+<section class="py-12">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Description Manager Column -->
+      <div class="lg:col-span-2">
+        <div class="card bg-base-200 shadow-xl mb-4">
+          <div class="card-body">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="card-title"><i class="bi bi-list-ul mr-2"></i>Description Manager</h2>
+              <button type="button" class="btn btn-sm btn-primary" id="addDescriptionBtn">
+                <i class="bi bi-plus-lg mr-1"></i>Add Description
+              </button>
+            </div>
+            <div id="descriptionManagerContainer"
+                 data-character-id="<%= @character.id %>"
+                 data-show-preview="false"
+                 data-compact="true">
+              <!-- Manager content will be rendered by JavaScript -->
+              <div class="desc-manager">
+                <div class="text-center py-8" id="descManagerLoading">
+                  <span class="loading loading-spinner loading-lg text-primary"></span>
+                  <p class="text-base-content/70 mt-2">Loading descriptions...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Help Card -->
+        <div class="card bg-base-200 shadow-xl">
+          <div class="card-body">
+            <h2 class="card-title">
+              <i class="bi bi-question-circle mr-2"></i>How Descriptions Work
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+              <div>
+                <h6 class="font-bold mb-2"><i class="bi bi-diagram-3 text-primary mr-2"></i>Body Positions</h6>
+                <p class="text-base-content/70 text-sm">
+                  Each description is attached to a specific body position (e.g., eyes, chest, left hand).
+                  You can have one description per position.
+                </p>
+              </div>
+              <div>
+                <h6 class="font-bold mb-2"><i class="bi bi-sort-numeric-down text-success mr-2"></i>Display Order</h6>
+                <p class="text-base-content/70 text-sm">
+                  Drag descriptions to reorder how they appear. Descriptions are grouped by body region
+                  and displayed in the order you set.
+                </p>
+              </div>
+              <div>
+                <h6 class="font-bold mb-2"><i class="bi bi-eye-slash text-warning mr-2"></i>Concealment</h6>
+                <p class="text-base-content/70 text-sm">
+                  Mark descriptions as "concealed by clothing" to hide them when wearing clothes over that area.
+                  Other players won't see concealed descriptions.
+                </p>
+              </div>
+              <div>
+                <h6 class="font-bold mb-2"><i class="bi bi-toggle-on text-info mr-2"></i>Active/Inactive</h6>
+                <p class="text-base-content/70 text-sm">
+                  Deactivate descriptions you don't want to show without deleting them.
+                  You can reactivate them later.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview Column -->
+      <div>
+        <div class="card bg-base-200 shadow-xl sticky top-20">
+          <div class="card-body">
+            <h2 class="card-title">
+              <i class="bi bi-eye mr-2"></i>Live Preview
+            </h2>
+            <% if @character.picture_url.to_s != '' %>
+            <div class="text-center mb-4">
+              <img src="<%= @character.picture_url %>" alt="<%= h @character.nickname %>"
+                   class="rounded-lg max-h-72 max-w-48 object-contain mx-auto">
+            </div>
+            <% end %>
+
+            <div class="mb-4">
+              <span class="text-sm text-base-content/70">Short Description:</span>
+              <p class="mb-0"><%= h(@character.short_desc || 'Not set') %></p>
+            </div>
+
+            <div class="divider"></div>
+
+            <div id="liveDescriptionPreview">
+              <p class="text-base-content/70 text-center py-4">
+                <i class="bi bi-body-text text-4xl block mb-2"></i>
+                Descriptions will appear here
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mt-6">
+      <a href="/characters/<%= @character.id %>" class="btn btn-ghost mr-2">
+        <i class="bi bi-arrow-left mr-1"></i>Back to Character
+      </a>
+      <a href="/dashboard" class="btn btn-ghost">
+        <i class="bi bi-house mr-1"></i>Dashboard
+      </a>
+    </div>
+  </div>
+</section>
+<% end %>
+
+<!-- Include Description Modal -->
+<%# Modal is created dynamically by description-modal.js %>
+
+<!-- Description System CSS -->
+<link rel="stylesheet" href="/css/descriptions.css?v=3">
+
+<!-- Description System JavaScript -->
+<script src="/js/description-editor.js?v=5"></script>
+<script src="/js/description-manager.js?v=3"></script>
+<script src="/js/description-modal.js?v=3"></script>
+
+<script>
+// Character gender for prefix pronoun generation
+window.characterGender = '<%= h(@character.gender || "neutral") %>';
+window.isPopout = <%= @popout ? 'true' : 'false' %>;
+
+document.addEventListener('DOMContentLoaded', function() {
+  const characterId = <%= @character.id %>;
+  const container = document.getElementById('descriptionManagerContainer');
+
+  // Fetch server-rendered preview (full appearance: name, intro, eyes/hair, descriptions)
+  function refreshServerPreview() {
+    fetch(`/characters/${characterId}/descriptions/preview`, {
+      headers: { 'Accept': 'application/json' }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success && data.html) {
+        document.getElementById('liveDescriptionPreview').innerHTML = data.html;
+      }
+    })
+    .catch(err => console.error('Failed to load preview:', err));
+  }
+
+  // Initialize description manager
+  if (typeof DescriptionManager !== 'undefined') {
+    window.descriptionManager = new DescriptionManager(container, characterId, {
+      showPreview: false,
+      onDescriptionChange: function(descriptions) {
+        // Always use server-rendered preview for full appearance
+        // (name, intro, eyes/hair, body descriptions, thumbnails)
+        refreshServerPreview();
+      }
+    });
+  } else {
+    console.error('DescriptionManager not loaded');
+    container.innerHTML = '<div class="alert alert-error">Failed to load description manager.</div>';
+  }
+
+  // Add description button
+  const addBtn = document.getElementById('addDescriptionBtn');
+  if (addBtn) {
+    addBtn.addEventListener('click', function() {
+      if (window.descriptionManager) {
+        window.descriptionManager.openAddModal();
+      }
+    });
+  }
+
+  // Load server-rendered preview on page load
+  refreshServerPreview();
+});
+
+// Lightbox for enlarged thumbnails - defined first so it's available
+window.showLightbox = function(src) {
+  // Remove existing lightbox if any
+  const existing = document.getElementById('imageLightbox');
+  if (existing) existing.remove();
+
+  const lightbox = document.createElement('div');
+  lightbox.id = 'imageLightbox';
+  lightbox.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    cursor: pointer;
+  `;
+  lightbox.onclick = () => lightbox.remove();
+
+  const img = document.createElement('img');
+  img.src = src;
+  img.style.cssText = `
+    max-height: 66vh;
+    max-width: 66vw;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  `;
+
+  lightbox.appendChild(img);
+  document.body.appendChild(lightbox);
+};
+
+function updateLivePreview(descriptions) {
+  const container = document.getElementById('liveDescriptionPreview');
+  const activeDescs = descriptions.filter(d => d.active);
+
+  if (activeDescs.length === 0) {
+    container.innerHTML = `
+      <p class="text-base-content/70 text-center py-4">
+        <i class="bi bi-body-text text-4xl block mb-2"></i>
+        Descriptions will appear here
+      </p>
+    `;
+    return;
+  }
+
+  const regions = ['head', 'torso', 'arms', 'hands', 'legs', 'feet'];
+  const regionLabels = {
+    head: 'Head',
+    torso: 'Torso',
+    arms: 'Arms',
+    hands: 'Hands',
+    legs: 'Legs',
+    feet: 'Feet'
+  };
+
+  const grouped = {};
+  regions.forEach(region => {
+    grouped[region] = activeDescs.filter(d => d.region === region)
+                                 .sort((a, b) => a.display_order - b.display_order);
+  });
+
+  // Helper functions for capitalization
+  const capitalizeFirst = (text) => text && text.length > 0 ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+  const lowercaseFirst = (text) => text && text.length > 0 ? text.charAt(0).toLowerCase() + text.slice(1) : text;
+
+  // Helper to get pronoun prefix text
+  const getPrefixText = (prefix) => {
+    const gender = window.characterGender || 'neutral';
+    switch (prefix) {
+      case 'pronoun_has': {
+        const pronoun = gender === 'female' ? 'She' : gender === 'male' ? 'He' : 'They';
+        const verb = gender === 'female' || gender === 'male' ? 'has' : 'have';
+        return `${pronoun} ${verb} `;
+      }
+      case 'pronoun_is': {
+        const pronoun = gender === 'female' ? 'She' : gender === 'male' ? 'He' : 'They';
+        const verb = gender === 'female' || gender === 'male' ? 'is' : 'are';
+        return `${pronoun} ${verb} `;
+      }
+      case 'and':
+        return 'and ';
+      default:
+        return '';
+    }
+  };
+
+  let html = '';
+  regions.forEach(region => {
+    if (grouped[region].length > 0) {
+      html += `<div class="mb-4">`;
+      html += `<span class="text-sm text-base-content/70">${regionLabels[region]}:</span>`;
+      html += `<div class="preview-region">`;
+      let previousSuffix = null;
+      grouped[region].forEach((desc, index) => {
+        if (desc.image_url) {
+          html += `<img src="${desc.image_url}" class="preview-image clickable-thumb mr-2" alt="" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; vertical-align: middle; cursor: pointer;" data-lightbox-src="${desc.image_url}">`;
+        }
+
+        // Get prefix text
+        const prefix = desc.prefix || 'none';
+        const prefixText = getPrefixText(prefix);
+
+        // Apply capitalization based on prefix and previous suffix
+        let content = desc.content || '';
+        if (prefixText) {
+          // Content after prefix should be lowercase
+          content = lowercaseFirst(content);
+        } else if (index > 0 && previousSuffix && ['comma', 'space'].includes(previousSuffix)) {
+          // No prefix, but previous was comma/space, so lowercase
+          content = lowercaseFirst(content);
+        } else {
+          content = capitalizeFirst(content);
+        }
+
+        const suffix = desc.suffix || 'period';
+        let suffixText = '';
+        switch (suffix) {
+          case 'comma': suffixText = ', '; break;
+          case 'space': suffixText = ' '; break;
+          case 'newline': suffixText = '.<br>'; break;
+          case 'double_newline': suffixText = '.<br><br>'; break;
+          default: suffixText = '. '; break;
+        }
+        html += `<span class="preview-text">${prefixText}${content}${suffixText}</span>`;
+        previousSuffix = suffix;
+      });
+      html += `</div></div>`;
+    }
+  });
+
+  container.innerHTML = html;
+
+  // Add click listeners for lightbox (event delegation)
+  container.querySelectorAll('[data-lightbox-src]').forEach(img => {
+    img.addEventListener('click', function() {
+      window.showLightbox(this.dataset.lightboxSrc);
+    });
+  });
+}
+</script>

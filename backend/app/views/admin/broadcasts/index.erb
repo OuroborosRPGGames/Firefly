@@ -1,0 +1,78 @@
+<% @title = 'Broadcasts' %>
+<% @breadcrumbs = [
+  { label: 'Admin', path: '/admin' },
+  { label: 'Broadcasts', path: '/admin/broadcasts' }
+] %>
+
+<%= admin_content_start %>
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-9">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold"><i class="bi bi-megaphone mr-2"></i>Broadcasts</h2>
+            <a href="/admin/broadcasts/new" class="btn btn-primary">
+              <i class="bi bi-plus-lg mr-1"></i>New Broadcast
+            </a>
+          </div>
+
+          <% if @broadcasts.empty? %>
+            <%= partial 'shared/empty_state', locals: { message: 'No broadcasts have been sent yet.', link: '/admin/broadcasts/new', link_text: 'Send one' } %>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra bg-base-200">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Content</th>
+                    <th>Sender</th>
+                    <th>Created</th>
+                    <th>Delivered</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @broadcasts.each do |broadcast| %>
+                    <tr class="hover">
+                      <td><%= broadcast.id %></td>
+                      <td>
+                        <% content = broadcast.content %>
+                        <%= h(content.length > 80 ? content[0..77] + '...' : content) %>
+                      </td>
+                      <td><%= h(broadcast.created_by_user&.username || 'Unknown') %></td>
+                      <td><%= broadcast.created_at&.strftime('%Y-%m-%d %H:%M') %></td>
+                      <td>
+                        <span class="badge badge-success gap-1" title="Delivered immediately to online players">
+                          <i class="bi bi-wifi"></i> <%= broadcast.online_delivery_count %>
+                        </span>
+                        <span class="badge badge-info gap-1" title="Delivered on login to offline players">
+                          <i class="bi bi-door-open"></i> <%= broadcast.login_delivery_count %>
+                        </span>
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Info Sidebar -->
+        <div class="lg:col-span-3">
+          <div class="card bg-base-200">
+            <div class="card-body">
+              <h5 class="card-title"><i class="bi bi-info-circle mr-2"></i>About Broadcasts</h5>
+              <p class="text-sm text-base-content/70">
+                Broadcasts are immediate messages sent to all players.
+              </p>
+              <h6 class="font-semibold mt-3">Delivery:</h6>
+              <ul class="text-sm space-y-1">
+                <li><span class="badge badge-success"><i class="bi bi-wifi"></i></span> Delivered immediately to online players</li>
+                <li><span class="badge badge-info"><i class="bi bi-door-open"></i></span> Delivered on login to offline players</li>
+              </ul>
+              <p class="text-sm text-base-content/70 mt-3">
+                Staff can also use the <code class="kbd kbd-sm">broadcast</code> command in-game
+                to send broadcasts quickly.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+<%= admin_content_end %>

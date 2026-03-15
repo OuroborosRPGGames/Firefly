@@ -1,0 +1,121 @@
+<div class="descriptions-tab">
+  <div class="flex justify-between items-center mb-3">
+    <p class="text-base-content/70 mb-0">
+      <i class="bi bi-info-circle mr-1"></i>
+      Manage your character's physical descriptions. Toggle to activate/deactivate, drag to reorder.
+    </p>
+    <a href="/characters/<%= @character.id %>/descriptions" class="btn btn-sm btn-outline btn-primary">
+      <i class="bi bi-pencil mr-1"></i>Edit Full Manager
+    </a>
+  </div>
+
+  <div id="descriptionsContainer" class="description-list">
+    <div class="text-center py-4" id="descLoading">
+      <span class="loading loading-spinner loading-sm text-primary"></span>
+      <span class="text-base-content/70 ml-2">Loading descriptions...</span>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  loadDescriptions();
+});
+
+async function loadDescriptions() {
+  const container = document.getElementById('descriptionsContainer');
+
+  try {
+    const response = await fetch('/characters/<%= @character.id %>/descriptions', {
+      headers: { 'Accept': 'application/json' }
+    });
+    const data = await response.json();
+
+    if (!data.success) {
+      container.innerHTML = '<div class="alert alert-error">Failed to load descriptions</div>';
+      return;
+    }
+
+    const descs = data.descriptions || [];
+    if (descs.length === 0) {
+      container.innerHTML = `
+        <div class="text-center text-base-content/70 py-4">
+          <i class="bi bi-body-text text-6xl block mb-2 opacity-50"></i>
+          <p>No descriptions yet.</p>
+          <a href="/characters/<%= @character.id %>/descriptions" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus mr-1"></i>Add Descriptions
+          </a>
+        </div>`;
+      return;
+    }
+
+    // Group by region
+    const regions = {};
+    descs.forEach(desc => {
+      const region = desc.region || 'other';
+      if (!regions[region]) regions[region] = [];
+      regions[region].push(desc);
+    });
+
+    let html = '';
+    const regionOrder = ['head', 'torso', 'arms', 'hands', 'legs', 'feet', 'other'];
+
+    regionOrder.forEach(region => {
+      if (!regions[region]) return;
+
+      html += `<div class="description-region mb-3">
+        <h6 class="uppercase text-base-content/70 text-sm mb-2">
+          <i class="bi bi-diagram-3 mr-1"></i>${region}
+        </h6>`;
+
+      regions[region].forEach(desc => {
+        const activeClass = desc.active ? '' : 'opacity-50';
+        const toggleIcon = desc.active ? 'toggle-on text-success' : 'toggle-off text-base-content/70';
+
+        html += `
+          <div class="description-item flex items-center p-2 border border-base-content/10 rounded mb-1 ${activeClass}" data-desc-id="${desc.id}">
+            <div class="mr-2">
+              <button class="btn btn-sm btn-link p-0 toggle-desc" data-id="${desc.id}" data-active="${desc.active}" title="${desc.active ? 'Deactivate' : 'Activate'}">
+                <i class="bi bi-${toggleIcon}"></i>
+              </button>
+            </div>
+            <div class="flex-grow">
+              <span class="badge badge-neutral mr-2">${desc.body_position_label || 'Unknown'}</span>
+              <span class="text-sm">${escapeHtml(desc.content?.substring(0, 50) || '')}${desc.content?.length > 50 ? '...' : ''}</span>
+            </div>
+            ${desc.concealed_by_clothing ? '<i class="bi bi-eye-slash text-warning ml-2" title="Hidden by clothing"></i>' : ''}
+          </div>`;
+      });
+
+      html += '</div>';
+    });
+
+    container.innerHTML = html;
+
+    // Bind toggle events
+    container.querySelectorAll('.toggle-desc').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const descId = btn.dataset.id;
+        await toggleDescription(descId);
+        loadDescriptions(); // Reload
+      });
+    });
+
+  } catch (err) {
+    console.error('Error loading descriptions:', err);
+    container.innerHTML = '<div class="alert alert-error">Error loading descriptions</div>';
+  }
+}
+
+async function toggleDescription(descId) {
+  try {
+    await fetch(`/characters/<%= @character.id %>/descriptions/${descId}/toggle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (err) {
+    console.error('Error toggling description:', err);
+  }
+}
+
+</script>

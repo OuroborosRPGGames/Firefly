@@ -1,0 +1,200 @@
+/* Media Popout Styles */
+
+/* Tab panels */
+.tab-panel {
+  display: none;
+}
+.tab-panel.active {
+  display: block;
+}
+
+/* Preview card */
+.media-preview-card {
+  overflow: hidden;
+}
+.media-preview-thumb {
+  position: relative;
+  width: 180px;
+  min-height: 100px;
+  flex-shrink: 0;
+  background: #000;
+}
+.media-preview-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.media-duration-badge {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Queue items */
+.media-queue-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: background 0.15s;
+}
+.media-queue-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+.media-queue-item .queue-pos {
+  width: 1.5rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.3);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.media-queue-item .queue-thumb {
+  width: 48px;
+  height: 36px;
+  border-radius: 0.25rem;
+  object-fit: cover;
+  background: #111;
+  flex-shrink: 0;
+}
+.media-queue-item .queue-info {
+  flex: 1;
+  min-width: 0;
+}
+.media-queue-item .queue-title {
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.media-queue-item .queue-duration {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+.media-queue-item .queue-actions {
+  display: flex;
+  gap: 0.15rem;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.media-queue-item:hover .queue-actions {
+  opacity: 1;
+}
+
+/* Share buttons */
+.media-share-btn {
+  border-color: rgba(255, 255, 255, 0.12);
+  transition: all 0.2s;
+}
+.media-share-btn:hover {
+  border-color: oklch(var(--p));
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Now-playing pulse */
+.media-now-playing-icon {
+  position: relative;
+}
+.media-now-playing-icon::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid oklch(var(--p) / 0.3);
+  animation: media-pulse 2s ease-in-out infinite;
+}
+@keyframes media-pulse {
+  0%, 100% { opacity: 0; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+/* Library / saved video items */
+.media-library-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.media-library-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+.media-library-item .lib-name {
+  flex: 1;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.media-library-item .lib-actions {
+  display: flex;
+  gap: 0.15rem;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.media-library-item:hover .lib-actions {
+  opacity: 1;
+}
+
+/* Section headers */
+.media-section-header {
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Loading spinner for video lookup */
+.media-loading {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-top-color: oklch(var(--p));
+  border-radius: 50%;
+  animation: media-spin 0.6s linear infinite;
+}
+@keyframes media-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Playlist items in preview */
+.playlist-preview-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.8rem;
+  border-radius: 0.25rem;
+}
+.playlist-preview-item:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.02);
+}
+.playlist-preview-item .pp-pos {
+  width: 1.2rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+.playlist-preview-item .pp-title {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.playlist-preview-item .pp-duration {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}

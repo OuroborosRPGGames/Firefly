@@ -1,0 +1,577 @@
+<%# Player-facing 3D Globe View - Read-only world exploration %>
+<style>
+  /* Full-screen globe layout */
+  .globe-page {
+    position: fixed;
+    top: 56px; /* Below navbar */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #000011;
+    overflow: hidden;
+  }
+
+  #player-globe-container {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Info panel - slides in from right */
+  .globe-info-panel {
+    position: absolute;
+    top: 0;
+    right: -350px;
+    width: 350px;
+    height: 100%;
+    background: rgba(30, 35, 45, 0.95);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    transition: right 0.3s ease-in-out;
+    z-index: 100;
+    overflow-y: auto;
+  }
+
+  .globe-info-panel.visible {
+    right: 0;
+  }
+
+  .globe-info-panel .panel-header {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .globe-info-panel .panel-body {
+    padding: 1rem;
+  }
+
+  .globe-info-panel .close-btn {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+  }
+
+  .globe-info-panel .close-btn:hover {
+    color: #fff;
+  }
+
+  /* Floating controls */
+  .globe-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 50;
+  }
+
+  .globe-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: rgba(30, 35, 45, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+  }
+
+  .globe-btn:hover {
+    background: rgba(60, 70, 90, 0.95);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+
+  .globe-btn i {
+    font-size: 1.1rem;
+  }
+
+  /* Player marker pulse animation */
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.5; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* Location info card */
+  .location-card {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .location-card h5 {
+    margin: 0 0 0.5rem 0;
+    color: #fff;
+  }
+
+  .location-card p {
+    margin: 0;
+    color: #aaa;
+    font-size: 0.9rem;
+  }
+
+  .terrain-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .terrain-ocean { background: #2d5f8a; color: #fff; }
+  .terrain-lake { background: #4a8ab5; color: #fff; }
+  .terrain-coast { background: #8a9a8d; color: #fff; }
+  .terrain-plain { background: #a8b878; color: #000; }
+  .terrain-field { background: #c4ba8a; color: #000; }
+  .terrain-forest { background: #3a6632; color: #fff; }
+  .terrain-hill { background: #96a07a; color: #000; }
+  .terrain-mountain { background: #8a7d6b; color: #fff; }
+  .terrain-desert { background: #c8b48a; color: #000; }
+  .terrain-swamp { background: #5a6b48; color: #fff; }
+  .terrain-urban { background: #7a7a7a; color: #fff; }
+  .terrain-ice { background: #d8e0e4; color: #000; }
+
+  /* World info header */
+  .world-header {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 50;
+  }
+
+  .world-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    background: rgba(30, 35, 45, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: #fff;
+  }
+
+  .world-title h4 {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .world-title small {
+    color: #aaa;
+  }
+
+  /* Loading overlay with progress bar */
+  .globe-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 17, 0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    transition: opacity 0.5s ease;
+  }
+
+  .globe-loading.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .globe-loading .loading-content {
+    text-align: center;
+    width: 300px;
+  }
+
+  .globe-loading .loading-content i {
+    font-size: 2rem;
+    color: #3a7ecf;
+    margin-bottom: 1rem;
+  }
+
+  .globe-loading .loading-stage {
+    color: #aaa;
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    min-height: 1.4em;
+  }
+
+  /* Cities list */
+  .cities-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .cities-list li {
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .cities-list li:hover {
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  .cities-list .city-name {
+    font-weight: 500;
+    color: #fff;
+  }
+
+  .cities-list .city-info {
+    font-size: 0.8rem;
+    color: #888;
+  }
+</style>
+
+<div class="globe-page">
+  <!-- Loading overlay with progress bar -->
+  <div id="globe-loading" class="globe-loading">
+    <div class="loading-content">
+      <i class="bi bi-globe2"></i>
+      <progress id="loading-progress" class="progress progress-info w-full" value="0" max="100"></progress>
+      <p id="loading-stage" class="loading-stage">Initializing globe...</p>
+    </div>
+  </div>
+
+  <!-- Globe container -->
+  <div id="player-globe-container"></div>
+
+  <!-- World title header -->
+  <div class="world-header">
+    <div class="world-title">
+      <i class="bi bi-globe2"></i>
+      <div>
+        <h4><%= h @world.name %></h4>
+        <small><%= h @world.universe&.name || 'Unknown Universe' %></small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating controls -->
+  <div class="globe-controls">
+    <% if @player_location %>
+    <button id="btn-center-on-me" class="globe-btn">
+      <i class="bi bi-crosshair"></i>
+      Center on Me
+    </button>
+    <% end %>
+    <button id="btn-show-cities" class="globe-btn">
+      <i class="bi bi-building"></i>
+      Show Cities
+    </button>
+    <a href="/world" class="globe-btn">
+      <i class="bi bi-arrow-left"></i>
+      Back to World
+    </a>
+  </div>
+
+  <!-- Info panel (slides in from right) -->
+  <div id="info-panel" class="globe-info-panel">
+    <div class="panel-header">
+      <h5 id="panel-title">Location Info</h5>
+      <button id="btn-close-panel" class="close-btn">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div id="panel-content">
+        <!-- Dynamic content loaded here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Globe.gl (self-hosted, bundles Three.js internally) -->
+<script src="/js/vendor/globe.gl.min.js"></script>
+
+<script>
+(function() {
+  'use strict';
+
+  const WORLD_ID = <%= @world.id %>;
+  const API_BASE = '/api/world/<%= @world.id %>';
+  <% if @player_location %>
+  const PLAYER_LOCATION = { lat: <%= @player_location[:lat] %>, lng: <%= @player_location[:lng] %> };
+  <% else %>
+  const PLAYER_LOCATION = null;
+  <% end %>
+
+  // State
+  let globe = null;
+  let cities = [];
+
+  // DOM elements
+  const container = document.getElementById('player-globe-container');
+  const loadingEl = document.getElementById('globe-loading');
+  const progressBar = document.getElementById('loading-progress');
+  const stageText = document.getElementById('loading-stage');
+  const infoPanel = document.getElementById('info-panel');
+  const panelTitle = document.getElementById('panel-title');
+  const panelContent = document.getElementById('panel-content');
+
+  /**
+   * Update loading progress bar
+   */
+  function setProgress(percent, message) {
+    progressBar.value = percent;
+    stageText.textContent = message;
+  }
+
+  /**
+   * Initialize the globe with texture-based rendering
+   */
+  function initGlobe() {
+    setProgress(10, 'Initializing globe...');
+
+    globe = Globe()
+      .backgroundColor('#000011')
+      .atmosphereColor('#3a7ecf')
+      .atmosphereAltitude(0.15)
+      .showAtmosphere(true)
+      .width(container.clientWidth)
+      .height(container.clientHeight);
+
+    // Use pre-rendered terrain texture (same approach as admin world builder)
+    const textureUrl = `${API_BASE}/terrain_texture.png`;
+    globe.globeImageUrl(textureUrl);
+
+    // Click detection via lat/lng lookup
+    globe.onGlobeClick((coords) => {
+      if (coords && coords.lat !== undefined && coords.lng !== undefined) {
+        handleGlobeClick(coords.lat, coords.lng);
+      }
+    });
+
+    // Mount to container
+    globe(container);
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      globe.width(container.clientWidth).height(container.clientHeight);
+    });
+
+    // Set initial camera position
+    if (PLAYER_LOCATION) {
+      globe.pointOfView({ lat: PLAYER_LOCATION.lat, lng: PLAYER_LOCATION.lng, altitude: 2.0 });
+    } else {
+      globe.pointOfView({ lat: 20, lng: 0, altitude: 2.5 });
+    }
+
+    // Add player marker if location known
+    if (PLAYER_LOCATION) {
+      addPlayerMarker();
+    }
+
+    // Change cursor on hover
+    container.style.cursor = 'grab';
+
+    setProgress(40, 'Loading terrain...');
+    console.log('Player Globe: Initialized with texture rendering');
+  }
+
+  /**
+   * Handle click on the globe surface - lookup nearest hex via API
+   */
+  async function handleGlobeClick(lat, lng) {
+    try {
+      const response = await fetch(`${API_BASE}/nearest_hex?lat=${lat}&lng=${lng}`);
+      if (!response.ok) return;
+      const data = await response.json();
+
+      if (data.success && data.hex) {
+        showHexInfo(data.hex);
+      } else {
+        // No hex data - show coordinates only
+        showHexInfo({ lat: lat, lng: lng, terrain: 'ocean' });
+      }
+    } catch (err) {
+      console.warn('Player Globe: Failed to lookup hex:', err);
+    }
+  }
+
+  /**
+   * Show hex info in the side panel
+   */
+  function showHexInfo(hex) {
+    const terrain = hex.terrain || 'ocean';
+    const terrainLabel = terrain.charAt(0).toUpperCase() + terrain.slice(1);
+    const lat = hex.lat || 0;
+    const lng = hex.lng || 0;
+
+    panelTitle.textContent = 'Location Info';
+    panelContent.innerHTML = `
+      <div class="location-card">
+        <h5><i class="bi bi-geo-alt mr-2"></i>Coordinates</h5>
+        <p>Latitude: ${lat.toFixed(2)}&deg;</p>
+        <p>Longitude: ${lng.toFixed(2)}&deg;</p>
+      </div>
+      <div class="location-card">
+        <h5><i class="bi bi-layers mr-2"></i>Terrain</h5>
+        <span class="terrain-badge terrain-${terrain}">${terrainLabel}</span>
+        ${hex.traversable === false ? '<span class="badge badge-error ml-2">Impassable</span>' : ''}
+      </div>
+      ${hex.altitude ? `
+      <div class="location-card">
+        <h5><i class="bi bi-arrow-up-circle mr-2"></i>Altitude</h5>
+        <p>${hex.altitude}m</p>
+      </div>
+      ` : ''}
+    `;
+
+    infoPanel.classList.add('visible');
+  }
+
+  /**
+   * Add player marker to globe
+   */
+  function addPlayerMarker() {
+    if (!PLAYER_LOCATION) return;
+
+    globe
+      .pointsData([{
+        lat: PLAYER_LOCATION.lat,
+        lng: PLAYER_LOCATION.lng,
+        name: 'Your Location',
+        color: '#00ff88'
+      }])
+      .pointLat(d => d.lat)
+      .pointLng(d => d.lng)
+      .pointColor(d => d.color)
+      .pointAltitude(0.02)
+      .pointRadius(0.8)
+      .pointLabel(d => d.name);
+  }
+
+  /**
+   * Load city data from API
+   */
+  async function loadCities() {
+    try {
+      const response = await fetch(`${API_BASE}/map`);
+      const data = await response.json();
+
+      if (data.success && data.cities) {
+        cities = data.cities;
+      }
+    } catch (err) {
+      console.warn('Player Globe: Failed to load cities:', err);
+    }
+  }
+
+  /**
+   * Wait for the terrain texture image to finish loading
+   */
+  function waitForTextureLoad() {
+    return new Promise((resolve) => {
+      // Globe.gl loads the texture internally via Three.js TextureLoader.
+      // We detect completion by polling for the globe's internal image state.
+      // As a reliable fallback, resolve after a timeout.
+      const textureImg = new Image();
+      textureImg.onload = () => {
+        setProgress(80, 'Terrain loaded');
+        resolve();
+      };
+      textureImg.onerror = () => {
+        setProgress(80, 'Terrain unavailable');
+        resolve();
+      };
+      textureImg.src = `${API_BASE}/terrain_texture.png`;
+    });
+  }
+
+  /**
+   * Show cities panel
+   */
+  function showCitiesPanel() {
+    panelTitle.textContent = 'Cities';
+
+    if (cities.length === 0) {
+      panelContent.innerHTML = '<p class="text-base-content/60">No cities discovered yet.</p>';
+    } else {
+      panelContent.innerHTML = `
+        <ul class="cities-list">
+          ${cities.map(city => `
+            <li onclick="centerOnCity(${city.lat}, ${city.lng})">
+              <div class="city-name"><i class="bi bi-building mr-2"></i>${city.name}</div>
+              <div class="city-info">${city.lat.toFixed(2)}&deg;, ${city.lng.toFixed(2)}&deg;</div>
+            </li>
+          `).join('')}
+        </ul>
+      `;
+    }
+
+    infoPanel.classList.add('visible');
+  }
+
+  /**
+   * Center globe on a city
+   */
+  window.centerOnCity = function(lat, lng) {
+    globe.pointOfView({ lat: lat, lng: lng, altitude: 1.5 }, 1000);
+  };
+
+  /**
+   * Center on player location
+   */
+  function centerOnPlayer() {
+    if (PLAYER_LOCATION) {
+      globe.pointOfView({
+        lat: PLAYER_LOCATION.lat,
+        lng: PLAYER_LOCATION.lng,
+        altitude: 1.5
+      }, 1000);
+    }
+  }
+
+  /**
+   * Close info panel
+   */
+  function closePanel() {
+    infoPanel.classList.remove('visible');
+  }
+
+  /**
+   * Hide loading overlay
+   */
+  function hideLoading() {
+    setProgress(100, 'Ready');
+    setTimeout(() => {
+      loadingEl.classList.add('hidden');
+    }, 300);
+  }
+
+  // Event listeners
+  document.getElementById('btn-close-panel').addEventListener('click', closePanel);
+  document.getElementById('btn-show-cities').addEventListener('click', showCitiesPanel);
+
+  const centerBtn = document.getElementById('btn-center-on-me');
+  if (centerBtn) {
+    centerBtn.addEventListener('click', centerOnPlayer);
+  }
+
+  // Initialize
+  document.addEventListener('DOMContentLoaded', async () => {
+    initGlobe();
+    await Promise.all([
+      waitForTextureLoad(),
+      loadCities()
+    ]);
+    hideLoading();
+  });
+})();
+</script>

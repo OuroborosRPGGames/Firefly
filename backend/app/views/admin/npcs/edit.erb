@@ -1,0 +1,271 @@
+<%= admin_content_start %>
+<% is_new = @archetype.id.nil? %>
+
+<div class="breadcrumbs text-sm mb-4">
+  <ul>
+    <li><a href="/admin">Admin</a></li>
+    <li><a href="/admin/npcs">NPCs</a></li>
+    <li><%= is_new ? 'New Archetype' : h(@archetype.name) %></li>
+  </ul>
+</div>
+
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-2xl font-bold flex items-center gap-2">
+    <i class="bi bi-robot"></i>
+    <%= is_new ? 'New NPC Archetype' : h(@archetype.name) %>
+  </h2>
+  <% unless is_new %>
+    <%= partial 'admin/delete_button', locals: { path: "/admin/npcs/#{@archetype.id}/delete", label: 'archetype' } %>
+  <% end %>
+</div>
+
+<% unless is_new %>
+  <!-- Tabs -->
+  <div class="tabs tabs-boxed mb-6 bg-base-200">
+    <a class="tab <%= @tab == 'general' ? 'tab-active' : '' %>"
+       href="/admin/npcs/<%= @archetype.id %>?tab=general">
+      <i class="bi bi-gear mr-1"></i>General
+    </a>
+    <a class="tab <%= @tab == 'appearance' ? 'tab-active' : '' %>"
+       href="/admin/npcs/<%= @archetype.id %>?tab=appearance">
+      <i class="bi bi-person mr-1"></i>Appearance
+    </a>
+    <a class="tab <%= @tab == 'combat' ? 'tab-active' : '' %>"
+       href="/admin/npcs/<%= @archetype.id %>?tab=combat">
+      <i class="bi bi-lightning mr-1"></i>Combat
+    </a>
+    <a class="tab <%= @tab == 'spawning' ? 'tab-active' : '' %>"
+       href="/admin/npcs/<%= @archetype.id %>?tab=spawning">
+      <i class="bi bi-arrow-repeat mr-1"></i>Spawning
+    </a>
+    <a class="tab <%= @tab == 'instances' ? 'tab-active' : '' %>"
+       href="/admin/npcs/<%= @archetype.id %>?tab=instances">
+      <i class="bi bi-people mr-1"></i>NPCs (<%= @npcs&.count || 0 %>)
+    </a>
+  </div>
+<% end %>
+
+<% form_action = is_new ? '/admin/npcs/create' : "/admin/npcs/#{@archetype.id}/update" %>
+<% active_tab = is_new ? 'general' : @tab %>
+
+<% if active_tab == 'general' || is_new %>
+  <!-- General Settings -->
+  <form method="post" action="<%= form_action %>">
+    <%= csrf_tag %>
+    <input type="hidden" name="_tab" value="general">
+
+    <div class="card bg-base-200 mb-4">
+      <div class="p-4 border-b border-base-content/10 flex items-center gap-2">
+        <i class="bi bi-gear"></i>Basic Information
+      </div>
+      <div class="card-body">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Name <span class="text-error">*</span></span>
+            </label>
+            <input type="text" class="input input-bordered w-full" name="name"
+                   value="<%= h(@archetype.name || '') %>" required>
+          </div>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Behavior Pattern</span>
+            </label>
+            <select class="select select-bordered w-full" name="behavior_pattern">
+              <% NpcArchetype::BEHAVIOR_PATTERNS.each do |bp| %>
+                <option value="<%= bp %>" <%= @archetype.behavior_pattern == bp ? 'selected' : '' %>>
+                  <%= bp.capitalize %>
+                </option>
+              <% end %>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Race</span>
+            </label>
+            <input type="text" class="input input-bordered w-full" name="race"
+                   value="<%= h(@archetype.race || 'human') %>">
+          </div>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Class</span>
+            </label>
+            <input type="text" class="input input-bordered w-full" name="character_class"
+                   value="<%= h(@archetype.character_class || 'commoner') %>">
+          </div>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Dialogue Style</span>
+            </label>
+            <input type="text" class="input input-bordered w-full" name="dialogue_style"
+                   value="<%= h(@archetype.dialogue_style || 'standard') %>">
+          </div>
+        </div>
+        <div class="form-control mt-4">
+          <label class="label cursor-pointer justify-start gap-3">
+            <input type="checkbox" class="checkbox" name="is_humanoid" value="1"
+                   id="is_humanoid" <%= @archetype.is_humanoid != false ? 'checked' : '' %>>
+            <span class="label-text">Humanoid (uses detailed appearance fields)</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <% if is_new %>
+      <!-- Show all sections for new archetype -->
+      <%= partial 'admin/npcs/appearance_fields' %>
+      <%= partial 'admin/npcs/combat_fields' %>
+      <%= partial 'admin/npcs/spawning_fields' %>
+    <% end %>
+
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-check-lg mr-1"></i><%= is_new ? 'Create Archetype' : 'Save Changes' %>
+    </button>
+  </form>
+<% end %>
+
+<% if active_tab == 'appearance' && !is_new %>
+  <!-- Profile Image Upload (separate form) -->
+  <div class="card bg-base-200 mb-4">
+    <div class="p-4 border-b border-base-content/10 flex items-center gap-2">
+      <i class="bi bi-image"></i>Profile Image
+    </div>
+    <div class="card-body">
+      <div class="flex flex-col md:flex-row items-center gap-6">
+        <div class="text-center">
+          <% if @archetype.profile_image_url %>
+            <img src="<%= @archetype.profile_image_url %>" alt="Profile" class="rounded-full w-24 h-24 object-cover border-4 border-base-content/20">
+          <% else %>
+            <div class="rounded-full bg-base-300 w-24 h-24 flex items-center justify-center mx-auto">
+              <i class="bi bi-person-fill text-4xl text-base-content/50"></i>
+            </div>
+          <% end %>
+        </div>
+        <div class="flex-1">
+          <form method="post" action="/admin/npcs/<%= @archetype.id %>/upload_profile_image" enctype="multipart/form-data" class="mb-2">
+            <%= csrf_tag %>
+            <div class="join w-full">
+              <input type="file" name="profile_image" accept="image/*" class="file-input file-input-bordered join-item flex-1">
+              <button type="submit" class="btn btn-outline btn-primary join-item">
+                <i class="bi bi-upload mr-1"></i>Upload
+              </button>
+            </div>
+          </form>
+          <small class="text-base-content/70">Upload an image for this NPC. Supported formats: JPG, PNG, GIF, WebP. Max 5MB.</small>
+          <% if @archetype.profile_image_url %>
+            <div class="mt-2">
+              <form method="post" action="/admin/npcs/<%= @archetype.id %>/remove_profile_image" class="inline">
+                <%= csrf_tag %>
+                <button type="submit" class="btn btn-outline btn-error btn-sm">
+                  <i class="bi bi-trash mr-1"></i>Remove Image
+                </button>
+              </form>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <form method="post" action="<%= form_action %>">
+    <%= csrf_tag %>
+    <input type="hidden" name="_tab" value="appearance">
+    <!-- Pass through other fields to preserve them -->
+    <input type="hidden" name="name" value="<%= h(@archetype.name) %>">
+    <input type="hidden" name="behavior_pattern" value="<%= h(@archetype.behavior_pattern) %>">
+    <input type="hidden" name="race" value="<%= h(@archetype.race) %>">
+    <input type="hidden" name="character_class" value="<%= h(@archetype.character_class) %>">
+    <input type="hidden" name="dialogue_style" value="<%= h(@archetype.dialogue_style) %>">
+    <input type="hidden" name="is_humanoid" value="<%= @archetype.is_humanoid ? '1' : '0' %>">
+    <input type="hidden" name="name_pattern" value="<%= h(@archetype.name_pattern) %>">
+    <input type="hidden" name="spawn_health_range" value="<%= h(@archetype.spawn_health_range) %>">
+    <input type="hidden" name="spawn_level_range" value="<%= h(@archetype.spawn_level_range) %>">
+    <input type="hidden" name="combat_max_hp" value="<%= @archetype.combat_max_hp %>">
+    <input type="hidden" name="combat_damage_bonus" value="<%= @archetype.combat_damage_bonus %>">
+    <input type="hidden" name="combat_defense_bonus" value="<%= @archetype.combat_defense_bonus %>">
+    <input type="hidden" name="combat_speed_modifier" value="<%= @archetype.combat_speed_modifier %>">
+    <input type="hidden" name="combat_ai_profile" value="<%= @archetype.combat_ai_profile %>">
+    <input type="hidden" name="combat_ability_chance" value="<%= @archetype.combat_ability_chance %>">
+    <input type="hidden" name="flee_health_percent" value="<%= @archetype.flee_health_percent %>">
+    <input type="hidden" name="defensive_health_percent" value="<%= @archetype.defensive_health_percent %>">
+    <input type="hidden" name="damage_dice_count" value="<%= @archetype.damage_dice_count %>">
+    <input type="hidden" name="damage_dice_sides" value="<%= @archetype.damage_dice_sides %>">
+
+    <%= partial 'admin/npcs/appearance_fields' %>
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-check-lg mr-1"></i>Save Changes
+    </button>
+  </form>
+<% end %>
+
+<% if active_tab == 'combat' && !is_new %>
+  <form method="post" action="<%= form_action %>">
+    <%= csrf_tag %>
+    <input type="hidden" name="_tab" value="combat">
+    <!-- Pass through other fields -->
+    <input type="hidden" name="name" value="<%= h(@archetype.name) %>">
+    <input type="hidden" name="behavior_pattern" value="<%= h(@archetype.behavior_pattern) %>">
+    <input type="hidden" name="race" value="<%= h(@archetype.race) %>">
+    <input type="hidden" name="character_class" value="<%= h(@archetype.character_class) %>">
+    <input type="hidden" name="dialogue_style" value="<%= h(@archetype.dialogue_style) %>">
+    <input type="hidden" name="is_humanoid" value="<%= @archetype.is_humanoid ? '1' : '0' %>">
+    <input type="hidden" name="default_hair_desc" value="<%= h(@archetype.default_hair_desc) %>">
+    <input type="hidden" name="default_eyes_desc" value="<%= h(@archetype.default_eyes_desc) %>">
+    <input type="hidden" name="default_skin_tone" value="<%= h(@archetype.default_skin_tone) %>">
+    <input type="hidden" name="default_body_desc" value="<%= h(@archetype.default_body_desc) %>">
+    <input type="hidden" name="default_clothes_desc" value="<%= h(@archetype.default_clothes_desc) %>">
+    <input type="hidden" name="default_creature_desc" value="<%= h(@archetype.default_creature_desc) %>">
+    <input type="hidden" name="profile_image_url" value="<%= h(@archetype.profile_image_url) %>">
+    <input type="hidden" name="name_pattern" value="<%= h(@archetype.name_pattern) %>">
+    <input type="hidden" name="spawn_health_range" value="<%= h(@archetype.spawn_health_range) %>">
+    <input type="hidden" name="spawn_level_range" value="<%= h(@archetype.spawn_level_range) %>">
+
+    <%= partial 'admin/npcs/combat_fields' %>
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-check-lg mr-1"></i>Save Changes
+    </button>
+  </form>
+<% end %>
+
+<% if active_tab == 'spawning' && !is_new %>
+  <form method="post" action="<%= form_action %>">
+    <%= csrf_tag %>
+    <input type="hidden" name="_tab" value="spawning">
+    <!-- Pass through other fields -->
+    <input type="hidden" name="name" value="<%= h(@archetype.name) %>">
+    <input type="hidden" name="behavior_pattern" value="<%= h(@archetype.behavior_pattern) %>">
+    <input type="hidden" name="race" value="<%= h(@archetype.race) %>">
+    <input type="hidden" name="character_class" value="<%= h(@archetype.character_class) %>">
+    <input type="hidden" name="dialogue_style" value="<%= h(@archetype.dialogue_style) %>">
+    <input type="hidden" name="is_humanoid" value="<%= @archetype.is_humanoid ? '1' : '0' %>">
+    <input type="hidden" name="default_hair_desc" value="<%= h(@archetype.default_hair_desc) %>">
+    <input type="hidden" name="default_eyes_desc" value="<%= h(@archetype.default_eyes_desc) %>">
+    <input type="hidden" name="default_skin_tone" value="<%= h(@archetype.default_skin_tone) %>">
+    <input type="hidden" name="default_body_desc" value="<%= h(@archetype.default_body_desc) %>">
+    <input type="hidden" name="default_clothes_desc" value="<%= h(@archetype.default_clothes_desc) %>">
+    <input type="hidden" name="default_creature_desc" value="<%= h(@archetype.default_creature_desc) %>">
+    <input type="hidden" name="profile_image_url" value="<%= h(@archetype.profile_image_url) %>">
+    <input type="hidden" name="combat_max_hp" value="<%= @archetype.combat_max_hp %>">
+    <input type="hidden" name="combat_damage_bonus" value="<%= @archetype.combat_damage_bonus %>">
+    <input type="hidden" name="combat_defense_bonus" value="<%= @archetype.combat_defense_bonus %>">
+    <input type="hidden" name="combat_speed_modifier" value="<%= @archetype.combat_speed_modifier %>">
+    <input type="hidden" name="combat_ai_profile" value="<%= @archetype.combat_ai_profile %>">
+    <input type="hidden" name="combat_ability_chance" value="<%= @archetype.combat_ability_chance %>">
+    <input type="hidden" name="flee_health_percent" value="<%= @archetype.flee_health_percent %>">
+    <input type="hidden" name="defensive_health_percent" value="<%= @archetype.defensive_health_percent %>">
+    <input type="hidden" name="damage_dice_count" value="<%= @archetype.damage_dice_count %>">
+    <input type="hidden" name="damage_dice_sides" value="<%= @archetype.damage_dice_sides %>">
+
+    <%= partial 'admin/npcs/spawning_fields' %>
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-check-lg mr-1"></i>Save Changes
+    </button>
+  </form>
+<% end %>
+
+<% if active_tab == 'instances' && !is_new %>
+  <%= partial 'admin/npcs/instances_tab' %>
+<% end %>
+<%= admin_content_end %>

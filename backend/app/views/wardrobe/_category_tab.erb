@@ -1,0 +1,334 @@
+<div class="category-tab" data-category="<%= category %>">
+  <!-- Dynamic Subcategory Tabs (populated from API) -->
+  <div class="flex flex-wrap gap-2 mb-3 subcategory-tabs"></div>
+
+  <!-- Content Area -->
+  <div class="category-content">
+    <div class="text-center py-4 loading-state">
+      <span class="loading loading-spinner loading-sm text-primary"></span>
+      <span class="text-base-content/70 ml-2">Loading <%= category %>...</span>
+    </div>
+
+    <!-- Unified Cards Grid -->
+    <div class="cards-grid wardrobe-cards-grid hidden"></div>
+
+    <div class="no-cards-message text-center text-base-content/70 py-3 hidden">
+      <i class="bi bi-inbox text-4xl block mb-2 opacity-50"></i>
+      <p class="mb-0">No stored <%= category %> found.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const container = document.querySelector('.category-tab[data-category="<%= category %>"]');
+  if (!container) return;
+
+  const category = '<%= category %>';
+  let currentSubcategory = 'all';
+
+  // Register loader for tab switching
+  if (window.registerWardrobeTabLoader) {
+    window.registerWardrobeTabLoader(category, loadCategoryCards);
+  }
+
+  async function loadCategoryCards() {
+    const loadingEl = container.querySelector('.loading-state');
+    const cardsGrid = container.querySelector('.cards-grid');
+    const noCardsMsg = container.querySelector('.no-cards-message');
+
+    loadingEl.classList.remove('hidden');
+    cardsGrid.classList.add('hidden');
+    noCardsMsg.classList.add('hidden');
+
+    try {
+      let url = `/api/wardrobe/items?category=${category}`;
+      if (window.wardrobeManager && window.wardrobeManager.currentRoomOnly && window.wardrobeManager.currentRoomId) {
+        url += `&room_id=${window.wardrobeManager.currentRoomId}`;
+      }
+      const response = await fetch(url);
+      const data = await response.json();
+
+      loadingEl.classList.add('hidden');
+
+      if (!data.success) {
+        cardsGrid.innerHTML = '<div class="col-span-full"><div class="alert alert-error">Failed to load items</div></div>';
+        cardsGrid.classList.remove('hidden');
+        return;
+      }
+
+      // Build subcategory buttons dynamically
+      buildSubcategoryButtons(data.available_subcategories || []);
+
+      // Filter cards by subcategory
+      let cards = data.cards || [];
+      if (currentSubcategory !== 'all') {
+        cards = cards.filter(c => c.subcategory === currentSubcategory);
+      }
+
+      if (cards.length === 0) {
+        cardsGrid.innerHTML = '';
+        noCardsMsg.classList.remove('hidden');
+      } else {
+        noCardsMsg.classList.add('hidden');
+        cardsGrid.innerHTML = renderCards(cards);
+        cardsGrid.classList.remove('hidden');
+      }
+
+      bindCardEvents();
+
+    } catch (err) {
+      console.error('Error loading category cards:', err);
+      loadingEl.classList.add('hidden');
+      noCardsMsg.classList.remove('hidden');
+    }
+  }
+
+  function buildSubcategoryButtons(subcategories) {
+    const tabsContainer = container.querySelector('.subcategory-tabs');
+    if (subcategories.length === 0) {
+      tabsContainer.innerHTML = '';
+      return;
+    }
+
+    let html = `<button class="btn btn-sm btn-ghost ${currentSubcategory === 'all' ? 'btn-active' : ''} subcategory-btn" data-subcategory="all">All</button>`;
+    subcategories.forEach(sub => {
+      const label = sub.charAt(0).toUpperCase() + sub.slice(1);
+      html += `<button class="btn btn-sm btn-ghost ${currentSubcategory === sub ? 'btn-active' : ''} subcategory-btn" data-subcategory="${sub}">${label}</button>`;
+    });
+    tabsContainer.innerHTML = html;
+
+    // Bind subcategory button clicks
+    tabsContainer.querySelectorAll('.subcategory-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabsContainer.querySelectorAll('.subcategory-btn').forEach(b => b.classList.remove('btn-active'));
+        btn.classList.add('btn-active');
+        currentSubcategory = btn.dataset.subcategory;
+        loadCategoryCards();
+      });
+    });
+  }
+
+  function renderCards(cards) {
+    // Separate items and patterns
+    const items = cards.filter(c => c.card_type === 'item');
+    const patterns = cards.filter(c => c.card_type === 'pattern');
+
+    // Group items by pattern_id (items without pattern_id are individual)
+    const stacks = {};
+    const individuals = [];
+
+    items.forEach(item => {
+      if (item.pattern_id) {
+        if (!stacks[item.pattern_id]) {
+          stacks[item.pattern_id] = { representative: item, items: [] };
+        }
+        stacks[item.pattern_id].items.push(item);
+      } else {
+        individuals.push(item);
+      }
+    });
+
+    let html = '';
+
+    // Render stacked items
+    Object.values(stacks).forEach(stack => {
+      html += renderStackedCard(stack.representative, stack.items);
+    });
+
+    // Render individual items (no pattern)
+    individuals.forEach(item => {
+      html += renderStackedCard(item, [item]);
+    });
+
+    // Render patterns only if no stored items exist for that pattern
+    const storedPatternIds = new Set(Object.keys(stacks).map(Number));
+    patterns.filter(p => !storedPatternIds.has(p.id)).forEach(pattern => {
+      html += renderPatternCard(pattern);
+    });
+
+    return html;
+  }
+
+  function renderStackedCard(representative, items) {
+    const imgSrc = representative.thumbnail_url || representative.image_url || '';
+    const hasImage = !!imgSrc;
+    const count = items.length;
+    const hasPattern = !!representative.pattern_id;
+    const vaultOk = window.wardrobeManager && window.wardrobeManager.vaultAccessible;
+
+    // Store items data for lightbox access
+    const itemDataAttr = escapeAttr(JSON.stringify({
+      name: representative.name,
+      description: representative.description,
+      long_description: representative.long_description,
+      image_url: representative.image_url,
+      thumbnail_url: representative.thumbnail_url,
+      condition: representative.condition,
+      stored_room_name: representative.stored_room_name
+    }));
+
+    return `
+      <div class="wardrobe-card" data-item-id="${representative.id}" data-pattern-id="${representative.pattern_id || ''}">
+        <div class="card-thumb" onclick='openWardrobeLightbox(${itemDataAttr})'>
+          ${hasImage
+            ? `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(representative.name)}" onerror="this.parentElement.innerHTML='<i class=\\'bi bi-image placeholder-icon\\'></i><span class=\\'placeholder-name\\'>${escapeHtml(representative.name)}</span>'">`
+            : `<i class="bi bi-image placeholder-icon"></i><span class="placeholder-name">${escapeHtml(representative.name)}</span>`}
+        </div>
+        <div class="card-actions">
+          <button class="action-btn action-wear wardrobe-action" data-id="${representative.id}" title="Wear">
+            <i class="bi bi-person-badge"></i>
+          </button>
+          <button class="action-btn action-retrieve wardrobe-action" data-id="${representative.id}" title="Retrieve">
+            <i class="bi bi-box-arrow-up"></i>
+          </button>
+          ${hasPattern
+            ? `<button class="action-btn action-copy wardrobe-action" data-pattern-id="${representative.pattern_id}" title="Add copy" ${!vaultOk ? 'disabled' : ''}>
+                <i class="bi bi-plus-circle"></i>
+              </button>`
+            : ''}
+          <button class="action-btn action-delete wardrobe-action" data-id="${representative.id}" data-name="${escapeHtml(representative.name)}" title="Delete">
+            <i class="bi bi-trash"></i>
+          </button>
+          ${count > 1 ? `<span class="item-count">x${count}</span>` : ''}
+        </div>
+      </div>`;
+  }
+
+  function renderPatternCard(pattern) {
+    const imgSrc = pattern.thumbnail_url || pattern.image_url || '';
+    const hasImage = !!imgSrc;
+    const costText = pattern.half_price > 0 ? `$${pattern.half_price}` : 'Free';
+
+    const patternDataAttr = escapeAttr(JSON.stringify({
+      name: pattern.name,
+      description: pattern.description,
+      long_description: pattern.long_description,
+      image_url: pattern.image_url,
+      thumbnail_url: pattern.thumbnail_url,
+      condition: null,
+      stored_room_name: 'Pattern'
+    }));
+
+    return `
+      <div class="wardrobe-card pattern-card" data-pattern-id="${pattern.id}">
+        <div class="card-thumb" onclick='openWardrobeLightbox(${patternDataAttr})'>
+          ${hasImage
+            ? `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(pattern.name)}" onerror="this.parentElement.innerHTML='<i class=\\'bi bi-image placeholder-icon\\'></i><span class=\\'placeholder-name\\'>${escapeHtml(pattern.name)}</span>'">`
+            : `<i class="bi bi-image placeholder-icon"></i><span class="placeholder-name">${escapeHtml(pattern.name)}</span>`}
+        </div>
+        <div class="card-actions">
+          <button class="action-btn action-copy wardrobe-action create-btn" data-id="${pattern.id}" title="Create (${costText})">
+            <i class="bi bi-plus-circle"></i>
+          </button>
+          ${pattern.owned_count > 0 ? `<span class="item-count">x${pattern.owned_count}</span>` : ''}
+        </div>
+      </div>`;
+  }
+
+  function bindCardEvents() {
+    // Wear buttons (fetch & wear)
+    container.querySelectorAll('.action-wear').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await fetchItem(btn.dataset.id, true);
+      });
+    });
+
+    // Retrieve buttons
+    container.querySelectorAll('.action-retrieve').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await fetchItem(btn.dataset.id, false);
+      });
+    });
+
+    // Copy (create from pattern) buttons - on item cards
+    container.querySelectorAll('.action-copy:not(.create-btn)').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (window.wardrobeManager) {
+          window.wardrobeManager.confirmCopy(btn.dataset.patternId, () => loadCategoryCards());
+        }
+      });
+    });
+
+    // Delete buttons
+    container.querySelectorAll('.action-delete').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (window.wardrobeManager) {
+          window.wardrobeManager.confirmTrash(btn.dataset.id, btn.dataset.name, () => loadCategoryCards());
+        }
+      });
+    });
+
+    // Create from pattern buttons (pattern cards)
+    container.querySelectorAll('.create-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (window.wardrobeManager) {
+          window.wardrobeManager.confirmCopy(btn.dataset.id, () => loadCategoryCards());
+        }
+      });
+    });
+  }
+
+  async function fetchItem(itemId, andWear) {
+    const endpoint = andWear ? 'fetch-wear' : 'fetch';
+    try {
+      const response = await fetch(`/api/wardrobe/items/${itemId}/${endpoint}`, { method: 'POST' });
+      const result = await response.json();
+
+      if (result.success) {
+        showToast(result.message || `Item ${andWear ? 'fetched and worn' : 'fetched'} successfully!`, 'success');
+        loadCategoryCards();
+      } else {
+        showToast(result.error || 'Failed to fetch item', 'danger');
+      }
+    } catch (err) {
+      console.error('Error fetching item:', err);
+      showToast('Error fetching item', 'danger');
+    }
+  }
+
+  async function createFromPattern(patternId) {
+    try {
+      const response = await fetch(`/api/wardrobe/patterns/${patternId}/create`, { method: 'POST' });
+      const result = await response.json();
+
+      if (result.success) {
+        showToast(result.message || 'Item created successfully!', 'success');
+        loadCategoryCards();
+      } else {
+        showToast(result.error || 'Failed to create item', 'danger');
+      }
+    } catch (err) {
+      console.error('Error creating from pattern:', err);
+      showToast('Error creating item', 'danger');
+    }
+  }
+
+  function showToast(message, type) {
+    if (window.wardrobeManager && window.wardrobeManager.showToast) {
+      window.wardrobeManager.showToast(message, type);
+    }
+  }
+
+  async function showItemTooltip(itemId, event) {
+    if (window.wardrobeManager && window.wardrobeManager.showTooltip) {
+      window.wardrobeManager.showTooltip(itemId, event);
+    }
+  }
+
+  function hideItemTooltip() {
+    if (window.wardrobeManager && window.wardrobeManager.hideTooltip) {
+      window.wardrobeManager.hideTooltip();
+    }
+  }
+
+  function escapeAttr(text) {
+    return escapeHtml(text).replace(/'/g, '&#39;');
+  }
+})();
+</script>

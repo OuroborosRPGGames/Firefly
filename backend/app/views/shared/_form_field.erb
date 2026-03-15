@@ -1,0 +1,58 @@
+<%#
+  Form Field Component
+
+  Usage:
+    <%= render 'shared/form_field', name: 'title', label: 'Title', type: 'text' %>
+    <%= render 'shared/form_field', name: 'bio', label: 'Biography', type: 'textarea', hint: 'Max 500 chars' %>
+    <%= render 'shared/form_field', name: 'role', label: 'Role', type: 'select', options: [{value: 'admin', label: 'Admin'}] %>
+
+  Parameters:
+    - name: (required) Field name attribute
+    - label: (required) Label text
+    - type: (required) 'text', 'email', 'password', 'textarea', 'select', 'number'
+    - value: (optional) Current value
+    - placeholder: (optional) Placeholder text
+    - hint: (optional) Help text below field
+    - required: (optional) Boolean for required field
+    - options: (required for select) Array of {value:, label:, selected:} hashes
+    - animated: (optional) Boolean to enable staggered animation
+%>
+<div class="form-control<%= ' form-field--animated' if local_assigns[:animated] %>">
+  <label class="label" for="<%= name %>">
+    <span class="label-text"><%= label %><%= '<span class="text-error">*</span>'.html_safe if local_assigns[:required] %></span>
+  </label>
+
+  <% case type.to_s %>
+  <% when 'textarea' %>
+    <textarea
+      class="textarea textarea-bordered w-full"
+      id="<%= name %>"
+      name="<%= name %>"
+      placeholder="<%= local_assigns[:placeholder] %>"
+      <%= 'required' if local_assigns[:required] %>><%= local_assigns[:value] %></textarea>
+  <% when 'select' %>
+    <select class="select select-bordered w-full" id="<%= name %>" name="<%= name %>" <%= 'required' if local_assigns[:required] %>>
+      <% if local_assigns[:placeholder] %>
+        <option value=""><%= placeholder %></option>
+      <% end %>
+      <% (local_assigns[:options] || []).each do |opt| %>
+        <option value="<%= opt[:value] %>" <%= 'selected' if opt[:selected] %>><%= opt[:label] %></option>
+      <% end %>
+    </select>
+  <% else %>
+    <input
+      class="input input-bordered w-full"
+      type="<%= type %>"
+      id="<%= name %>"
+      name="<%= name %>"
+      placeholder="<%= local_assigns[:placeholder] %>"
+      value="<%= local_assigns[:value] %>"
+      <%= 'required' if local_assigns[:required] %>>
+  <% end %>
+
+  <% if local_assigns[:hint] %>
+    <label class="label">
+      <span class="label-text-alt text-base-content/70"><%= hint %></span>
+    </label>
+  <% end %>
+</div>

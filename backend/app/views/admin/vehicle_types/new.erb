@@ -1,0 +1,15 @@
+<% @page_title = 'New Vehicle Type - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Vehicle Types', path: '/admin/vehicle_types' }, { label: 'New' }] %>
+
+<%= admin_content_start %>
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">
+          <i class="bi bi-plus-circle mr-2"></i>New Vehicle Type
+        </h2>
+        <a href="/admin/vehicle_types" class="btn btn-outline btn-secondary">
+          <i class="bi bi-arrow-left mr-2"></i>Back to Vehicle Types
+        </a>
+      </div>
+
+      <%= partial 'admin/vehicle_types/form' %>
+<%= admin_content_end %>

@@ -1,0 +1,17 @@
+# frozen_string_literal: true
+#
+# AnyCable configuration
+# Used by BroadcastService for WebSocket broadcasting
+#
+
+development:
+  adapter: redis
+  url: <%= ENV.fetch('REDIS_URL', 'redis://localhost:6379/0') %>
+
+test:
+  adapter: async
+
+production:
+  adapter: redis
+  url: <%= ENV['REDIS_URL'] %>
+  channel_prefix: firefly_production

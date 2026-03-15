@@ -1,0 +1,496 @@
+<% @page_title = "Mission Job ##{@job.id} - Admin" %>
+<% @breadcrumbs = [
+  { label: 'Admin', path: '/admin' },
+  { label: 'Mission Generator', path: '/admin/mission_generator' },
+  { label: "Job ##{@job.id}" }
+] %>
+
+<%= admin_content_start %>
+      <div class="mb-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <h1 class="text-2xl font-bold">
+              <i class="bi bi-bullseye mr-2"></i>Mission Generation Job #<%= @job.id %>
+            </h1>
+          </div>
+          <div class="flex gap-2">
+            <% if @job.running? || @job.pending? %>
+              <form action="/admin/mission_generator/<%= @job.id %>/cancel" method="post" class="inline">
+                <button type="submit" class="btn btn-outline btn-error" onclick="return confirm('Cancel this job?')">
+                  <i class="bi bi-x-circle mr-1"></i>Cancel
+                </button>
+              </form>
+            <% end %>
+            <a href="/admin/mission_generator" class="btn btn-outline btn-ghost">
+              <i class="bi bi-arrow-left mr-1"></i>Back
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <!-- Main Content -->
+        <div class="lg:col-span-2">
+          <!-- Status Card -->
+          <div class="card bg-base-200 shadow-lg border border-<%= case @job.status
+                                             when 'completed' then 'success'
+                                             when 'failed' then 'error'
+                                             when 'running' then 'primary'
+                                             when 'cancelled' then 'warning'
+                                             else 'base-content/20'
+                                             end %> mb-4">
+            <div class="p-4 border-b border-base-content/10 flex justify-between items-center">
+              <span>
+                <i class="bi bi-<%= case @job.status
+                                    when 'completed' then 'check-circle-fill text-success'
+                                    when 'failed' then 'x-circle-fill text-error'
+                                    when 'running' then 'hourglass-split text-primary'
+                                    when 'cancelled' then 'slash-circle text-warning'
+                                    else 'circle'
+                                    end %> mr-2"></i>
+                Status: <%= @job.status.capitalize %>
+              </span>
+              <% if @job.phase %>
+                <span class="badge badge-info">Phase: <%= @job.phase.capitalize %></span>
+              <% end %>
+            </div>
+            <div class="card-body">
+              <% if @job.running? %>
+                <progress class="progress progress-primary w-full h-6 mb-3" value="<%= @job.progress&.dig('percent') || 33 %>" max="100"></progress>
+                <p class="text-base-content/70">
+                  <i class="bi bi-info-circle mr-1"></i>
+                  <%= @job.progress&.dig('message') || 'Processing...' %>
+                </p>
+              <% elsif @job.failed? %>
+                <div class="alert alert-error">
+                  <strong>Error:</strong> <%= h @job.error_message %>
+                </div>
+              <% elsif @job.completed? && @activity %>
+                <div class="alert alert-success">
+                  <i class="bi bi-check-circle mr-2"></i>
+                  <span>
+                    Mission "<strong><%= h @activity.aname %></strong>" created successfully!
+                    <a href="/admin/activity_builder/<%= @activity.id %>" class="btn btn-success btn-sm ml-2">
+                      <i class="bi bi-pencil mr-1"></i>Edit Mission
+                    </a>
+                  </span>
+                </div>
+              <% elsif @job.cancelled? %>
+                <div class="alert alert-warning">
+                  <i class="bi bi-slash-circle mr-2"></i>
+                  Job was cancelled.
+                </div>
+              <% end %>
+            </div>
+          </div>
+
+          <!-- Generated Activity -->
+          <% if @activity %>
+            <div class="card bg-base-200 shadow-lg border border-success mb-4">
+              <div class="p-4 border-b border-success bg-success/20 font-semibold text-success">
+                <i class="bi bi-trophy mr-2"></i>Generated Mission
+              </div>
+              <div class="card-body">
+                <h4 class="text-xl font-semibold mb-2"><%= h @activity.aname %></h4>
+                <p class="mb-4"><%= h @activity.adesc %></p>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div>
+                    <span class="font-semibold">Type:</span> <%= @activity.atype.capitalize %>
+                  </div>
+                  <div>
+                    <span class="font-semibold">Rounds:</span> <%= @job.result_value(:rounds_created) || 0 %>
+                  </div>
+                  <div>
+                    <span class="font-semibold">Archetypes:</span> <%= @job.result_value(:archetypes_created) || 0 %>
+                  </div>
+                  <div>
+                    <span class="font-semibold">Universe:</span>
+                    <% uni = @activity[:universe_id] ? (Universe[@activity[:universe_id]] rescue nil) : nil %>
+                    <% if uni %>
+                      <%= h uni.name %>
+                    <% else %>
+                      <span class="text-base-content/50">None</span>
+                    <% end %>
+                  </div>
+                  <% sb = @activity[:stat_block_id] ? (StatBlock[@activity[:stat_block_id]] rescue nil) : nil %>
+                  <% if sb %>
+                    <div>
+                      <span class="font-semibold">Stat Block:</span> <%= h sb.name %>
+                    </div>
+                  <% end %>
+                </div>
+                <div class="divider my-2"></div>
+                <a href="/admin/activity_builder/<%= @activity.id %>" class="btn btn-success">
+                  <i class="bi bi-pencil mr-1"></i>Open in Activity Builder
+                </a>
+              </div>
+            </div>
+          <% end %>
+
+          <!-- Brainstorm Outputs -->
+          <% if @job.brainstorm_outputs && @job.brainstorm_outputs.any? %>
+            <div class="card bg-base-200 shadow-lg mb-4">
+              <div class="p-4 border-b border-base-content/10 font-semibold">
+                <i class="bi bi-lightbulb mr-2"></i>Brainstorm Outputs
+              </div>
+              <div class="card-body p-0">
+                <div class="join join-vertical w-full">
+                  <% @job.brainstorm_outputs.each_with_index do |(key, output), idx| %>
+                    <div class="collapse collapse-arrow join-item border border-base-content/10">
+                      <input type="radio" name="brainstorm-accordion" <%= idx == 0 ? 'checked' : '' %> />
+                      <div class="collapse-title font-medium">
+                        <%= key.to_s.split('_').map(&:capitalize).join(' ') %>
+                      </div>
+                      <div class="collapse-content">
+                        <pre class="bg-base-300 p-3 rounded text-sm overflow-x-auto max-h-96 overflow-y-auto whitespace-pre-wrap"><%= h output %></pre>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+
+          <!-- Synthesized Plan -->
+          <% if @job.synthesized_plan && @job.synthesized_plan.any? %>
+            <div class="card bg-base-200 shadow-lg mb-4">
+              <div class="p-4 border-b border-base-content/10 font-semibold">
+                <i class="bi bi-diagram-3 mr-2"></i>Synthesized Plan
+              </div>
+              <div class="card-body">
+                <h5 class="text-lg font-semibold mb-2"><%= h @job.synthesized_plan['title'] %></h5>
+                <p class="mb-4"><%= h @job.synthesized_plan['summary'] %></p>
+
+                <%# Theme, Tone & Narrative Details %>
+                <% if @job.synthesized_plan['theme'] || @job.synthesized_plan['tone_adjectives'] || @job.synthesized_plan['chekhov_details'] %>
+                  <div class="bg-base-300 rounded-lg p-3 mb-4">
+                    <% if @job.synthesized_plan['theme'] %>
+                      <div class="mb-2">
+                        <span class="font-semibold">Theme:</span>
+                        <span class="badge badge-accent ml-1"><%= h @job.synthesized_plan['theme'] %></span>
+                      </div>
+                    <% end %>
+                    <% if @job.synthesized_plan['tone_adjectives'].is_a?(Array) && @job.synthesized_plan['tone_adjectives'].any? %>
+                      <div class="mb-2">
+                        <span class="font-semibold">Tone:</span>
+                        <% @job.synthesized_plan['tone_adjectives'].each do |adj| %>
+                          <span class="badge badge-outline ml-1"><%= h adj %></span>
+                        <% end %>
+                      </div>
+                    <% end %>
+                    <% if @job.synthesized_plan['chekhov_details'].is_a?(Array) && @job.synthesized_plan['chekhov_details'].any? %>
+                      <div>
+                        <span class="font-semibold">Chekhov's Guns:</span>
+                        <ul class="list-disc list-inside text-sm text-base-content/70 mt-1">
+                          <% @job.synthesized_plan['chekhov_details'].each do |detail| %>
+                            <li><%= h detail %></li>
+                          <% end %>
+                        </ul>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+
+                <%# Pacing Warnings %>
+                <% if @job.synthesized_plan['pacing_warnings'].is_a?(Array) && @job.synthesized_plan['pacing_warnings'].any? %>
+                  <div class="alert alert-warning mb-4">
+                    <div>
+                      <i class="bi bi-exclamation-triangle mr-2"></i>
+                      <span class="font-semibold">Pacing Warnings:</span>
+                      <ul class="list-disc list-inside mt-1 text-sm">
+                        <% @job.synthesized_plan['pacing_warnings'].each do |w| %>
+                          <li><%= h w %></li>
+                        <% end %>
+                      </ul>
+                    </div>
+                  </div>
+                <% end %>
+
+                <% if @job.synthesized_plan['rounds'] %>
+                  <h6 class="font-semibold mt-4 mb-2">Rounds (<%= @job.synthesized_plan['rounds'].length %>)</h6>
+                  <div class="overflow-x-auto">
+                    <table class="table table-zebra table-sm">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Branch</th>
+                          <th>Type</th>
+                          <th>Description</th>
+                          <th>Details</th>
+                          <th>Stats</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <% @job.synthesized_plan['rounds'].each do |round| %>
+                          <tr>
+                            <td><%= round['round_number'] %></td>
+                            <td><%= round['branch'] || 0 %></td>
+                            <td><span class="badge badge-info"><%= round['rtype'] %></span></td>
+                            <td><%= truncate_text(round['emit'], 100) %></td>
+                            <td class="text-xs">
+                              <% if round['rtype'] == 'persuade' %>
+                                <% if round['persuade_npc_name'] %>
+                                  <div><span class="font-semibold">NPC:</span> <%= round['persuade_npc_name'] %></div>
+                                <% end %>
+                                <% if round['persuade_goal'] %>
+                                  <div><span class="font-semibold">Goal:</span> <%= round['persuade_goal'] %></div>
+                                <% end %>
+                                <% if round['persuade_npc_personality'] && !round['persuade_npc_personality'].to_s.empty? %>
+                                  <div class="mt-1">
+                                    <span class="font-semibold">Personality:</span>
+                                    <span class="text-base-content/60"><%= truncate_text(round['persuade_npc_personality'], 80) %></span>
+                                  </div>
+                                <% end %>
+                              <% elsif round['rtype'] == 'combat' %>
+                                <% if round['combat_encounter_name'] %>
+                                  <div><span class="font-semibold">Encounter:</span> <%= round['combat_encounter_name'] %></div>
+                                <% end %>
+                                <% if round['is_finale'] %>
+                                  <span class="badge badge-error badge-sm">Finale</span>
+                                <% end %>
+                              <% elsif round['rtype'] == 'branch' %>
+                                <% if round['branch_choices'].is_a?(Array) %>
+                                  <div><%= round['branch_choices'].length %> choices</div>
+                                <% end %>
+                              <% elsif round['rtype'] == 'reflex' %>
+                                <% if round['timeout_seconds'] %>
+                                  <div><span class="font-semibold">Timeout:</span> <%= round['timeout_seconds'] %>s</div>
+                                <% end %>
+                              <% elsif round['rtype'] == 'free_roll' %>
+                                <% if round['free_roll_context'] && !round['free_roll_context'].to_s.empty? %>
+                                  <div><span class="font-semibold">Context:</span> <%= truncate_text(round['free_roll_context'], 60) %></div>
+                                <% end %>
+                              <% elsif round['rtype'] == 'standard' %>
+                                <% if round['actions'].is_a?(Array) && round['actions'].any? %>
+                                  <div><%= round['actions'].length %> actions</div>
+                                <% end %>
+                                <% if round['tasks'].is_a?(Array) && round['tasks'].any? %>
+                                  <div><%= round['tasks'].length %> tasks</div>
+                                <% end %>
+                              <% end %>
+                              <% if round['fail_con'] && round['fail_con'] != 'none' %>
+                                <div class="mt-1"><span class="badge badge-warning badge-sm">Fail: <%= round['fail_con'] %></span></div>
+                              <% end %>
+                              <% if round['knockout'] %>
+                                <span class="badge badge-error badge-sm">KO</span>
+                              <% end %>
+                            </td>
+                            <td>
+                              <%
+                                stat_info = []
+                                if round['reflex_stat_id']
+                                  s = Stat[round['reflex_stat_id']] rescue nil
+                                  stat_info << "Reflex: #{s&.name || round['reflex_stat_id']}"
+                                end
+                                if round['stat_set_a'].is_a?(Array) && round['stat_set_a'].any?
+                                  names = round['stat_set_a'].map { |id| s = Stat[id] rescue nil; s&.name || id.to_s }
+                                  stat_info << "Group: #{names.join(', ')}"
+                                end
+                                if round['persuade_stat_ids'].is_a?(Array) && round['persuade_stat_ids'].any?
+                                  names = round['persuade_stat_ids'].map { |id| s = Stat[id] rescue nil; s&.name || id.to_s }
+                                  stat_info << "Persuade: #{names.join(', ')}"
+                                end
+                                if round['actions'].is_a?(Array)
+                                  action_stats = round['actions'].select { |a| a['stat_ids'].is_a?(Array) && a['stat_ids'].any? }
+                                  if action_stats.any?
+                                    stat_info << "#{action_stats.length} actions with stats"
+                                  end
+                                end
+                              %>
+                              <% if stat_info.any? %>
+                                <span class="text-xs text-success"><%= stat_info.join('; ') %></span>
+                              <% elsif %w[standard reflex group_check persuade].include?(round['rtype']) %>
+                                <span class="badge badge-warning badge-sm">No stats</span>
+                              <% else %>
+                                <span class="text-xs text-base-content/40">-</span>
+                              <% end %>
+                            </td>
+                          </tr>
+                        <% end %>
+                      </tbody>
+                    </table>
+                  </div>
+                <% end %>
+
+                <% if @job.synthesized_plan['adversaries'] && @job.synthesized_plan['adversaries'].any? %>
+                  <h6 class="font-semibold mt-4 mb-2">Adversaries</h6>
+                  <ul class="menu bg-base-300 rounded-box">
+                    <% @job.synthesized_plan['adversaries'].each do |adv| %>
+                      <li>
+                        <div class="flex flex-col items-start">
+                          <span>
+                            <strong><%= h adv['name'] %></strong>
+                            <span class="badge badge-neutral ml-2"><%= h adv['role'] %></span>
+                          </span>
+                          <span class="text-sm text-base-content/60"><%= h adv['description'] %></span>
+                        </div>
+                      </li>
+                    <% end %>
+                  </ul>
+                <% end %>
+
+                <% if @job.synthesized_plan['locations'] && @job.synthesized_plan['locations'].any? %>
+                  <h6 class="font-semibold mt-4 mb-2">Locations</h6>
+                  <ul class="menu bg-base-300 rounded-box">
+                    <% @job.synthesized_plan['locations'].each do |loc| %>
+                      <li>
+                        <div class="flex flex-col items-start">
+                          <span>
+                            <strong><%= h loc['name'] %></strong>
+                            <span class="badge badge-neutral ml-2"><%= h loc['room_type'] %></span>
+                          </span>
+                          <span class="text-sm text-base-content/60"><%= h loc['description'] %></span>
+                        </div>
+                      </li>
+                    <% end %>
+                  </ul>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <!-- Progress Log -->
+          <% if @job.progress && @job.progress['log'] && @job.progress['log'].any? %>
+            <div class="card bg-base-200 shadow-lg">
+              <div class="p-4 border-b border-base-content/10 font-semibold">
+                <i class="bi bi-terminal mr-2"></i>Progress Log
+              </div>
+              <div class="card-body p-0">
+                <div class="bg-base-300 p-3 rounded max-h-96 overflow-y-auto font-mono text-sm">
+                  <% @job.progress['log'].each do |entry| %>
+                    <div class="text-base-content/60">
+                      [<%= Time.parse(entry['time']).strftime('%H:%M:%S') rescue entry['time'] %>]
+                      <span class="text-base-content"><%= h entry['message'] %></span>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Job Info Sidebar -->
+        <div class="lg:col-span-1">
+          <!-- Job Info -->
+          <div class="card bg-base-200 shadow-lg mb-4">
+            <div class="p-4 border-b border-base-content/10 font-semibold">
+              <i class="bi bi-info-circle mr-2"></i>Job Details
+            </div>
+            <div class="card-body p-0">
+              <table class="table table-zebra table-sm">
+                <tr>
+                  <th>Job ID</th>
+                  <td>#<%= @job.id %></td>
+                </tr>
+                <tr>
+                  <th>Type</th>
+                  <td><%= @job.type_display %></td>
+                </tr>
+                <tr>
+                  <th>Phase</th>
+                  <td><%= (@job.phase || 'pending').capitalize %></td>
+                </tr>
+                <tr>
+                  <th>Created</th>
+                  <td><%= @job.created_at.strftime('%Y-%m-%d %H:%M:%S') %></td>
+                </tr>
+                <tr>
+                  <th>Started</th>
+                  <td><%= @job.started_at ? @job.started_at.strftime('%H:%M:%S') : '-' %></td>
+                </tr>
+                <tr>
+                  <th>Completed</th>
+                  <td><%= @job.completed_at ? @job.completed_at.strftime('%H:%M:%S') : '-' %></td>
+                </tr>
+                <tr>
+                  <th>Duration</th>
+                  <td><%= @job.duration_display %></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <!-- Configuration -->
+          <% if @job.config && @job.config.any? %>
+            <div class="card bg-base-200 shadow-lg mb-4">
+              <div class="p-4 border-b border-base-content/10 font-semibold">
+                <i class="bi bi-gear mr-2"></i>Configuration
+              </div>
+              <div class="card-body p-0">
+                <table class="table table-zebra table-sm">
+                  <% if @job.config['description'] %>
+                    <tr>
+                      <th>Description</th>
+                      <td><%= h truncate_text(@job.config['description'], 100) %></td>
+                    </tr>
+                  <% end %>
+                  <% if @job.config['setting'] %>
+                    <tr>
+                      <th>Setting</th>
+                      <td><%= @job.config['setting'].to_s.capitalize %></td>
+                    </tr>
+                  <% end %>
+                  <% if @job.config['difficulty'] %>
+                    <tr>
+                      <th>Difficulty</th>
+                      <td><%= @job.config['difficulty'].to_s.capitalize %></td>
+                    </tr>
+                  <% end %>
+                  <% if @job.config['location_mode'] %>
+                    <tr>
+                      <th>Location Mode</th>
+                      <td><%= @job.config['location_mode'].to_s.split('_').map(&:capitalize).join(' ') %></td>
+                    </tr>
+                  <% end %>
+                  <% if @job.config['base_room_id'] %>
+                    <tr>
+                      <th>Base Room</th>
+                      <td>
+                        <% base_room = Room[@job.config['base_room_id']] rescue nil %>
+                        <%= h(base_room ? "#{base_room.name} (##{base_room.id})" : "##{@job.config['base_room_id']}") %>
+                      </td>
+                    </tr>
+                  <% end %>
+                </table>
+              </div>
+            </div>
+          <% end %>
+
+          <!-- Results Summary -->
+          <% if @job.completed? && @job.results && @job.results.any? %>
+            <div class="card bg-base-200 shadow-lg border border-success">
+              <div class="p-4 border-b border-success bg-success/20 font-semibold text-success">
+                <i class="bi bi-check-circle mr-2"></i>Results
+              </div>
+              <div class="card-body p-0">
+                <table class="table table-zebra table-sm">
+                  <% if @job.results['activity_id'] %>
+                    <tr>
+                      <th>Activity ID</th>
+                      <td>
+                        <a href="/admin/activity_builder/<%= @job.results['activity_id'] %>" class="link link-primary">
+                          #<%= @job.results['activity_id'] %>
+                        </a>
+                      </td>
+                    </tr>
+                  <% end %>
+                  <tr>
+                    <th>Rounds Created</th>
+                    <td><%= @job.results['rounds_created'] || 0 %></td>
+                  </tr>
+                  <tr>
+                    <th>Archetypes Created</th>
+                    <td><%= @job.results['archetypes_created'] || 0 %></td>
+                  </tr>
+                  <tr>
+                    <th>Rooms Created</th>
+                    <td><%= @job.results['rooms_created'] || 0 %></td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    
+<%= admin_content_end %>

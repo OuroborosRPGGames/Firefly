@@ -1,0 +1,48 @@
+<%#
+  Empty state component - supports two styles.
+
+  CARD style (default, player-facing pages):
+    Use locals: icon, title, message, and optionally button_text, button_path, button_icon
+
+  ALERT style (admin views - simple inline alert, default when no icon/title):
+    Use locals: message, and optionally link, link_text, style: :alert
+
+  WARNING: All locals are HTML-escaped with h(). Do NOT double-escape already-safe HTML.
+%>
+<%
+  # Determine style: explicit override, or infer from presence of icon/title
+  _style = defined?(style) ? style : ((defined?(icon) && icon) || (defined?(title) && title) ? :card : :alert)
+%>
+<% if _style == :card %>
+  <div class="card bg-base-200 shadow-xl">
+    <div class="card-body text-center py-12">
+      <% if defined?(icon) && icon %>
+        <i class="bi bi-<%= h(icon) %> text-6xl text-base-content/60 mb-3"></i>
+      <% end %>
+      <% if defined?(title) && title %>
+        <h3 class="text-xl font-semibold"><%= h(title) %></h3>
+      <% end %>
+      <p class="text-base-content/60"><%= h(message) %></p>
+      <% if defined?(button_text) && button_text %>
+        <div class="card-actions justify-center mt-4">
+          <a href="<%= h(button_path) %>" class="btn btn-primary">
+            <% if defined?(button_icon) && button_icon %>
+              <i class="bi bi-<%= h(button_icon) %> mr-1"></i>
+            <% end %>
+            <%= h(button_text) %>
+          </a>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% else %>
+  <div class="alert alert-info">
+    <i class="bi bi-info-circle mr-2"></i>
+    <span>
+      <%= h(message) %>
+      <% if defined?(link) && link && defined?(link_text) && link_text %>
+        <a href="<%= h(link) %>" class="link link-primary"><%= h(link_text) %></a>.
+      <% end %>
+    </span>
+  </div>
+<% end %>

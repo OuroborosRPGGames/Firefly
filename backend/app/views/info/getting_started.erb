@@ -1,0 +1,204 @@
+<!-- Page Banner -->
+<section class="page-banner" style="background-image: url('/images/library.jpg');">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <nav aria-label="breadcrumb">
+        <div class="breadcrumbs text-sm">
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/info">Game Info</a></li>
+            <li>Getting Started</li>
+          </ul>
+        </div>
+      </nav>
+      <h1>Getting Started</h1>
+    </div>
+  </div>
+</section>
+
+<section class="py-12">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <!-- Main Content -->
+      <div class="lg:col-span-8">
+        <div class="card bg-base-200 mb-6">
+          <div class="card-body">
+            <p class="text-lg mb-0">
+              Welcome to <%= game_name %>! This guide will help you get started with creating your first character
+              and joining the world of collaborative storytelling.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 1 -->
+        <div class="card bg-base-200 mb-6">
+          <div class="card-body">
+            <h3 class="card-title mb-4">
+              <span class="badge badge-primary mr-2">Step 1</span>Create Your Account
+            </h3>
+            <p class="text-base-content/70 mb-3">
+              If you haven't already, start by creating an account. You'll need:
+            </p>
+            <ul class="text-base-content/70 mb-4 list-disc list-inside">
+              <li>A unique username (this is your player identity)</li>
+              <li>A valid email address (for account recovery)</li>
+              <li>A secure password (at least 6 characters)</li>
+            </ul>
+            <a href="/register" class="btn btn-primary">
+              <i class="bi bi-person-plus mr-1"></i>Create Account
+            </a>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="card bg-base-200 mb-6">
+          <div class="card-body">
+            <h3 class="card-title mb-4">
+              <span class="badge badge-primary mr-2">Step 2</span>Create Your Character
+            </h3>
+            <p class="text-base-content/70 mb-3">
+              Once logged in, create your first character. Our character creation system lets you customize:
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <ul class="text-base-content/70 list-disc list-inside">
+                <li>Name and nickname</li>
+                <li>Physical appearance</li>
+                <li>Gender and age (18+)</li>
+              </ul>
+              <ul class="text-base-content/70 list-disc list-inside">
+                <li>Personality traits</li>
+                <li>Background story</li>
+                <li>Goals and motivations</li>
+              </ul>
+            </div>
+            <div class="alert alert-info">
+              <i class="bi bi-lightbulb mr-2"></i>
+              <span><strong>Tip:</strong> Take your time with character creation! A well-developed character
+              makes for more engaging roleplay.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="card bg-base-200 mb-6">
+          <div class="card-body">
+            <h3 class="card-title mb-4">
+              <span class="badge badge-primary mr-2">Step 3</span>Learn the Interface
+            </h3>
+            <p class="text-base-content/70 mb-3">
+              The game interface has several key areas:
+            </p>
+            <ul class="text-base-content/70 mb-4 list-disc list-inside">
+              <li><strong>Room Display:</strong> Shows your current location and who else is present</li>
+              <li><strong>Chat Panes:</strong> Separate areas for roleplay and OOC communication</li>
+              <li><strong>Command Input:</strong> Type commands to interact with the world</li>
+            </ul>
+            <h6 class="text-primary font-bold mb-2">Common Commands</h6>
+            <div class="bg-base-300 p-4 rounded-lg font-mono text-sm">
+              <code class="text-primary">look</code> - Examine your surroundings<br>
+              <code class="text-primary">say [message]</code> - Speak in character<br>
+              <code class="text-primary">.emote [action]</code> - Perform an action<br>
+              <code class="text-primary">ooc [message]</code> - Out-of-character chat<br>
+              <code class="text-primary">help</code> - Show available commands
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="card bg-base-200 mb-6">
+          <div class="card-body">
+            <h3 class="card-title mb-4">
+              <span class="badge badge-primary mr-2">Step 4</span>Start Roleplaying!
+            </h3>
+            <p class="text-base-content/70 mb-3">
+              You're ready to begin! Here are some tips for your first scenes:
+            </p>
+            <ul class="text-base-content/70 list-disc list-inside">
+              <li>Start in public areas where other players gather</li>
+              <li>Read others' posts carefully before responding</li>
+              <li>Take turns and give everyone a chance to participate</li>
+              <li>Don't be afraid to ask questions OOC if you're unsure</li>
+              <li>Have fun and be creative!</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card bg-base-200">
+          <div class="card-body">
+            <h3 class="card-title mb-4">
+              <i class="bi bi-book mr-2"></i>Further Reading
+            </h3>
+            <p class="text-base-content/70 mb-4">
+              Ready to dive deeper? Check out these resources:
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <a href="/info/rules" class="btn btn-ghost btn-block">
+                <i class="bi bi-shield-check mr-1"></i>Community Rules
+              </a>
+              <a href="/world/lore" class="btn btn-ghost btn-block">
+                <i class="bi bi-journal-text mr-1"></i>World Lore
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="lg:col-span-4">
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body text-center">
+            <h3 class="font-bold mb-3">
+              <i class="bi bi-lightning mr-2"></i>Quick Start
+            </h3>
+            <% if @current_user %>
+              <p class="text-base-content/70 mb-3">Ready to play?</p>
+              <a href="/characters/new" class="btn btn-primary btn-block mb-2">
+                <i class="bi bi-person-plus mr-1"></i>Create Character
+              </a>
+              <a href="/dashboard" class="btn btn-ghost btn-block">
+                <i class="bi bi-speedometer2 mr-1"></i>Go to Dashboard
+              </a>
+            <% else %>
+              <p class="text-base-content/70 mb-3">Join us today!</p>
+              <a href="/register" class="btn btn-primary btn-block mb-2">
+                <i class="bi bi-rocket-takeoff mr-1"></i>Create Account
+              </a>
+              <a href="/login" class="btn btn-ghost btn-block">
+                <i class="bi bi-box-arrow-in-right mr-1"></i>Sign In
+              </a>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body p-0">
+            <div class="p-4 border-b border-base-content/10">
+              <h3 class="font-bold text-sm">
+                <i class="bi bi-info-circle mr-2"></i>Related Pages
+              </h3>
+            </div>
+            <ul class="menu">
+              <li><a href="/info/rules"><i class="bi bi-shield-check mr-2 text-primary"></i>Community Rules</a></li>
+              <li><a href="/world/lore"><i class="bi bi-journal-text mr-2 text-primary"></i>World Lore</a></li>
+              <li><a href="/world/locations"><i class="bi bi-map mr-2 text-primary"></i>Locations</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card bg-base-200">
+          <div class="card-body">
+            <h3 class="font-bold text-sm mb-3">
+              <i class="bi bi-question-circle mr-2"></i>Need Help?
+            </h3>
+            <p class="text-base-content/70 text-sm mb-3">
+              Our community is here to help! Don't hesitate to ask questions in OOC chat or contact staff.
+            </p>
+            <a href="/discord" class="btn btn-ghost btn-sm btn-block" target="_blank">
+              <i class="bi bi-discord mr-1"></i>Join Discord
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

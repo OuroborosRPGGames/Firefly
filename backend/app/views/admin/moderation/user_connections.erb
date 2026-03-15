@@ -1,0 +1,139 @@
+<% @page_title = "Connections: #{@target_user.username}" %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Moderation', path: '/admin/moderation' }, { label: 'Connections', path: '/admin/moderation/connections' }, { label: @target_user.username, path: "/admin/moderation/connections/user/#{@target_user.id}" }] %>
+
+<%= admin_content_start %>
+      <h2 class="text-2xl font-bold mb-4">
+        <i class="bi bi-person mr-2"></i>Connection History: <%= h @target_user.username %>
+      </h2>
+
+      <!-- User Info Card -->
+      <div class="card bg-base-200 shadow-lg mb-4">
+        <div class="p-4 border-b border-base-content/10 flex justify-between items-center">
+          <h5 class="font-semibold"><i class="bi bi-info-circle mr-2"></i>User Information</h5>
+          <% if @target_user.suspended? %>
+            <span class="badge badge-error">Suspended</span>
+          <% end %>
+        </div>
+        <div class="card-body">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p><strong>Username:</strong> <%= h @target_user.username %></p>
+              <p><strong>Email:</strong> <%= h @target_user.email %></p>
+              <p><strong>Created:</strong> <%= @target_user.created_at&.strftime('%Y-%m-%d') %></p>
+            </div>
+            <div>
+              <% if @target_user.suspended? %>
+                <div class="alert alert-warning">
+                  <div>
+                    <strong>Suspension Info:</strong><br>
+                    Reason: <%= h(@target_user.suspension_reason || 'Not specified') %><br>
+                    <% if @target_user.suspension_permanent? %>
+                      Duration: Permanent
+                    <% else %>
+                      Until: <%= @target_user.suspended_until&.strftime('%Y-%m-%d %H:%M') %>
+                    <% end %>
+                  </div>
+                </div>
+                <form action="/admin/moderation/users/<%= @target_user.id %>/unsuspend" method="post" class="mt-2">
+                  <button type="submit" class="btn btn-sm btn-success">
+                    <i class="bi bi-check-circle mr-1"></i>Unsuspend
+                  </button>
+                </form>
+              <% else %>
+                <form action="/admin/moderation/users/<%= @target_user.id %>/suspend" method="post">
+                  <div class="form-control mb-2">
+                    <input type="text" class="input input-bordered input-sm w-full" name="reason" placeholder="Suspension reason">
+                  </div>
+                  <div class="form-control mb-2">
+                    <select class="select select-bordered select-sm w-full" name="duration">
+                      <option value="1h">1 Hour</option>
+                      <option value="24h">24 Hours</option>
+                      <option value="7d">7 Days</option>
+                      <option value="30d">30 Days</option>
+                      <option value="permanent">Permanent</option>
+                    </select>
+                  </div>
+                  <button type="submit" class="btn btn-sm btn-warning">
+                    <i class="bi bi-person-x mr-1"></i>Suspend User
+                  </button>
+                </form>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Known IPs -->
+      <div class="card bg-base-200 shadow-lg mb-4">
+        <div class="p-4 border-b border-base-content/10">
+          <h5 class="font-semibold"><i class="bi bi-geo-alt mr-2"></i>Known IP Addresses</h5>
+        </div>
+        <div class="card-body">
+          <% if @known_ips.empty? %>
+            <p class="text-base-content/70">No IP addresses recorded.</p>
+          <% else %>
+            <div class="flex flex-wrap gap-2">
+              <% @known_ips.each do |ip| %>
+                <a href="/admin/moderation/connections/ip/<%= CGI.escape(ip) %>" class="btn btn-sm btn-outline btn-info">
+                  <i class="bi bi-link-45deg"></i> <%= ip %>
+                </a>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Connection History -->
+      <div class="card bg-base-200 shadow-lg">
+        <div class="p-4 border-b border-base-content/10">
+          <h5 class="font-semibold"><i class="bi bi-clock-history mr-2"></i>Connection History</h5>
+        </div>
+        <div class="card-body">
+          <% if @logs.empty? %>
+            <p class="text-base-content/70">No connection logs found.</p>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra table-sm">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>IP Address</th>
+                    <th>Type</th>
+                    <th>Outcome</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @logs.each do |log| %>
+                  <tr>
+                    <td class="whitespace-nowrap"><%= log.created_at&.strftime('%Y-%m-%d %H:%M:%S') %></td>
+                    <td>
+                      <a href="/admin/moderation/connections/ip/<%= CGI.escape(log.ip_address) %>" class="link link-info">
+                        <%= log.ip_address %>
+                      </a>
+                    </td>
+                    <td><span class="badge badge-neutral"><%= log.connection_type %></span></td>
+                    <td>
+                      <% case log.outcome %>
+                      <% when 'success' %>
+                        <span class="badge badge-success">Success</span>
+                      <% when 'banned_ip' %>
+                        <span class="badge badge-error">IP Banned</span>
+                      <% when 'suspended' %>
+                        <span class="badge badge-warning">Suspended</span>
+                      <% when 'invalid_credentials' %>
+                        <span class="badge badge-error">Invalid Credentials</span>
+                      <% else %>
+                        <span class="badge badge-neutral"><%= log.outcome %></span>
+                      <% end %>
+                    </td>
+                    <td><small class="text-base-content/70"><%= log.failure_reason %></small></td>
+                  </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+      </div>
+<%= admin_content_end %>

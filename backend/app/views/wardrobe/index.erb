@@ -1,0 +1,355 @@
+<% unless @popout %>
+<section class="page-banner" style="background-image: url('/images/library.jpg');">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <div class="breadcrumbs text-sm mb-2">
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/dashboard">Dashboard</a></li>
+          <li><a href="/characters/<%= @character.id %>"><%= h(@character.nickname || @character.forename) %></a></li>
+          <li>Wardrobe</li>
+        </ul>
+      </div>
+      <h1><i class="bi bi-handbag mr-2"></i>Wardrobe</h1>
+      <p class="text-base-content/70 text-lg"><%= h @character.full_name %></p>
+    </div>
+  </div>
+</section>
+<% end %>
+
+<section class="<%= @popout ? 'py-2' : 'py-12' %>">
+  <div class="<%= @popout ? 'px-3' : 'container mx-auto px-4' %> wardrobe-container" id="wardrobeContainer">
+
+    <!-- Vault Warning -->
+    <div id="vaultWarning" class="alert alert-warning mb-3 <%= @overview[:vault_accessible] ? 'hidden' : '' %>">
+      <i class="bi bi-exclamation-triangle"></i>
+      <div>
+        <span class="font-bold">No vault access.</span>
+        You must be in a vault-accessible room to fetch, store, or create items.
+      </div>
+    </div>
+
+    <!-- Top Controls -->
+    <div class="wardrobe-top-controls">
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-base-content/50">All Wardrobes</span>
+        <input type="checkbox" class="toggle toggle-sm toggle-primary" id="wardrobeToggle" />
+        <span class="text-xs text-base-content/50">This Wardrobe</span>
+      </div>
+      <button class="btn btn-sm btn-ghost" id="manageTransfersBtn">
+        <i class="bi bi-truck mr-1"></i>Transfers
+      </button>
+    </div>
+
+    <!-- Tabs -->
+    <div role="tablist" class="tabs tabs-bordered tabs-lg mb-4" id="wardrobeTabs">
+      <a role="tab" class="tab tab-active" data-tab="clothing" id="tab-clothing">
+        <i class="bi bi-hanger mr-1"></i>Clothing
+      </a>
+      <a role="tab" class="tab" data-tab="jewelry" id="tab-jewelry">
+        <i class="bi bi-gem mr-1"></i>Jewelry
+      </a>
+      <a role="tab" class="tab" data-tab="consumables" id="tab-consumables">
+        <i class="bi bi-cup-hot mr-1"></i>Consumables
+      </a>
+      <a role="tab" class="tab" data-tab="weapons" id="tab-weapons">
+        <i class="bi bi-shield mr-1"></i>Weapons
+      </a>
+      <a role="tab" class="tab" data-tab="other" id="tab-other">
+        <i class="bi bi-box-seam mr-1"></i>Other
+      </a>
+      <a role="tab" class="tab" data-tab="inventory" id="tab-inventory">
+        <i class="bi bi-archive mr-1"></i>Inventory
+      </a>
+    </div>
+
+    <!-- Tab loader registry (must be defined before partials render) -->
+    <script>
+      window._wardrobeTabLoaders = {};
+      window.registerWardrobeTabLoader = function(tabName, loaderFn) {
+        window._wardrobeTabLoaders[tabName] = loaderFn;
+      };
+    </script>
+
+    <!-- Tab Content -->
+    <div id="tabContent">
+      <!-- Clothing Tab -->
+      <div class="tab-panel" id="panel-clothing">
+        <%= partial 'wardrobe/category_tab', locals: { category: 'clothing', icon: 'hanger' } %>
+      </div>
+
+      <!-- Jewelry Tab -->
+      <div class="tab-panel hidden" id="panel-jewelry">
+        <%= partial 'wardrobe/category_tab', locals: { category: 'jewelry', icon: 'gem' } %>
+      </div>
+
+      <!-- Consumables Tab -->
+      <div class="tab-panel hidden" id="panel-consumables">
+        <%= partial 'wardrobe/category_tab', locals: { category: 'consumables', icon: 'cup-hot' } %>
+      </div>
+
+      <!-- Weapons Tab -->
+      <div class="tab-panel hidden" id="panel-weapons">
+        <%= partial 'wardrobe/category_tab', locals: { category: 'weapons', icon: 'shield' } %>
+      </div>
+
+      <!-- Other Tab -->
+      <div class="tab-panel hidden" id="panel-other">
+        <%= partial 'wardrobe/category_tab', locals: { category: 'other', icon: 'box-seam' } %>
+      </div>
+
+      <!-- Inventory Tab (Store) -->
+      <div class="tab-panel hidden" id="panel-inventory">
+        <div class="inventory-tab">
+          <p class="text-base-content/70 mb-3">
+            <i class="bi bi-info-circle mr-1"></i>
+            Store items from your inventory into your wardrobe for safekeeping.
+          </p>
+
+          <div class="inventory-content">
+            <div class="text-center py-4 inventory-loading hidden">
+              <span class="loading loading-spinner loading-sm text-primary"></span>
+              <span class="text-base-content/70 ml-2">Loading inventory...</span>
+            </div>
+
+            <div class="inventory-grid wardrobe-cards-grid hidden"></div>
+
+            <div class="inventory-empty text-center text-base-content/70 py-4 hidden">
+              <i class="bi bi-inbox text-6xl block mb-3 opacity-50"></i>
+              <p>No storable items in your inventory.</p>
+              <p class="text-sm">Items that are worn, equipped, or held cannot be stored.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <% unless @popout %>
+    <div class="text-center mt-6">
+      <a href="/play" class="btn btn-ghost mr-2">
+        <i class="bi bi-arrow-left mr-1"></i>Back to Game
+      </a>
+      <a href="/dashboard" class="btn btn-ghost">
+        <i class="bi bi-house mr-1"></i>Dashboard
+      </a>
+    </div>
+    <% end %>
+  </div>
+</section>
+
+<!-- Trash Confirmation Modal -->
+<dialog id="trashConfirmModal" class="modal">
+  <div class="modal-box bg-base-200">
+    <h3 class="font-bold text-lg"><i class="bi bi-trash mr-2"></i>Destroy Item</h3>
+    <p class="py-4">Are you sure you want to destroy <strong id="trashItemName"></strong>? This cannot be undone.</p>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn btn-ghost">Cancel</button>
+      </form>
+      <button class="btn btn-error" id="trashConfirmBtn">
+        <i class="bi bi-trash mr-1"></i>Destroy
+      </button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<script src="/js/wardrobe-manager.js"></script>
+
+<script>
+(function() {
+  const container = document.getElementById('wardrobeContainer');
+
+  // Initialize WardrobeManager
+  window.wardrobeManager = new WardrobeManager(container, <%= @character.id %>, {
+    popout: <%= @popout ? 'true' : 'false' %>
+  });
+
+  // Tab switching
+  const tabs = document.querySelectorAll('#wardrobeTabs .tab');
+  const panels = document.querySelectorAll('.tab-panel');
+  const tabLoaders = window._wardrobeTabLoaders || {};
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const tabName = tab.dataset.tab;
+
+      // Update tab active states
+      tabs.forEach(t => t.classList.remove('tab-active'));
+      tab.classList.add('tab-active');
+
+      // Show/hide panels
+      panels.forEach(p => p.classList.add('hidden'));
+      const panel = document.getElementById('panel-' + tabName);
+      if (panel) panel.classList.remove('hidden');
+
+      // Trigger content load for the tab
+      if (tabLoaders[tabName]) {
+        tabLoaders[tabName]();
+      }
+    });
+  });
+
+  // Load clothing tab on init
+  if (tabLoaders['clothing']) tabLoaders['clothing']();
+
+  // Wardrobe toggle - "All Wardrobes" vs "This Wardrobe"
+  const wardrobeToggle = document.getElementById('wardrobeToggle');
+  if (wardrobeToggle) {
+    wardrobeToggle.addEventListener('change', () => {
+      window.wardrobeManager.currentRoomOnly = wardrobeToggle.checked;
+      // Reload current active tab
+      const activeTab = document.querySelector('#wardrobeTabs .tab-active');
+      if (activeTab) {
+        const tabName = activeTab.dataset.tab;
+        if (tabLoaders[tabName]) tabLoaders[tabName]();
+      }
+    });
+  }
+
+  // Manage Transfers button
+  const transfersBtn = document.getElementById('manageTransfersBtn');
+  if (transfersBtn) {
+    transfersBtn.addEventListener('click', () => {
+      window.wardrobeManager.openTransferModal();
+    });
+  }
+
+  // ========================================
+  // Inventory Tab Logic
+  // ========================================
+  const invLoading = document.querySelector('.inventory-loading');
+  const invGrid = document.querySelector('.inventory-grid');
+  const invEmpty = document.querySelector('.inventory-empty');
+
+  async function loadInventoryItems() {
+    invLoading.classList.remove('hidden');
+    invGrid.classList.add('hidden');
+    invEmpty.classList.add('hidden');
+
+    try {
+      const response = await fetch('/api/wardrobe/inventory');
+      const data = await response.json();
+
+      invLoading.classList.add('hidden');
+
+      if (!data.success) {
+        invGrid.innerHTML = '<div class="col-span-full"><div class="alert alert-error">Failed to load inventory</div></div>';
+        invGrid.classList.remove('hidden');
+        return;
+      }
+
+      const items = data.items || [];
+
+      if (items.length === 0) {
+        invEmpty.classList.remove('hidden');
+      } else {
+        invGrid.innerHTML = renderInventoryCards(items);
+        invGrid.classList.remove('hidden');
+        bindInventoryEvents();
+      }
+    } catch (err) {
+      console.error('Error loading inventory:', err);
+      invLoading.classList.add('hidden');
+      invEmpty.classList.remove('hidden');
+    }
+  }
+
+  function renderInventoryCards(items) {
+    const stacks = {};
+    const individuals = [];
+
+    items.forEach(item => {
+      if (item.pattern_id) {
+        if (!stacks[item.pattern_id]) {
+          stacks[item.pattern_id] = { representative: item, items: [] };
+        }
+        stacks[item.pattern_id].items.push(item);
+      } else {
+        individuals.push(item);
+      }
+    });
+
+    let html = '';
+    Object.values(stacks).forEach(stack => {
+      html += renderInventoryStackCard(stack.representative, stack.items);
+    });
+    individuals.forEach(item => {
+      html += renderInventoryStackCard(item, [item]);
+    });
+    return html;
+  }
+
+  function renderInventoryStackCard(representative, items) {
+    const imgSrc = representative.thumbnail_url || representative.image_url || '';
+    const hasImage = !!imgSrc;
+    const count = items.length;
+    const vaultOk = window.wardrobeManager && window.wardrobeManager.vaultAccessible;
+
+    const itemDataAttr = escapeAttr(JSON.stringify({
+      name: representative.name,
+      description: representative.description,
+      long_description: representative.long_description,
+      image_url: representative.image_url,
+      thumbnail_url: representative.thumbnail_url,
+      condition: representative.condition,
+      stored_room_name: 'Inventory'
+    }));
+
+    return `
+      <div class="wardrobe-card" data-item-id="${representative.id}">
+        <div class="card-thumb" onclick='openWardrobeLightbox(${itemDataAttr})'>
+          ${hasImage
+            ? `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(representative.name)}" onerror="this.parentElement.innerHTML='<i class=\\'bi bi-image placeholder-icon\\'></i><span class=\\'placeholder-name\\'>${escapeHtml(representative.name)}</span>'">`
+            : `<i class="bi bi-image placeholder-icon"></i><span class="placeholder-name">${escapeHtml(representative.name)}</span>`}
+        </div>
+        <div class="card-actions">
+          <button class="action-btn action-store wardrobe-action" data-id="${representative.id}" title="Store in wardrobe" ${!vaultOk ? 'disabled' : ''}>
+            <i class="bi bi-arrow-down-circle"></i>
+          </button>
+          ${count > 1 ? `<span class="item-count">x${count}</span>` : ''}
+        </div>
+      </div>`;
+  }
+
+  function escapeAttr(text) {
+    return escapeHtml(text).replace(/'/g, '&#39;');
+  }
+
+  function bindInventoryEvents() {
+    document.querySelectorAll('.action-store').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const itemId = btn.dataset.id;
+        await storeItem(itemId);
+      });
+    });
+  }
+
+  async function storeItem(itemId) {
+    try {
+      const response = await fetch(`/api/wardrobe/items/${itemId}/store`, { method: 'POST' });
+      const result = await response.json();
+
+      if (result.success) {
+        if (window.wardrobeManager) {
+          window.wardrobeManager.showToast(result.message || 'Item stored!', 'success');
+        }
+        loadInventoryItems();
+      } else {
+        if (window.wardrobeManager) {
+          window.wardrobeManager.showToast(result.error || 'Failed to store item', 'danger');
+        }
+      }
+    } catch (err) {
+      console.error('Error storing item:', err);
+      if (window.wardrobeManager) {
+        window.wardrobeManager.showToast('Error storing item', 'danger');
+      }
+    }
+  }
+
+  // Register inventory tab loader
+  tabLoaders['inventory'] = loadInventoryItems;
+})();
+</script>

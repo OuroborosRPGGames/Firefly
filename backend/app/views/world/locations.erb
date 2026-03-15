@@ -1,0 +1,198 @@
+<!-- Page Banner -->
+<section class="page-banner" style="background-image: url('/images/library.jpg');">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <nav aria-label="breadcrumb">
+        <div class="breadcrumbs text-sm">
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/world">World</a></li>
+            <li>Locations</li>
+          </ul>
+        </div>
+      </nav>
+      <h1>Locations</h1>
+    </div>
+  </div>
+</section>
+
+<section class="py-12">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <!-- Main Content -->
+      <div class="lg:col-span-8">
+        <div class="card bg-base-200 mb-6">
+          <div class="card-body">
+            <p class="text-lg mb-0">
+              Explore the many locations that make up our world. From bustling city centers to
+              quiet retreats, each place has its own character and stories to tell.
+            </p>
+          </div>
+        </div>
+
+        <!-- Featured Locations -->
+        <div class="card bg-base-200 mb-6">
+          <div class="card-body">
+            <h3 class="card-title mb-4">
+              <i class="bi bi-star mr-2"></i>Featured Locations
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="card bg-base-300 h-full">
+                <div class="card-body">
+                  <h5 class="card-title text-primary text-base">
+                    <i class="bi bi-building mr-2"></i>The Grand Library
+                  </h5>
+                  <p class="text-base-content/70 text-sm">
+                    A massive repository of knowledge and stories, the Grand Library serves as
+                    the heart of intellectual pursuit in our world. Scholars and seekers gather
+                    here to research, learn, and share wisdom.
+                  </p>
+                  <span class="badge badge-neutral">Public Space</span>
+                </div>
+              </div>
+
+              <div class="card bg-base-300 h-full">
+                <div class="card-body">
+                  <h5 class="card-title text-primary text-base">
+                    <i class="bi bi-cup-hot mr-2"></i>The Crossroads Inn
+                  </h5>
+                  <p class="text-base-content/70 text-sm">
+                    A welcoming tavern where travelers from all walks of life meet. The perfect
+                    place for chance encounters, sharing tales, and beginning new adventures.
+                  </p>
+                  <span class="badge badge-neutral">Social Hub</span>
+                </div>
+              </div>
+
+              <div class="card bg-base-300 h-full">
+                <div class="card-body">
+                  <h5 class="card-title text-primary text-base">
+                    <i class="bi bi-tree mr-2"></i>The Whispering Gardens
+                  </h5>
+                  <p class="text-base-content/70 text-sm">
+                    A serene park filled with ancient trees and winding paths. Many come here
+                    for quiet reflection or private conversations away from prying ears.
+                  </p>
+                  <span class="badge badge-neutral">Outdoor</span>
+                </div>
+              </div>
+
+              <div class="card bg-base-300 h-full">
+                <div class="card-body">
+                  <h5 class="card-title text-primary text-base">
+                    <i class="bi bi-shop mr-2"></i>Market Square
+                  </h5>
+                  <p class="text-base-content/70 text-sm">
+                    The commercial heart of the city, where merchants hawk their wares and
+                    visitors browse exotic goods from distant lands.
+                  </p>
+                  <span class="badge badge-neutral">Commerce</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Location Types -->
+        <div class="card bg-base-200 mb-6">
+          <div class="card-body">
+            <h3 class="card-title mb-4">
+              <i class="bi bi-grid mr-2"></i>Location Types
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h6 class="text-primary font-bold mb-2"><i class="bi bi-people mr-2"></i>Public Spaces</h6>
+                <p class="text-base-content/70 text-sm mb-0">
+                  Open areas where anyone can visit and interact. Great for meeting new characters
+                  and starting spontaneous scenes.
+                </p>
+              </div>
+              <div>
+                <h6 class="text-primary font-bold mb-2"><i class="bi bi-lock mr-2"></i>Private Areas</h6>
+                <p class="text-base-content/70 text-sm mb-0">
+                  Restricted locations that require invitation or special access. Perfect for
+                  planned scenes and faction activities.
+                </p>
+              </div>
+              <div>
+                <h6 class="text-primary font-bold mb-2"><i class="bi bi-house mr-2"></i>Residences</h6>
+                <p class="text-base-content/70 text-sm mb-0">
+                  Personal spaces that characters can claim as their own. A place to call home
+                  and host visitors.
+                </p>
+              </div>
+              <div>
+                <h6 class="text-primary font-bold mb-2"><i class="bi bi-compass mr-2"></i>Adventure Zones</h6>
+                <p class="text-base-content/70 text-sm mb-0">
+                  Dynamic areas where events and plots unfold. Keep an eye out for special
+                  happenings and storylines.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Map/Navigation -->
+        <div class="card bg-base-200">
+          <div class="card-body text-center py-12">
+            <i class="bi bi-map text-6xl text-base-content/40 mb-4 block"></i>
+            <h5 class="font-bold mb-2">Interactive Map Coming Soon</h5>
+            <p class="text-base-content/70">
+              An interactive map of the world will be available here, allowing you to explore
+              locations visually and navigate the world with ease.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="lg:col-span-4">
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body">
+            <h3 class="font-bold text-sm mb-3">
+              <i class="bi bi-search mr-2"></i>Find Location
+            </h3>
+            <form action="/world/locations/search" method="get">
+              <div class="join w-full">
+                <input type="text" class="input input-bordered join-item flex-1" name="q" placeholder="Search locations...">
+                <button class="btn btn-primary join-item" type="submit">
+                  <i class="bi bi-search"></i>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body p-0">
+            <div class="p-4 border-b border-base-content/10">
+              <h3 class="font-bold text-sm">
+                <i class="bi bi-funnel mr-2"></i>Filter by Type
+              </h3>
+            </div>
+            <ul class="menu">
+              <li><a href="#"><i class="bi bi-people mr-2 text-primary"></i>Public Spaces</a></li>
+              <li><a href="#"><i class="bi bi-cup-hot mr-2 text-primary"></i>Social Hubs</a></li>
+              <li><a href="#"><i class="bi bi-tree mr-2 text-primary"></i>Outdoor Areas</a></li>
+              <li><a href="#"><i class="bi bi-shop mr-2 text-primary"></i>Commerce</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card bg-base-200">
+          <div class="card-body p-0">
+            <div class="p-4 border-b border-base-content/10">
+              <h3 class="font-bold text-sm">
+                <i class="bi bi-link-45deg mr-2"></i>Related Pages
+              </h3>
+            </div>
+            <ul class="menu">
+              <li><a href="/world/lore"><i class="bi bi-journal-text mr-2 text-primary"></i>World Lore</a></li>
+              <li><a href="/info/getting-started"><i class="bi bi-rocket-takeoff mr-2 text-primary"></i>Getting Started</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

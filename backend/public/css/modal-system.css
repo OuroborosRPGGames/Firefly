@@ -1,0 +1,564 @@
+/* modal-system.css - Refined Dark Elegance Design System */
+
+:root {
+  /* Base colors - refined dark palette */
+  --modal-bg: rgba(22, 22, 30, 0.95);
+  --modal-bg-solid: #16161e;
+  --modal-border: rgba(255, 255, 255, 0.08);
+  --modal-border-focus: rgba(135, 206, 235, 0.4);
+
+  /* Glass-morphism */
+  --modal-blur: 20px;
+  --modal-shadow: 0 8px 32px rgba(0, 0, 0, 0.6),
+                  0 0 0 1px rgba(255, 255, 255, 0.05);
+
+  /* Accent (sky blue) */
+  --accent: #87ceeb;
+  --accent-glow: rgba(135, 206, 235, 0.15);
+  --accent-subtle: rgba(135, 206, 235, 0.08);
+
+  /* Text hierarchy */
+  --text-primary: #f0f0f0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666;
+
+  /* Spacing scale */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+
+  /* Animation timing */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+}
+
+/* ===========================================
+   MODAL OVERLAY & CONTAINER
+   =========================================== */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 9000;
+  display: none;
+  animation-duration: var(--duration-normal);
+}
+
+.modal-overlay.closing {
+  animation-duration: var(--duration-fast);
+}
+
+.modal-container {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+  z-index: 9001;
+}
+
+.modal-dialog {
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100vh - var(--space-xl) * 2);
+  overflow: hidden;
+  background: var(--modal-bg);
+  backdrop-filter: blur(var(--modal-blur));
+  border: 1px solid var(--modal-border);
+  border-radius: 12px;
+  box-shadow: var(--modal-shadow);
+  display: flex;
+  flex-direction: column;
+  animation-duration: var(--duration-slow);
+}
+
+/* Size variants */
+.modal-dialog--sm { max-width: 360px; }
+.modal-dialog--lg { max-width: 640px; }
+.modal-dialog--xl { max-width: 800px; }
+
+/* ===========================================
+   MODAL SECTIONS
+   =========================================== */
+
+.modal-header {
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--modal-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.modal-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out-expo);
+}
+
+.modal-close:hover {
+  background: var(--accent-subtle);
+  border-color: var(--modal-border);
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: var(--space-xl);
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+.modal-footer {
+  padding: var(--space-md) var(--space-xl) var(--space-lg);
+  border-top: 1px solid var(--modal-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+/* ===========================================
+   FORM ELEMENTS
+   =========================================== */
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--modal-border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  font-family: inherit;
+  transition: border-color var(--duration-fast),
+              box-shadow var(--duration-fast),
+              background var(--duration-fast);
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--modal-border-focus);
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 3px var(--accent-glow),
+              inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.form-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* Validation states */
+.form-input--error {
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.form-input--error:focus {
+  border-color: rgba(239, 68, 68, 0.7);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+.form-error {
+  font-size: 0.8125rem;
+  color: #f87171;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.form-hint {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+/* ===========================================
+   BUTTONS
+   =========================================== */
+
+/* Scoped to .modal-dialog to avoid overriding DaisyUI's global .btn styles.
+   DaisyUI uses CSS @layer for its component styles; an unlayered global .btn rule
+   here would beat DaisyUI's layered .btn-outline.btn-success etc. regardless of
+   specificity, making colored outline buttons lose their borders. */
+.modal-dialog .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out-expo);
+}
+
+.modal-dialog .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Primary */
+.btn--primary {
+  background: linear-gradient(135deg, var(--accent), #6bb8d9);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #0a0a0a;
+  box-shadow: 0 2px 8px rgba(135, 206, 235, 0.25);
+}
+
+.btn--primary:hover:not(:disabled) {
+  box-shadow: 0 4px 16px rgba(135, 206, 235, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn--primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(135, 206, 235, 0.2);
+}
+
+/* Secondary */
+.btn--secondary {
+  background: transparent;
+  border-color: var(--modal-border);
+  color: var(--text-secondary);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: var(--accent-subtle);
+  border-color: var(--modal-border-focus);
+  color: var(--text-primary);
+}
+
+/* Danger */
+.btn--danger {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+/* Size variants */
+.btn--sm {
+  padding: var(--space-xs) var(--space-sm);
+  font-size: 0.8125rem;
+}
+
+.btn--lg {
+  padding: var(--space-md) var(--space-lg);
+  font-size: 1rem;
+}
+
+/* ===========================================
+   ANIMATIONS
+   =========================================== */
+
+@keyframes elegantFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes elegantFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+.modal-dialog--elegant-enter {
+  animation: elegantFadeIn var(--duration-slow) var(--ease-out-expo);
+}
+
+.modal-dialog--elegant-exit {
+  animation: elegantFadeOut var(--duration-fast) ease-in;
+}
+
+/* Staggered form field animation */
+.form-field--animated {
+  opacity: 0;
+  animation: elegantFadeIn var(--duration-normal) var(--ease-out-expo) forwards;
+}
+
+.form-field--animated:nth-child(1) { animation-delay: 50ms; }
+.form-field--animated:nth-child(2) { animation-delay: 100ms; }
+.form-field--animated:nth-child(3) { animation-delay: 150ms; }
+.form-field--animated:nth-child(4) { animation-delay: 200ms; }
+.form-field--animated:nth-child(5) { animation-delay: 250ms; }
+
+/* Fast webclient animations */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeSlideOut {
+  to {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popupFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes popupFadeOut {
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===========================================
+   LANDING & AUTH PAGE STYLES
+   =========================================== */
+
+/* Page layout for centered content */
+.page-centered {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl);
+}
+
+/* Auth card container */
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--modal-bg);
+  backdrop-filter: blur(var(--modal-blur));
+  border: 1px solid var(--modal-border);
+  border-radius: 12px;
+  box-shadow: var(--modal-shadow);
+  overflow: hidden;
+  animation: elegantFadeIn var(--duration-slow) var(--ease-out-expo);
+}
+
+.auth-card--wide {
+  max-width: 560px;
+}
+
+/* Auth card header */
+.auth-header {
+  padding: var(--space-xl);
+  text-align: center;
+  border-bottom: 1px solid var(--modal-border);
+}
+
+.auth-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-xs);
+  letter-spacing: -0.02em;
+}
+
+.auth-subtitle {
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Auth card body */
+.auth-body {
+  padding: var(--space-xl);
+}
+
+/* Auth card footer */
+.auth-footer {
+  padding: var(--space-md) var(--space-xl) var(--space-lg);
+  border-top: 1px solid var(--modal-border);
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.auth-footer a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: opacity var(--duration-fast);
+}
+
+.auth-footer a:hover {
+  opacity: 0.8;
+}
+
+/* Divider with text */
+.divider-text {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin: var(--space-lg) 0;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+}
+
+.divider-text::before,
+.divider-text::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--modal-border);
+}
+
+/* Feature cards for landing pages */
+.feature-card {
+  background: var(--modal-bg);
+  backdrop-filter: blur(var(--modal-blur));
+  border: 1px solid var(--modal-border);
+  border-radius: 12px;
+  padding: var(--space-lg);
+  transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+}
+
+.feature-card:hover {
+  border-color: var(--modal-border-focus);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.feature-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-subtle);
+  border: 1px solid var(--modal-border);
+  border-radius: 10px;
+  color: var(--accent);
+  font-size: 1.25rem;
+  margin-bottom: var(--space-md);
+}
+
+.feature-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-xs);
+}
+
+.feature-desc {
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Hero section enhancement */
+.hero-enhanced {
+  background: linear-gradient(135deg, var(--modal-bg-solid) 0%, #1a1a24 100%);
+  position: relative;
+}
+
+.hero-enhanced::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, var(--accent-glow) 0%, transparent 60%);
+  pointer-events: none;
+}

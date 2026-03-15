@@ -1,0 +1,57 @@
+<div class="header">
+  <h1>Character Created Successfully!</h1>
+  <p>Your character <strong><%= h character.full_name %></strong> has been created.</p>
+</div>
+
+<div style="background-color: rgba(42, 42, 42, 0.95); padding: 30px; border-radius: 8px; margin: 20px 0;">
+  <h2>Character Summary</h2>
+  
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+    <div>
+      <h3>Basic Information</h3>
+      <p><strong>Name:</strong> <%= h character.full_name %></p>
+      <p><strong>Nickname:</strong> <%= h character.nickname %></p>
+      <% if character.age %>
+      <p><strong>Age:</strong> <%= character.age %> years old</p>
+      <% end %>
+      <% if character.gender %>
+      <p><strong>Gender:</strong> <%= h character.gender %></p>
+      <% end %>
+    </div>
+    
+    <div>
+      <h3>Appearance</h3>
+      <% if character.ethnicity %>
+      <p><strong>Ethnicity:</strong> <%= h character.ethnicity %></p>
+      <% end %>
+      <% if character.body_type %>
+      <p><strong>Body Type:</strong> <%= h character.body_type %></p>
+      <% end %>
+      <% if character.eye_color %>
+      <p><strong>Eyes:</strong> <%= h character.eye_color %></p>
+      <% end %>
+      <% if character.hair_color %>
+      <p><strong>Hair:</strong> <%= h character.hair_color %><% if character.hair_style %> (<%= h character.hair_style %>)<% end %></p>
+      <% end %>
+    </div>
+  </div>
+  
+  <% if character.short_desc %>
+  <div style="margin: 20px 0;">
+    <h3>Description</h3>
+    <p><em><%= h character.short_desc %></em></p>
+  </div>
+  <% end %>
+  
+  <% if character.personality %>
+  <div style="margin: 20px 0;">
+    <h3>Personality</h3>
+    <p><%= h character.personality %></p>
+  </div>
+  <% end %>
+</div>
+
+<div style="text-align: center; margin: 30px 0;">
+  <a href="/characters/new" style="color: #87ceeb; text-decoration: underline; margin-right: 20px;">Create Another Character</a>
+  <a href="/" style="color: #87ceeb; text-decoration: underline;">← Back to Home</a>
+</div>

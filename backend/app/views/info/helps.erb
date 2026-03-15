@@ -1,0 +1,327 @@
+<!-- Page Banner -->
+<section class="page-banner" style="background-image: url('/images/library.jpg');">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <nav aria-label="breadcrumb">
+        <div class="breadcrumbs text-sm">
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/info">Game Info</a></li>
+            <li>Help Topics</li>
+          </ul>
+        </div>
+      </nav>
+      <h1>Help Topics</h1>
+      <p class="text-lg mb-0">Guides, tutorials, and reference documentation</p>
+    </div>
+  </div>
+</section>
+
+<section class="py-8">
+  <div class="container mx-auto px-4">
+    <% if @helpfiles.empty? %>
+      <div class="flex justify-center">
+        <div class="w-full max-w-2xl">
+          <div class="card bg-base-200 text-center py-12">
+            <div class="card-body">
+              <i class="bi bi-journal-text text-6xl text-base-content/40 mb-4"></i>
+              <h3 class="text-xl font-bold mb-2">No Help Topics Yet</h3>
+              <p class="text-base-content/70 mb-6">
+                Help topics are guides, tutorials, and reference documentation created by staff.
+                Check back later for helpful guides on gameplay, systems, and more!
+              </p>
+              <div class="flex justify-center gap-3">
+                <a href="/info/commands" class="btn btn-primary">
+                  <i class="bi bi-terminal mr-1"></i>Browse Commands
+                </a>
+                <a href="/info/systems" class="btn btn-ghost">
+                  <i class="bi bi-collection mr-1"></i>View Systems
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% else %>
+      <!-- Letter Navigation -->
+      <% if @letters.any? %>
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body py-2">
+            <div class="flex flex-wrap justify-center gap-2 items-center">
+              <span class="text-base-content/70 mr-2 hidden md:inline">Jump to:</span>
+              <% ('A'..'Z').each do |letter| %>
+                <% if @letters.include?(letter) %>
+                  <a href="#letter-<%= letter %>" class="btn btn-sm btn-outline btn-primary letter-nav"><%= letter %></a>
+                <% else %>
+                  <span class="btn btn-sm btn-outline btn-disabled"><%= letter %></span>
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Category Filter -->
+      <% if @categories.any? %>
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body py-2">
+            <div class="flex flex-wrap gap-2 items-center">
+              <span class="text-base-content/70 mr-2">Filter by category:</span>
+              <button class="btn btn-sm btn-primary filter-btn active" data-category="all">All</button>
+              <% @categories.each do |cat| %>
+                <button class="btn btn-sm btn-outline btn-ghost filter-btn" data-category="<%= cat %>"><%= cat&.capitalize %></button>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Main Content - Expandable Topics -->
+        <div class="lg:col-span-9 order-2 lg:order-1">
+          <% current_letter = nil %>
+          <% @helpfiles.each do |hf| %>
+            <% topic_name = hf.topic || hf.command_name %>
+            <% first_letter = topic_name[0].upcase %>
+            <% if first_letter != current_letter %>
+              <% current_letter = first_letter %>
+              <div class="letter-section" id="letter-<%= current_letter %>" data-letter="<%= current_letter %>">
+                <h2 class="text-xl text-primary border-b border-primary pb-2 mb-3 mt-4">
+                  <i class="bi bi-bookmark mr-2"></i><%= current_letter %>
+                </h2>
+              </div>
+            <% end %>
+
+            <div class="helpfile-card mb-2" id="topic-<%= topic_name %>" data-category="<%= hf.category %>">
+              <div class="collapse collapse-arrow bg-base-200 rounded-lg">
+                <input type="checkbox" class="helpfile-toggle" data-helpfile-id="<%= hf.id %>" />
+                <div class="collapse-title py-2 flex justify-between items-center">
+                  <div>
+                    <strong class="text-white"><%= topic_name %></strong>
+                    <% if hf.category %>
+                      <span class="badge badge-neutral ml-2"><%= hf.category %></span>
+                    <% end %>
+                  </div>
+                </div>
+                <div class="collapse-content">
+                  <% if hf.summary %>
+                    <p class="text-lg mb-3"><%= hf.summary %></p>
+                  <% end %>
+
+                  <% if hf.description && !hf.description.empty? %>
+                    <div class="mb-3">
+                      <%= hf.description %>
+                    </div>
+                  <% end %>
+
+                  <% if hf.syntax && !hf.syntax.empty? %>
+                    <div class="mb-3">
+                      <strong class="text-primary">Usage:</strong>
+                      <code class="ml-2"><%= hf.syntax %></code>
+                    </div>
+                  <% end %>
+
+                  <% if hf.related_commands && !hf.related_commands.to_a.empty? %>
+                    <div class="mb-3">
+                      <strong class="text-primary">Related:</strong>
+                      <% hf.related_commands.to_a.each do |rel| %>
+                        <a href="/info/commands#cmd-<%= rel %>" class="badge badge-neutral no-underline ml-1"><%= rel %></a>
+                      <% end %>
+                    </div>
+                  <% end %>
+
+                  <% if hf.see_also && !hf.see_also.to_a.empty? %>
+                    <div class="mb-3">
+                      <strong class="text-primary">See Also:</strong>
+                      <% hf.see_also.to_a.each do |rel| %>
+                        <a href="#topic-<%= rel %>" class="badge badge-info no-underline ml-1"><%= rel %></a>
+                      <% end %>
+                    </div>
+                  <% end %>
+
+                  <% if @is_admin %>
+                    <!-- Staff Information -->
+                    <hr class="border-warning my-4">
+                    <div class="bg-base-300 p-4 rounded-lg border border-warning">
+                      <h6 class="text-warning font-bold mb-2"><i class="bi bi-shield-lock mr-1"></i>Staff Information</h6>
+
+                      <% if hf.source_file %>
+                        <div class="mb-2">
+                          <strong class="text-base-content/70 text-sm">Source:</strong>
+                          <code class="text-sm"><%= hf.source_file %><%= ":#{hf.source_line}" if hf.source_line %></code>
+                        </div>
+                      <% end %>
+
+                      <% if hf.staff_notes && !hf.staff_notes.empty? %>
+                        <div class="mb-2">
+                          <strong class="text-base-content/70 text-sm">Notes:</strong>
+                          <p class="text-sm text-base-content/70 mb-0"><%= hf.staff_notes %></p>
+                        </div>
+                      <% end %>
+
+                      <% refs = hf.parsed_code_references %>
+                      <% if refs.any? %>
+                        <div>
+                          <strong class="text-base-content/70 text-sm">Related Files:</strong>
+                          <ul class="text-sm mb-0">
+                            <% refs.each do |ref| %>
+                              <li><code><%= ref['file'] %><%= ":#{ref['line']}" if ref['line'] %></code>
+                                <% if ref['desc'] || ref['description'] %>
+                                  - <%= ref['desc'] || ref['description'] %>
+                                <% end %>
+                              </li>
+                            <% end %>
+                          </ul>
+                        </div>
+                      <% end %>
+
+                      <div class="mt-3">
+                        <a href="/admin/help/commands/<%= hf.id %>" class="btn btn-sm btn-outline btn-warning">
+                          <i class="bi bi-pencil mr-1"></i>Edit Topic
+                        </a>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Sidebar - Topic List -->
+        <div class="lg:col-span-3 order-1 lg:order-2 mb-4">
+          <div class="card bg-base-200 lg:sticky lg:top-20 max-h-[calc(100vh-100px)] overflow-y-auto">
+            <div class="card-body p-0">
+              <div class="p-4 border-b border-base-content/10">
+                <h3 class="font-bold text-sm">
+                  <i class="bi bi-list mr-2"></i>Topics (<span id="visible-count"><%= @helpfiles.count %></span>)
+                </h3>
+              </div>
+              <ul class="menu menu-sm" id="topic-sidebar">
+                <% @helpfiles.each do |hf| %>
+                  <li>
+                    <a href="#topic-<%= hf.topic || hf.command_name %>"
+                       class="sidebar-link text-sm"
+                       data-category="<%= hf.category %>">
+                      <%= hf.topic || hf.command_name %>
+                    </a>
+                  </li>
+                <% end %>
+              </ul>
+              <div class="p-4 border-t border-base-content/10">
+                <a href="/info/commands" class="btn btn-outline btn-primary btn-sm btn-block">
+                  <i class="bi bi-terminal mr-1"></i>View Commands
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</section>
+
+<style>
+.letter-nav {
+  min-width: 32px;
+  padding: 0.25rem;
+}
+.sidebar-link.hidden {
+  display: none;
+}
+.helpfile-card.hidden {
+  display: none;
+}
+.letter-section.hidden {
+  display: none;
+}
+/* DaisyUI collapse styling overrides */
+.helpfile-card .collapse-title {
+  min-height: auto;
+  padding: 0.5rem 1rem;
+}
+.helpfile-card .collapse-content {
+  padding: 0 1rem 1rem 1rem;
+}
+.helpfile-card .collapse-arrow > .collapse-title:after {
+  top: 0.75rem;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  const helpfileCards = document.querySelectorAll('.helpfile-card');
+  const sidebarLinks = document.querySelectorAll('.sidebar-link');
+  const letterSections = document.querySelectorAll('.letter-section');
+  const visibleCountEl = document.getElementById('visible-count');
+
+  if (filterBtns.length > 0) {
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        filterBtns.forEach(b => b.classList.remove('active', 'btn-primary'));
+        filterBtns.forEach(b => b.classList.add('btn-outline', 'btn-ghost'));
+        this.classList.add('active', 'btn-primary');
+        this.classList.remove('btn-outline', 'btn-ghost');
+
+        const category = this.dataset.category;
+        let visibleCount = 0;
+        const visibleLetters = new Set();
+
+        helpfileCards.forEach(card => {
+          if (category === 'all' || card.dataset.category === category) {
+            card.classList.remove('hidden');
+            visibleCount++;
+            const topicId = card.id.replace('topic-', '');
+            const letter = topicId[0].toUpperCase();
+            visibleLetters.add(letter);
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+
+        sidebarLinks.forEach(link => {
+          if (category === 'all' || link.dataset.category === category) {
+            link.classList.remove('hidden');
+          } else {
+            link.classList.add('hidden');
+          }
+        });
+
+        letterSections.forEach(section => {
+          const letter = section.dataset.letter;
+          if (visibleLetters.has(letter)) {
+            section.classList.remove('hidden');
+          } else {
+            section.classList.add('hidden');
+          }
+        });
+
+        if (visibleCountEl) visibleCountEl.textContent = visibleCount;
+      });
+    });
+  }
+
+  // Smooth scroll for anchor links with DaisyUI collapse expansion
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      const targetId = this.getAttribute('href');
+      if (targetId === '#') return;
+
+      const target = document.querySelector(targetId);
+      if (target) {
+        e.preventDefault();
+        const offset = 90;
+        const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - offset;
+        window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+
+        // Expand DaisyUI collapse if not already expanded
+        const collapseCheckbox = target.querySelector('.helpfile-toggle');
+        if (collapseCheckbox && !collapseCheckbox.checked) {
+          collapseCheckbox.checked = true;
+        }
+      }
+    });
+  });
+});
+</script>

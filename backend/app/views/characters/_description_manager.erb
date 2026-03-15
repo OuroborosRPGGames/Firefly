@@ -1,0 +1,131 @@
+<%# Description Manager Component %>
+<%# Displays and manages character descriptions with tabs for body regions %>
+<%#
+  Required locals:
+    - character_id: The character ID to manage descriptions for
+    - show_preview: Whether to show the preview section (default: true)
+    - compact: Whether to use compact mode for embedding (default: false)
+%>
+
+<% character_id ||= @character&.id %>
+<% show_preview = local_assigns.fetch(:show_preview, true) %>
+<% compact = local_assigns.fetch(:compact, false) %>
+
+<div id="descriptionManagerContainer"
+     data-character-id="<%= character_id %>"
+     data-show-preview="<%= show_preview %>"
+     data-compact="<%= compact %>">
+  <!-- Manager content will be rendered by JavaScript -->
+  <div class="desc-manager">
+    <div class="desc-manager-header">
+      <h5><i class="bi bi-body-text mr-2"></i>Character Descriptions</h5>
+      <button type="button" class="btn btn-sm btn-primary" id="addDescBtn" disabled>
+        <i class="bi bi-plus-lg"></i> Add Description
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div class="text-center py-5" id="descManagerLoading">
+      <span class="loading loading-spinner loading-lg text-primary"></span>
+      <p class="text-base-content/70 mt-2">Loading descriptions...</p>
+    </div>
+  </div>
+</div>
+
+<% unless compact %>
+<!-- Preview Panel (shown alongside manager when not in compact mode) -->
+<div class="mt-4" id="descriptionPreviewPanel">
+  <div class="card bg-base-200">
+    <div class="card-body">
+      <h2 class="card-title">
+        <i class="bi bi-eye mr-2"></i>Appearance Preview
+      </h2>
+      <div id="appearancePreviewContent" class="appearance-preview-content">
+        <p class="text-base-content/70">Your character's appearance will be displayed here as you add descriptions.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<% end %>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const container = document.getElementById('descriptionManagerContainer');
+  const characterId = container.dataset.characterId;
+  const showPreview = container.dataset.showPreview === 'true';
+  const compact = container.dataset.compact === 'true';
+
+  if (!characterId) {
+    container.querySelector('.desc-manager').innerHTML = `
+      <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle mr-2"></i>
+        <span>Please save your character first before adding descriptions.</span>
+      </div>
+    `;
+    return;
+  }
+
+  // Hide loading and initialize manager
+  const loadingEl = document.getElementById('descManagerLoading');
+
+  // Initialize the description manager
+  if (typeof DescriptionManager !== 'undefined') {
+    const manager = new DescriptionManager(container, characterId, {
+      showPreview: showPreview && !compact,
+      onDescriptionChange: function(descriptions) {
+        // Update external preview if exists
+        const previewPanel = document.getElementById('appearancePreviewContent');
+        if (previewPanel && !compact) {
+          updateExternalPreview(previewPanel, descriptions);
+        }
+      }
+    });
+
+    // Store reference for external access
+    window.descriptionManager = manager;
+  } else {
+    console.error('DescriptionManager not loaded. Make sure description-manager.js is included.');
+    if (loadingEl) {
+      loadingEl.innerHTML = `
+        <div class="alert alert-error">
+          <i class="bi bi-exclamation-triangle mr-2"></i>
+          <span>Failed to load description manager.</span>
+        </div>
+      `;
+    }
+  }
+});
+
+function updateExternalPreview(container, descriptions) {
+  const activeDescs = descriptions.filter(d => d.active);
+
+  if (activeDescs.length === 0) {
+    container.innerHTML = '<p class="text-base-content/70">Your character\'s appearance will be displayed here as you add descriptions.</p>';
+    return;
+  }
+
+  const regions = ['head', 'torso', 'arms', 'hands', 'legs', 'feet'];
+  const grouped = {};
+
+  regions.forEach(region => {
+    grouped[region] = activeDescs.filter(d => d.region === region)
+                                 .sort((a, b) => a.display_order - b.display_order);
+  });
+
+  let html = '';
+  regions.forEach(region => {
+    if (grouped[region].length > 0) {
+      html += '<div class="preview-region mb-2">';
+      grouped[region].forEach(desc => {
+        if (desc.image_url) {
+          html += `<img src="${desc.image_url}" class="preview-image" alt="">`;
+        }
+        html += `<span class="preview-text">${desc.content}</span> `;
+      });
+      html += '</div>';
+    }
+  });
+
+  container.innerHTML = html;
+}
+</script>

@@ -1,0 +1,361 @@
+/* Profile Page Styles - Haven-inspired design */
+
+/* Background & Page Container */
+.profile-page {
+  position: relative;
+  min-height: 100vh;
+}
+
+.profile-page.has-background {
+  background-image: var(--profile-bg);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.profile-background-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(21, 23, 25, 0.7) 0%,
+    rgba(21, 23, 25, 0.85) 50%,
+    rgba(21, 23, 25, 0.95) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.profile-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Header */
+.profile-header {
+  padding-top: 2rem;
+}
+
+.profile-name {
+  font-size: 3rem;
+  font-weight: 700;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  margin-bottom: 0.5rem;
+}
+
+.profile-nickname {
+  font-size: 1.5rem;
+  font-style: italic;
+  opacity: 0.9;
+  margin-bottom: 0.25rem;
+}
+
+.profile-handle {
+  font-size: 1rem;
+  opacity: 0.7;
+}
+
+/* Profile Cards - Semi-transparent glass effect */
+.profile-card {
+  background: rgba(39, 43, 48, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+.profile-card .card-header {
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Picture Carousel */
+.profile-pictures-carousel {
+  position: relative;
+}
+
+.carousel-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.carousel-slides {
+  position: relative;
+}
+
+.carousel-slide {
+  display: none;
+  position: relative;
+}
+
+.carousel-slide.active {
+  display: block;
+}
+
+.carousel-slide img {
+  width: 100%;
+  height: auto;
+  max-height: 400px;
+  object-fit: cover;
+}
+
+.carousel-delete-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.carousel-slide:hover .carousel-delete-btn {
+  opacity: 1;
+}
+
+.carousel-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+  z-index: 10;
+}
+
+.carousel-nav:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.carousel-prev {
+  left: 10px;
+}
+
+.carousel-next {
+  right: 10px;
+}
+
+.carousel-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.carousel-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s;
+}
+
+.carousel-indicator.active,
+.carousel-indicator:hover {
+  background: var(--prom-accent, #87ceeb);
+  border-color: var(--prom-accent, #87ceeb);
+}
+
+/* Placeholder Image */
+.placeholder-image {
+  width: 200px;
+  height: 200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+}
+
+.carousel-empty {
+  min-height: 200px;
+}
+
+/* Profile Sections */
+.profile-section {
+  transition: transform 0.2s;
+}
+
+.profile-section:hover {
+  transform: translateY(-2px);
+}
+
+.section-title {
+  font-weight: 600;
+}
+
+.section-content {
+  line-height: 1.7;
+}
+
+.section-content p:last-child {
+  margin-bottom: 0;
+}
+
+.section-actions {
+  display: flex;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.profile-section:hover .section-actions {
+  opacity: 1;
+}
+
+/* Video Carousel */
+.profile-videos {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.video-carousel {
+  position: relative;
+}
+
+.video-carousel-container {
+  position: relative;
+}
+
+.video-slide {
+  display: none;
+  position: relative;
+}
+
+.video-slide.active {
+  display: block;
+}
+
+.video-title {
+  font-size: 0.9rem;
+  color: #9ca3af;
+}
+
+.video-delete-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+
+.video-slide:hover .video-delete-btn {
+  opacity: 1;
+}
+
+.video-indicators {
+  margin-top: 1rem;
+}
+
+.video-prev {
+  left: -50px;
+}
+
+.video-next {
+  right: -50px;
+}
+
+/* Description Editor Integration */
+.description-editor {
+  min-height: 200px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 991.98px) {
+  .profile-name {
+    font-size: 2rem;
+  }
+
+  .profile-nickname {
+    font-size: 1.25rem;
+  }
+
+  .video-prev,
+  .video-next {
+    position: static;
+    margin-top: 1rem;
+  }
+
+  .video-carousel .carousel-nav {
+    position: static;
+    transform: none;
+    display: inline-flex;
+    margin: 0 0.5rem;
+  }
+
+  .video-carousel-container + .carousel-nav {
+    display: none;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .carousel-slide img {
+    max-height: 300px;
+  }
+
+  .section-actions {
+    opacity: 1;
+  }
+}
+
+/* Animation for adding/removing elements */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.profile-section,
+.carousel-slide,
+.video-slide {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* Loading states */
+.profile-card.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.profile-card.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--prom-accent, #87ceeb);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

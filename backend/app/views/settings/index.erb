@@ -1,0 +1,357 @@
+<!-- Page Banner -->
+<section class="page-banner" style="background-image: url('/images/library.jpg');">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <nav aria-label="breadcrumb">
+        <div class="breadcrumbs text-sm">
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/dashboard">Characters</a></li>
+            <li>Settings</li>
+          </ul>
+        </div>
+      </nav>
+      <h1>Account Settings</h1>
+    </div>
+  </div>
+</section>
+
+<section class="py-12">
+  <div class="container mx-auto px-4">
+    <div class="flex justify-center">
+      <div class="w-full lg:w-2/3">
+        <!-- Profile Settings -->
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body">
+            <h2 class="card-title">
+              <i class="bi bi-person mr-2"></i>Profile Information
+            </h2>
+            <form action="/settings/profile" method="post">
+              <%= csrf_tag %>
+
+              <div class="form-control mb-4">
+                <label for="username" class="label">
+                  <span class="label-text">Username</span>
+                </label>
+                <input type="text" class="input input-bordered" id="username" value="<%= @current_user.username %>" disabled>
+                <label class="label">
+                  <span class="label-text-alt text-base-content/70">Username cannot be changed</span>
+                </label>
+              </div>
+
+              <div class="form-control mb-4">
+                <label for="email" class="label">
+                  <span class="label-text">Email Address</span>
+                </label>
+                <input type="email" class="input input-bordered" id="email" name="email" value="<%= @current_user.email %>" required>
+              </div>
+
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg mr-1"></i>Update Profile
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Password Change -->
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body">
+            <h2 class="card-title">
+              <i class="bi bi-shield-lock mr-2"></i>Change Password
+            </h2>
+            <form action="/settings/password" method="post">
+              <%= csrf_tag %>
+
+              <div class="form-control mb-4">
+                <label for="current_password" class="label">
+                  <span class="label-text">Current Password</span>
+                </label>
+                <input type="password" class="input input-bordered" id="current_password" name="current_password" required autocomplete="current-password">
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="form-control">
+                  <label for="new_password" class="label">
+                    <span class="label-text">New Password</span>
+                  </label>
+                  <input type="password" class="input input-bordered" id="new_password" name="new_password" required minlength="6" autocomplete="new-password">
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/70">Minimum 6 characters</span>
+                  </label>
+                </div>
+
+                <div class="form-control">
+                  <label for="confirm_password" class="label">
+                    <span class="label-text">Confirm New Password</span>
+                  </label>
+                  <input type="password" class="input input-bordered" id="confirm_password" name="confirm_password" required autocomplete="new-password">
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-key mr-1"></i>Change Password
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Preferences -->
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body">
+            <h2 class="card-title">
+              <i class="bi bi-sliders mr-2"></i>Preferences
+            </h2>
+            <form action="/settings/preferences" method="post">
+              <%= csrf_tag %>
+
+              <div class="form-control mb-4">
+                <label class="label cursor-pointer justify-start gap-4">
+                  <input type="checkbox" class="toggle toggle-primary" id="email_notifications" name="email_notifications" value="1" checked>
+                  <span class="label-text">Receive email notifications</span>
+                </label>
+              </div>
+
+              <div class="form-control mb-4">
+                <label class="label cursor-pointer justify-start gap-4">
+                  <input type="checkbox" class="toggle toggle-primary" id="sound_enabled" name="sound_enabled" value="1" checked>
+                  <span class="label-text">Enable sound effects</span>
+                </label>
+              </div>
+
+              <div class="form-control mb-4">
+                <label for="default_theme" class="label">
+                  <span class="label-text">Default Theme</span>
+                </label>
+                <select class="select select-bordered" id="default_theme" name="default_theme">
+                  <option value="system">System Default</option>
+                  <option value="dark" selected>Dark</option>
+                  <option value="light">Light</option>
+                </select>
+                <label class="label">
+                  <span class="label-text-alt text-base-content/70">You can also use the theme toggle in the navigation bar</span>
+                </label>
+              </div>
+
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg mr-1"></i>Save Preferences
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Webclient Settings -->
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body">
+            <h2 class="card-title">
+              <i class="bi bi-display mr-2"></i>Webclient Settings
+            </h2>
+            <form action="/settings/webclient" method="post" id="webclient-settings-form">
+              <%= csrf_tag %>
+
+              <h6 class="text-base-content/70 mb-3 font-semibold">Display</h6>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="form-control">
+                  <label for="setting_llheight" class="label">
+                    <span class="label-text">Left Panel Line Height</span>
+                  </label>
+                  <select class="select select-bordered" id="setting_llheight" name="llheight">
+                    <option value="100">100%</option>
+                    <option value="110">110%</option>
+                    <option value="120">120%</option>
+                    <option value="130">130%</option>
+                    <option value="140" selected>140%</option>
+                    <option value="150">150%</option>
+                    <option value="160">160%</option>
+                  </select>
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/70">Vertical spacing of text on OOC panel</span>
+                  </label>
+                </div>
+                <div class="form-control">
+                  <label for="setting_rlheight" class="label">
+                    <span class="label-text">Right Panel Line Height</span>
+                  </label>
+                  <select class="select select-bordered" id="setting_rlheight" name="rlheight">
+                    <option value="100">100%</option>
+                    <option value="110">110%</option>
+                    <option value="120">120%</option>
+                    <option value="130">130%</option>
+                    <option value="140" selected>140%</option>
+                    <option value="150">150%</option>
+                    <option value="160">160%</option>
+                  </select>
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/70">Vertical spacing of text on RP panel</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="form-control">
+                  <label for="setting_lfont" class="label">
+                    <span class="label-text">Left Panel Font</span>
+                  </label>
+                  <select class="select select-bordered" id="setting_lfont" name="lfont">
+                    <option value="inherit" selected>Default</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Palatino">Palatino</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Arial">Arial</option>
+                    <option value="Verdana">Verdana</option>
+                    <option value="Courier New">Courier New</option>
+                  </select>
+                </div>
+                <div class="form-control">
+                  <label for="setting_rfont" class="label">
+                    <span class="label-text">Right Panel Font</span>
+                  </label>
+                  <select class="select select-bordered" id="setting_rfont" name="rfont">
+                    <option value="inherit" selected>Default</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Palatino">Palatino</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Arial">Arial</option>
+                    <option value="Verdana">Verdana</option>
+                    <option value="Courier New">Courier New</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="form-control">
+                  <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" class="toggle toggle-primary" id="setting_simpleui" name="simpleui" value="1">
+                    <div>
+                      <span class="label-text">Simple/Mobile UI</span>
+                      <p class="text-xs text-base-content/70">Remove weather effects for better performance</p>
+                    </div>
+                  </label>
+                </div>
+                <div class="form-control">
+                  <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" class="toggle toggle-primary" id="setting_single_screen" name="single_screen" value="1">
+                    <div>
+                      <span class="label-text">Single Screen Mode</span>
+                      <p class="text-xs text-base-content/70">All output to one panel</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="form-control">
+                  <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" class="toggle toggle-primary" id="setting_noback" name="noback" value="1">
+                    <div>
+                      <span class="label-text">No Background Images</span>
+                      <p class="text-xs text-base-content/70">Disable room background pictures</p>
+                    </div>
+                  </label>
+                </div>
+                <div class="form-control">
+                  <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" class="toggle toggle-primary" id="setting_pichide" name="pichide" value="1">
+                    <div>
+                      <span class="label-text">Hide Character Pictures</span>
+                      <p class="text-xs text-base-content/70">Profile commands won't show pictures</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <h6 class="text-base-content/70 mb-3 font-semibold">Notifications</h6>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="form-control">
+                  <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" class="toggle toggle-primary" id="setting_notify_message" name="notify_message" value="1" checked>
+                    <div>
+                      <span class="label-text">Message Notifications</span>
+                      <p class="text-xs text-base-content/70">Desktop notifications for DMs and OOCs</p>
+                    </div>
+                  </label>
+                </div>
+                <div class="form-control">
+                  <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" class="toggle toggle-primary" id="setting_notify_emote" name="notify_emote" value="1">
+                    <div>
+                      <span class="label-text">Emote Notifications</span>
+                      <p class="text-xs text-base-content/70">Desktop notifications for roleplay poses</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <h6 class="text-base-content/70 mb-3 font-semibold">Audio</h6>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="form-control">
+                  <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" class="toggle toggle-primary" id="setting_noambi" name="noambi" value="1">
+                    <div>
+                      <span class="label-text">Mute Environment Sounds</span>
+                      <p class="text-xs text-base-content/70">Disable weather and ambient sounds</p>
+                    </div>
+                  </label>
+                </div>
+                <div class="form-control">
+                  <label for="setting_volume" class="label">
+                    <span class="label-text">Master Volume</span>
+                  </label>
+                  <input type="range" class="range range-primary" id="setting_volume" name="volume" min="0" max="100" value="50">
+                </div>
+              </div>
+
+              <h6 class="text-base-content/70 mb-3 font-semibold">Email Notifications</h6>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="form-control">
+                  <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" class="toggle toggle-primary" id="setting_emailmissed" name="emailmissed" value="1">
+                    <div>
+                      <span class="label-text">Email Missed Messages</span>
+                      <p class="text-xs text-base-content/70">Receive OOC/DMs when offline</p>
+                    </div>
+                  </label>
+                </div>
+                <div class="form-control">
+                  <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" class="toggle toggle-primary" id="setting_emailscene" name="emailscene" value="1">
+                    <div>
+                      <span class="label-text">Email Scene Posts</span>
+                      <p class="text-xs text-base-content/70">Get emailed when scene posts are added</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg mr-1"></i>Save Webclient Settings
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="card bg-base-200 border border-error">
+          <div class="card-body">
+            <h2 class="card-title text-error">
+              <i class="bi bi-exclamation-triangle mr-2"></i>Danger Zone
+            </h2>
+            <p class="text-base-content/70 mb-3">
+              Once you delete your account, there is no going back. All your characters and data will be permanently removed.
+            </p>
+            <button type="button" class="btn btn-outline btn-error"
+                    onclick="if(confirm('Are you sure you want to delete your account? This action cannot be undone.')) { document.getElementById('delete-form').submit(); }">
+              <i class="bi bi-trash mr-1"></i>Delete Account
+            </button>
+            <form id="delete-form" action="/settings/delete" method="post" style="display: none;">
+              <%= csrf_tag %>
+            </form>
+          </div>
+        </div>
+
+        <div class="text-center mt-6">
+          <a href="/dashboard" class="link link-hover text-base-content/70"><i class="bi bi-arrow-left mr-1"></i>Back to Characters</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

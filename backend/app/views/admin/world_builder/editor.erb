@@ -1,0 +1,2007 @@
+<div class="h-full overflow-hidden">
+  <div class="flex h-full flex-nowrap">
+    <!-- Left sidebar - Tools (collapsible sections) -->
+    <div class="w-[260px] h-full bg-base-300 border-r border-base-content/10 flex flex-col flex-shrink-0">
+      <!-- Header - fixed -->
+      <div class="p-2 border-b border-base-content/10">
+        <div class="flex items-center">
+          <a href="/admin/world_builder" class="btn btn-ghost btn-sm mr-2">
+            <i class="bi bi-arrow-left"></i>
+          </a>
+          <h6 class="mb-0 truncate font-semibold"><%= h @world.name %></h6>
+        </div>
+      </div>
+
+      <!-- Scrollable sections -->
+      <div class="flex-grow overflow-auto" style="scrollbar-width: thin;">
+        <div class="join join-vertical w-full" id="sidebarAccordion">
+
+          <!-- Tools Section (always visible, most important) -->
+          <div class="collapse collapse-arrow join-item border-b border-base-content/10 bg-base-200">
+            <input type="checkbox" name="sidebar-accordion" checked />
+            <div class="collapse-title py-2 px-3 min-h-0">
+              <i class="bi bi-tools mr-2"></i><small class="font-bold">TOOLS</small>
+            </div>
+            <div class="collapse-content py-2 px-3">
+              <div class="flex flex-wrap gap-1">
+                <button class="btn btn-primary btn-sm tool-btn active" data-tool="select" title="Select / Zoom">
+                  <i class="bi bi-cursor"></i>
+                </button>
+                <button class="btn btn-ghost btn-sm tool-btn" data-tool="terrain" title="Paint Terrain">
+                  <i class="bi bi-paint-bucket"></i>
+                </button>
+                <button class="btn btn-ghost btn-sm tool-btn" data-tool="feature" title="Draw Features">
+                  <i class="bi bi-signpost"></i>
+                </button>
+                <button class="btn btn-ghost btn-sm tool-btn" data-tool="traversable" title="Toggle Traversable">
+                  <i class="bi bi-lock"></i>
+                </button>
+                <button class="btn btn-ghost btn-sm tool-btn" data-tool="city" title="Place City">
+                  <i class="bi bi-building text-warning"></i>
+                </button>
+                <button class="btn btn-ghost btn-sm tool-btn" data-tool="zone" title="Draw Zone">
+                  <i class="bi bi-hexagon text-info"></i>
+                </button>
+                <button class="btn btn-ghost btn-sm tool-btn" data-tool="link" title="Link Cities">
+                  <i class="bi bi-diagram-3 text-success"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Terrain Palette (shown when Paint Terrain selected) -->
+          <div id="terrain-palette-container" class="collapse collapse-arrow join-item border-b border-base-content/10 bg-base-200" style="display: none;">
+            <input type="checkbox" name="sidebar-accordion" checked />
+            <div class="collapse-title py-2 px-3 min-h-0">
+              <i class="bi bi-palette mr-2"></i><small class="font-bold">TERRAIN</small>
+            </div>
+            <div class="collapse-content py-2 px-3">
+              <div id="terrain-palette" class="flex flex-wrap gap-1">
+                <!-- Terrain swatches added by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Feature Palette (shown when Draw Features selected) -->
+          <div id="feature-palette-container" class="collapse collapse-arrow join-item border-b border-base-content/10 bg-base-200" style="display: none;">
+            <input type="checkbox" name="sidebar-accordion" checked />
+            <div class="collapse-title py-2 px-3 min-h-0">
+              <i class="bi bi-signpost mr-2"></i><small class="font-bold">FEATURES</small>
+            </div>
+            <div class="collapse-content py-2 px-3">
+              <div id="feature-palette" class="flex flex-wrap gap-1">
+                <!-- Feature buttons added by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Navigation Section -->
+          <div class="collapse collapse-arrow join-item border-b border-base-content/10 bg-base-200">
+            <input type="checkbox" name="sidebar-accordion" />
+            <div class="collapse-title py-2 px-3 min-h-0">
+              <i class="bi bi-compass mr-2"></i><small class="font-bold">NAVIGATION</small>
+            </div>
+            <div class="collapse-content py-2 px-3">
+              <div class="flex justify-between items-center mb-2">
+                <small>Zoom</small>
+                <span id="zoom-level-display" class="badge badge-primary badge-sm">0 - World</span>
+              </div>
+              <div class="join w-full mb-2">
+                <button id="btn-zoom-out" class="btn btn-ghost btn-sm join-item" disabled>
+                  <i class="bi bi-zoom-out"></i>
+                </button>
+                <button id="btn-zoom-in" class="btn btn-ghost btn-sm join-item">
+                  <i class="bi bi-zoom-in"></i>
+                </button>
+                <button id="btn-rotate-left" class="btn btn-ghost btn-sm join-item">
+                  <i class="bi bi-arrow-counterclockwise"></i>
+                </button>
+                <button id="btn-rotate-right" class="btn btn-ghost btn-sm join-item">
+                  <i class="bi bi-arrow-clockwise"></i>
+                </button>
+              </div>
+              <div class="flex justify-between items-center">
+                <small>Detail</small>
+                <span id="granularity-display" class="badge badge-info badge-sm">~320</span>
+              </div>
+              <input type="range" id="granularity-slider" class="range range-sm" min="1" max="4" value="2" step="1">
+            </div>
+          </div>
+
+          <!-- Generation Section -->
+          <div class="collapse collapse-arrow join-item border-b border-base-content/10 bg-base-200">
+            <input type="checkbox" name="sidebar-accordion" />
+            <div class="collapse-title py-2 px-3 min-h-0">
+              <i class="bi bi-globe mr-2"></i><small class="font-bold">GENERATION</small>
+            </div>
+            <div class="collapse-content py-2 px-3">
+              <div class="mb-2">
+                <small>Planet Type</small>
+                <select id="gen-preset" class="select select-sm select-bordered w-full">
+                  <option value="earth_like" selected>Earth-like</option>
+                  <option value="pangaea">Pangaea</option>
+                  <option value="archipelago">Archipelago</option>
+                  <option value="ice_age">Ice Age</option>
+                  <option value="waterworld">Waterworld</option>
+                  <option value="arid">Arid</option>
+                </select>
+              </div>
+              <div class="mb-2">
+                <small>Seed</small>
+                <div class="join w-full">
+                  <input type="number" id="gen-seed" class="input input-sm input-bordered join-item flex-1" placeholder="Random">
+                  <button id="btn-random-seed" class="btn btn-sm btn-ghost join-item" type="button" title="Random seed">
+                    <i class="bi bi-shuffle"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="mb-2">
+                <small>World Size</small>
+                <select id="gen-world-size" class="select select-sm select-bordered w-full">
+                  <option value="0.1">Tiny (~328K hexes)</option>
+                  <option value="0.25">Small (~1.3M hexes)</option>
+                  <option value="0.5" selected>Medium (~5.2M hexes)</option>
+                  <option value="0.75">Large (~21M hexes)</option>
+                  <option value="1.0">Earth-size (~21M hexes)</option>
+                </select>
+              </div>
+              <button id="btn-generate-procedural" class="btn btn-success btn-sm w-full mb-2">
+                <i class="bi bi-globe mr-1"></i>Generate World
+              </button>
+              <button id="btn-import-earth" class="btn btn-outline btn-info btn-sm w-full mb-1">
+                <i class="bi bi-download mr-1"></i>Import Earth
+              </button>
+              <div id="generation-progress" class="mt-2" style="display: none;">
+                <progress id="progress-bar" class="progress progress-primary w-full" value="0" max="100"></progress>
+                <small id="progress-status" class="text-base-content/70">Starting...</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bulk Operations Section -->
+          <div class="collapse collapse-arrow join-item border-b border-base-content/10 bg-base-200">
+            <input type="checkbox" name="sidebar-accordion" />
+            <div class="collapse-title py-2 px-3 min-h-0">
+              <i class="bi bi-grid mr-2"></i><small class="font-bold">BULK OPS</small>
+            </div>
+            <div class="collapse-content py-2 px-3">
+              <button id="btn-all-traversable" class="btn btn-outline btn-success btn-sm w-full mb-1">
+                <i class="bi bi-unlock mr-1"></i>All Traversable
+              </button>
+              <button id="btn-none-traversable" class="btn btn-outline btn-error btn-sm w-full mb-1">
+                <i class="bi bi-lock mr-1"></i>None Traversable
+              </button>
+              <button id="btn-landmass-traversable" class="btn btn-outline btn-warning btn-sm w-full">
+                <i class="bi bi-globe-americas mr-1"></i>Toggle Landmass
+              </button>
+              <small class="text-base-content/50 block mt-1">Click a land hex after pressing</small>
+            </div>
+          </div>
+
+          <!-- Weather Grid Section -->
+          <div class="collapse collapse-arrow join-item border-b border-base-content/10 bg-base-200">
+            <input type="checkbox" name="sidebar-accordion" />
+            <div class="collapse-title py-2 px-3 min-h-0">
+              <i class="bi bi-cloud-sun mr-2"></i><small class="font-bold">WEATHER GRID</small>
+            </div>
+            <div class="collapse-content py-2 px-3">
+              <form method="post" action="/admin/world_builder/<%= @world.id %>/weather_grid">
+                <input type="hidden" name="enabled" value="<%= @world.use_grid_weather ? 'false' : 'true' %>">
+                <input type="hidden" name="_csrf" value="<%= csrf_token %>">
+                <label class="label cursor-pointer justify-start gap-2 py-1">
+                  <input type="checkbox" class="toggle toggle-sm toggle-primary"
+                         <%= @world.use_grid_weather ? 'checked' : '' %>
+                         onchange="this.form.submit()">
+                  <span class="label-text text-xs">Enable Grid Weather</span>
+                </label>
+              </form>
+
+              <% if @world.use_grid_weather %>
+                <div id="weather-grid-status" class="mt-2">
+                  <div class="flex flex-wrap gap-1 mb-2">
+                    <span class="badge badge-info badge-xs" id="wg-tick-count">...</span>
+                    <span class="badge badge-ghost badge-xs" id="wg-last-tick">...</span>
+                  </div>
+
+                  <small class="font-semibold block mb-1">Active Storms</small>
+                  <div id="wg-storms">
+                    <small class="text-base-content/50">Loading...</small>
+                  </div>
+                </div>
+
+                <div class="mt-2">
+                  <form method="post" action="/admin/world_builder/<%= @world.id %>/weather_grid/reset"
+                        onsubmit="return confirm('Reset weather grid? This clears all simulation state.')">
+                    <input type="hidden" name="_csrf" value="<%= csrf_token %>">
+                    <button type="submit" class="btn btn-error btn-xs w-full">
+                      <i class="bi bi-arrow-counterclockwise mr-1"></i>Reset Grid
+                    </button>
+                  </form>
+                </div>
+
+                <script>
+                  (function() {
+                    function refreshWeatherStatus() {
+                      fetch('/admin/world_builder/<%= @world.id %>/weather_grid/status')
+                        .then(function(r) { return r.json(); })
+                        .then(function(data) {
+                          var tickEl = document.getElementById('wg-tick-count');
+                          var lastEl = document.getElementById('wg-last-tick');
+                          if (tickEl) tickEl.textContent = 'Ticks: ' + (data.tick_count || 0);
+                          if (lastEl) {
+                            lastEl.textContent = data.last_tick_at
+                              ? 'Last: ' + new Date(data.last_tick_at).toLocaleTimeString()
+                              : 'Not ticked';
+                          }
+
+                          var stormsEl = document.getElementById('wg-storms');
+                          if (!stormsEl) return;
+
+                          if (data.storms && data.storms.length > 0) {
+                            var html = '';
+                            data.storms.forEach(function(s) {
+                              var phaseClass = s.phase === 'mature' ? 'badge-error'
+                                : s.phase === 'forming' ? 'badge-warning' : 'badge-ghost';
+                              html += '<div class="flex items-center gap-1 mb-1">' +
+                                '<span class="badge badge-xs ' + phaseClass + '">' + (s.phase || '?') + '</span>' +
+                                '<small>' + (s.name || s.type || 'Storm') + '</small>' +
+                                '<small class="text-base-content/50 ml-auto">' +
+                                (s.intensity != null ? Math.round(s.intensity * 100) + '%' : '') + '</small>' +
+                                '</div>';
+                            });
+                            stormsEl.innerHTML = html;
+                          } else {
+                            stormsEl.innerHTML = '<small class="text-base-content/50">No active storms</small>';
+                          }
+                        })
+                        .catch(function() {});
+                    }
+                    refreshWeatherStatus();
+                    setInterval(refreshWeatherStatus, 30000);
+                  })();
+                </script>
+              <% end %>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Status bar - fixed at bottom -->
+      <div class="p-2 border-t border-base-content/10 bg-base-300">
+        <small id="coords-display" class="text-base-content/50">Position: (0, 0)</small>
+      </div>
+    </div>
+
+    <!-- Main map area -->
+    <div class="flex-1 bg-black flex items-center justify-center relative min-w-0 overflow-hidden">
+      <!-- Loading spinner overlay -->
+      <div id="globe-loading" class="globe-loading">
+        <span class="loading loading-spinner loading-lg text-primary"></span>
+        <div class="mt-2">Loading world...</div>
+      </div>
+
+      <!-- Globe container (3D view) -->
+      <div id="globe-container" class="w-full h-full"></div>
+
+      <!-- Fallback placeholder for testing when Globe.gl fails to load -->
+      <div id="globe-fallback" class="w-full h-full hidden absolute top-0 left-0 items-center justify-center" style="background: radial-gradient(circle at 40% 40%, #2d5f8a 0%, #1a3a5a 50%, #000011 100%); cursor: pointer;">
+        <div class="text-center text-white">
+          <div style="width: 250px; height: 250px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #4a8ab5 0%, #2d5f8a 40%, #1a3a5a 70%, #000011 100%); box-shadow: 0 0 60px rgba(58, 126, 207, 0.3); margin: 0 auto 20px;"></div>
+          <p class="mt-3">Click anywhere to open hex editor</p>
+          <small class="text-base-content/50">(Globe placeholder)</small>
+        </div>
+      </div>
+
+      <!-- 2D Hex Editor container (hidden by default) -->
+      <div id="editor-container" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #111;">
+        <!-- Hex grid will be rendered here by HexEditor -->
+      </div>
+
+      <!-- Loading overlay (shown while fetching region data) -->
+      <div id="editor-loading" class="hidden absolute inset-0 z-50 flex items-center justify-center" style="background: rgba(0,0,0,0.85);">
+        <div class="text-center">
+          <span class="loading loading-spinner loading-lg text-primary"></span>
+          <p class="mt-3 text-base-content/70 text-sm">Loading hex region...</p>
+        </div>
+      </div>
+
+      <!-- Mini world map (shown during hex editing) -->
+      <div id="globe-mini" class="absolute hidden" style="bottom: 10px; right: 10px; width: 200px; height: 200px; cursor: pointer;">
+        <!-- Mini Globe.gl instance will be rendered here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Prevent page scrollbars - constrain full chain so h-full works below navbar */
+  html, body, .drawer, .drawer-content, main {
+    overflow: hidden !important;
+    height: 100% !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* DaisyUI collapse styling for sidebar */
+  #sidebarAccordion .collapse-title {
+    min-height: 2.5rem;
+    padding: 0.5rem 0.75rem;
+  }
+  #sidebarAccordion .collapse-content {
+    padding: 0.5rem 0.75rem;
+    background: oklch(var(--b3));
+  }
+  #sidebarAccordion .collapse-arrow > .collapse-title:after {
+    top: 0.75rem;
+  }
+
+  /* Loading overlay */
+  .globe-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    text-align: center;
+    z-index: 200;
+  }
+  .globe-loading.hidden {
+    display: none;
+  }
+
+  /* Globe container */
+  #globe-container {
+    position: relative;
+  }
+
+  /* Globe thumbnail mode */
+  #globe-container.globe-thumbnail {
+    position: absolute !important;
+    bottom: 20px;
+    right: 20px;
+    width: 120px !important;
+    height: 120px !important;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    overflow: hidden;
+    z-index: 100;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  }
+  #globe-container.globe-thumbnail:hover {
+    border-color: rgba(255, 255, 255, 0.6);
+  }
+
+  /* Hex editor container */
+  #editor-container svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Tool buttons */
+  .tool-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tool-btn.active {
+    background-color: oklch(var(--p)) !important;
+    border-color: oklch(var(--p)) !important;
+    color: oklch(var(--pc)) !important;
+  }
+
+  /* Terrain swatches */
+  .terrain-swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.1s, border-color 0.1s;
+  }
+  .terrain-swatch:hover {
+    transform: scale(1.1);
+  }
+  .terrain-swatch.active {
+    border-color: #fff;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+  }
+
+  .feature-btn.active {
+    background-color: oklch(var(--p)) !important;
+    border-color: oklch(var(--p)) !important;
+    color: oklch(var(--pc)) !important;
+  }
+
+  /* Hex styling */
+  .editor-hex {
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .editor-hex:hover {
+    opacity: 0.8;
+  }
+
+  /* Mini globe */
+  #globe-mini:hover {
+    border-color: rgba(255, 255, 255, 0.6);
+  }
+
+  /* Slim scrollbar */
+  .overflow-auto::-webkit-scrollbar {
+    width: 6px;
+  }
+  .overflow-auto::-webkit-scrollbar-track {
+    background: oklch(var(--b3));
+  }
+  .overflow-auto::-webkit-scrollbar-thumb {
+    background: oklch(var(--bc) / 0.3);
+    border-radius: 3px;
+  }
+</style>
+
+<!-- City Creation Modal -->
+<dialog class="modal" id="cityModal">
+  <div class="modal-box bg-base-200 max-w-2xl max-h-[90vh]">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-bold text-lg"><i class="bi bi-building mr-2"></i>Create City</h3>
+      <form method="dialog">
+        <button class="btn btn-sm btn-circle btn-ghost">✕</button>
+      </form>
+    </div>
+    <form id="city-form" class="overflow-y-auto max-h-[calc(90vh-10rem)] pr-1">
+      <input type="hidden" id="city-hex-x">
+      <input type="hidden" id="city-hex-y">
+      <input type="hidden" id="city-globe-hex-id">
+      <div class="mb-3 text-base-content/70 text-sm" id="city-coords-display">Hex: (0, 0)</div>
+
+      <!-- City Name + Generate Toggle -->
+      <div class="form-control mb-3">
+        <label class="label"><span class="label-text">City Name</span></label>
+        <input type="text" id="city-name" class="input input-bordered w-full" placeholder="Enter city name or leave blank to generate">
+        <label class="label cursor-pointer justify-start gap-3 mt-1">
+          <input type="checkbox" id="city-generate-name" class="toggle toggle-sm toggle-primary" checked>
+          <span class="text-sm text-base-content/70">AI-generate city name</span>
+        </label>
+      </div>
+
+      <!-- Description -->
+      <div class="form-control mb-3">
+        <label class="label"><span class="label-text">Description</span></label>
+        <textarea id="city-description" class="textarea textarea-bordered w-full h-24"
+          placeholder="Describe this city... A bustling port town on a sheltered bay, known for its fish market and ancient lighthouse. The cobblestone streets wind uphill from the docks to a crumbling stone keep."></textarea>
+        <label class="label py-0.5"><span class="label-text-alt text-base-content/50">Used as seed for AI generation of names, buildings, and NPCs</span></label>
+      </div>
+
+      <!-- Setting -->
+      <div class="form-control mb-3">
+        <label class="label"><span class="label-text">Setting</span></label>
+        <select id="city-setting" class="select select-bordered w-full">
+          <option value="fantasy" selected>Fantasy</option>
+          <option value="medieval">Medieval</option>
+          <option value="modern">Modern</option>
+          <option value="scifi">Sci-Fi</option>
+          <option value="steampunk">Steampunk</option>
+          <option value="noir">Noir</option>
+          <option value="horror">Horror</option>
+        </select>
+      </div>
+
+      <!-- Size Presets -->
+      <div class="form-control mb-3">
+        <label class="label"><span class="label-text">City Size</span></label>
+        <div class="flex flex-wrap gap-2 mb-2">
+          <button type="button" class="btn btn-sm btn-outline city-size-preset" data-streets="3" data-avenues="3" data-height="40">Village</button>
+          <button type="button" class="btn btn-sm btn-outline city-size-preset" data-streets="5" data-avenues="5" data-height="60">Town</button>
+          <button type="button" class="btn btn-sm btn-outline city-size-preset" data-streets="7" data-avenues="7" data-height="100">Small City</button>
+          <button type="button" class="btn btn-sm btn-outline city-size-preset btn-primary" data-streets="10" data-avenues="10" data-height="150">City</button>
+          <button type="button" class="btn btn-sm btn-outline city-size-preset" data-streets="15" data-avenues="15" data-height="200">Large City</button>
+          <button type="button" class="btn btn-sm btn-outline city-size-preset" data-streets="20" data-avenues="20" data-height="300">Metropolis</button>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="form-control">
+            <label class="label py-1"><span class="label-text text-xs">Streets (E-W)</span></label>
+            <input type="number" id="city-horizontal-streets" class="input input-sm input-bordered w-full" value="10" min="2" max="50">
+          </div>
+          <div class="form-control">
+            <label class="label py-1"><span class="label-text text-xs">Avenues (N-S)</span></label>
+            <input type="number" id="city-vertical-streets" class="input input-sm input-bordered w-full" value="10" min="2" max="50">
+          </div>
+          <div class="form-control">
+            <label class="label py-1"><span class="label-text text-xs">Max Height (ft)</span></label>
+            <input type="number" id="city-max-height" class="input input-sm input-bordered w-full" value="150" min="20" max="1000">
+          </div>
+        </div>
+      </div>
+
+      <!-- Generation Options -->
+      <div class="form-control mb-3">
+        <label class="label"><span class="label-text">Generation Options</span></label>
+        <div class="bg-base-300 p-3 rounded space-y-2">
+          <!-- Generate Buildings toggle -->
+          <label class="label cursor-pointer justify-start gap-3 py-1">
+            <input type="checkbox" id="city-gen-buildings-toggle" class="toggle toggle-sm toggle-primary" checked>
+            <div>
+              <span class="font-medium text-sm">Generate Buildings</span>
+              <p class="text-xs text-base-content/60">Create taverns, shops, temples, etc.</p>
+            </div>
+          </label>
+          <!-- Room Descriptions (indented, shown when buildings on) -->
+          <div id="city-room-desc-row" class="ml-8">
+            <label class="label cursor-pointer justify-start gap-3 py-0.5">
+              <input type="checkbox" id="city-gen-room-desc" class="toggle toggle-xs toggle-primary" checked>
+              <span class="text-sm">Room Descriptions</span>
+            </label>
+          </div>
+          <!-- Shop Inventories (indented, shown when buildings on) -->
+          <div id="city-inventory-row" class="ml-8">
+            <label class="label cursor-pointer justify-start gap-3 py-0.5">
+              <input type="checkbox" id="city-gen-inventory" class="toggle toggle-xs toggle-primary" checked>
+              <span class="text-sm">Shop Inventories</span>
+            </label>
+          </div>
+          <!-- AI Street Names (indented, shown when buildings on) -->
+          <div id="city-ai-names-row" class="ml-8">
+            <label class="label cursor-pointer justify-start gap-3 py-0.5">
+              <input type="checkbox" id="city-gen-ai-names" class="toggle toggle-xs toggle-primary" checked>
+              <span class="text-sm">AI Street Names</span>
+            </label>
+          </div>
+          <!-- Green Space slider (shown when buildings on) -->
+          <div id="city-green-space-row" class="ml-8">
+            <div class="form-control">
+              <label class="label py-1">
+                <span class="label-text text-sm">Green Space</span>
+                <span class="label-text-alt" id="city-green-space-label">50%</span>
+              </label>
+              <input type="range" id="city-green-space" min="0" max="100" value="50" step="10" class="range range-xs range-success">
+            </div>
+          </div>
+          <div class="divider my-1"></div>
+          <!-- Generate NPCs toggle -->
+          <label class="label cursor-pointer justify-start gap-3 py-1">
+            <input type="checkbox" id="city-gen-npcs-toggle" class="toggle toggle-sm toggle-secondary">
+            <div>
+              <span class="font-medium text-sm">Generate NPCs</span>
+              <p class="text-xs text-base-content/60">Populate buildings with characters</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- NPC Configuration (shown when NPC toggle is on) -->
+      <div id="city-npc-config" class="form-control mb-3" style="display:none;">
+        <label class="label"><span class="label-text">NPC Options</span></label>
+        <div class="bg-base-300 p-3 rounded space-y-2">
+          <label class="label cursor-pointer justify-start gap-3 py-0.5">
+            <input type="checkbox" id="city-gen-portraits" class="toggle toggle-xs toggle-accent">
+            <span class="text-sm">Generate NPC portraits</span>
+          </label>
+          <label class="label cursor-pointer justify-start gap-3 py-0.5">
+            <input type="checkbox" id="city-gen-schedules" class="toggle toggle-xs toggle-accent">
+            <span class="text-sm">Generate NPC daily schedules</span>
+          </label>
+          <div class="form-control mt-2">
+            <label class="label py-1">
+              <span class="label-text text-xs">NPC Density</span>
+              <span class="label-text-alt" id="city-npc-density-label">Normal</span>
+            </label>
+            <input type="range" id="city-npc-density" min="1" max="3" value="2" class="range range-xs range-primary">
+          </div>
+        </div>
+      </div>
+
+      <!-- Image Generation (shown when buildings on) -->
+      <div id="city-image-config" class="form-control mb-3" style="display:none;">
+        <label class="label"><span class="label-text">Image Generation</span></label>
+        <div class="bg-base-300 p-3 rounded space-y-1">
+          <label class="label cursor-pointer justify-start gap-3 py-0.5">
+            <input type="checkbox" id="city-gen-overview" class="toggle toggle-xs toggle-info" checked>
+            <span class="text-sm">City overview (aerial view)</span>
+          </label>
+          <label class="label cursor-pointer justify-start gap-3 py-0.5">
+            <input type="checkbox" id="city-gen-street" class="toggle toggle-xs toggle-info">
+            <span class="text-sm">Street scene</span>
+          </label>
+          <label class="label cursor-pointer justify-start gap-3 py-0.5">
+            <input type="checkbox" id="city-gen-buildings" class="toggle toggle-xs toggle-info">
+            <span class="text-sm">Building exteriors</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Earth Mode -->
+      <div class="form-control mb-3">
+        <label class="label cursor-pointer justify-start gap-3">
+          <input type="checkbox" id="city-earth-mode" class="checkbox checkbox-sm checkbox-info">
+          <div>
+            <span class="label-text">Earth Mode</span>
+            <p class="text-xs text-base-content/60">Use realistic street names from real-world location</p>
+          </div>
+        </label>
+      </div>
+      <div id="earth-mode-fields" class="bg-base-300 p-3 rounded mb-3" style="display:none;">
+        <div class="grid grid-cols-2 gap-2 mb-2">
+          <div class="form-control">
+            <label class="label py-1"><span class="label-text text-xs">Latitude</span></label>
+            <input type="number" step="0.0001" id="city-latitude" class="input input-sm input-bordered" placeholder="40.7128">
+          </div>
+          <div class="form-control">
+            <label class="label py-1"><span class="label-text text-xs">Longitude</span></label>
+            <input type="number" step="0.0001" id="city-longitude" class="input input-sm input-bordered" placeholder="-74.0060">
+          </div>
+        </div>
+        <div id="city-country-preview" class="text-sm text-info"></div>
+      </div>
+    </form>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn btn-ghost">Cancel</button>
+      </form>
+      <button type="submit" form="city-form" class="btn btn-warning">
+        <i class="bi bi-building mr-1"></i>Create City
+      </button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<!-- Zone Creation Modal -->
+<dialog class="modal" id="zoneModal">
+  <div class="modal-box bg-base-200">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-bold text-lg"><i class="bi bi-hexagon mr-2"></i>Create Zone</h3>
+      <form method="dialog">
+        <button class="btn btn-sm btn-circle btn-ghost">✕</button>
+      </form>
+    </div>
+    <form id="zone-form">
+      <input type="hidden" id="zone-polygon-points">
+      <div class="mb-2 text-base-content/70 text-sm" id="zone-points-display">Polygon: 0 points</div>
+      <div class="form-control mb-3">
+        <label class="label"><span class="label-text">Zone Name</span></label>
+        <input type="text" id="zone-name" class="input input-bordered w-full" placeholder="Enter zone name" required>
+      </div>
+      <div class="form-control mb-3">
+        <label class="label"><span class="label-text">Zone Type</span></label>
+        <select id="zone-type" class="select select-bordered w-full">
+          <option value="political">Political</option>
+          <option value="area">Area</option>
+          <option value="location">Location</option>
+          <option value="city">City</option>
+        </select>
+      </div>
+      <div class="form-control mb-3">
+        <label class="label"><span class="label-text">Danger Level: <span id="zone-danger-value">1</span></span></label>
+        <input type="range" id="zone-danger" class="range" min="1" max="10" value="1"
+               oninput="document.getElementById('zone-danger-value').textContent = this.value">
+      </div>
+    </form>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn btn-ghost">Cancel</button>
+      </form>
+      <button type="submit" form="zone-form" class="btn btn-info">Create Zone</button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<!-- Link Cities Modal -->
+<dialog class="modal" id="linkModal">
+  <div class="modal-box bg-base-200">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-bold text-lg"><i class="bi bi-diagram-3 mr-2"></i>Link Cities</h3>
+      <form method="dialog">
+        <button class="btn btn-sm btn-circle btn-ghost">✕</button>
+      </form>
+    </div>
+    <form id="link-cities-form">
+      <div class="form-control mb-3">
+        <label class="label"><span class="label-text">From City</span></label>
+        <select id="link-from-city" class="select select-bordered w-full" required>
+          <option value="">Select a city...</option>
+        </select>
+      </div>
+      <div class="form-control mb-3">
+        <label class="label"><span class="label-text">To City</span></label>
+        <select id="link-to-city" class="select select-bordered w-full" required>
+          <option value="">Select a city...</option>
+        </select>
+      </div>
+      <div class="form-control mb-3">
+        <label class="label"><span class="label-text">Connection Type</span></label>
+        <select id="link-type" class="select select-bordered w-full">
+          <option value="trail">Dirt Trail</option>
+          <option value="road" selected>Paved Road</option>
+          <option value="highway">Highway</option>
+          <option value="railway">Railway</option>
+        </select>
+      </div>
+    </form>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn btn-ghost">Cancel</button>
+      </form>
+      <button type="submit" form="link-cities-form" class="btn btn-success">Create Link</button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<!-- Plain Zone Creation Modal -->
+<dialog class="modal" id="plainZoneModal">
+  <div class="modal-box bg-base-200">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-bold text-lg"><i class="bi bi-hexagon mr-2"></i>Save Zone</h3>
+      <form method="dialog">
+        <button class="btn btn-sm btn-circle btn-ghost">✕</button>
+      </form>
+    </div>
+    <form id="plain-zone-modal-form">
+      <div class="form-control mb-3">
+        <label class="label"><span class="label-text">Zone Name</span></label>
+        <input type="text" id="plain-zone-modal-name" class="input input-bordered w-full" placeholder="Enter zone name" required>
+      </div>
+      <div class="form-control mb-3">
+        <label class="label"><span class="label-text">Zone Type</span></label>
+        <select id="plain-zone-modal-type" class="select select-bordered w-full">
+          <option value="area" selected>Area</option>
+          <option value="political">Political</option>
+        </select>
+      </div>
+    </form>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn btn-ghost">Cancel</button>
+      </form>
+      <button type="submit" form="plain-zone-modal-form" class="btn btn-success">Save Zone</button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<!-- Location Creation Modal -->
+<dialog class="modal" id="locationModal">
+  <div class="modal-box bg-base-200">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-bold text-lg"><i class="bi bi-geo-alt mr-2"></i>Create Location</h3>
+      <form method="dialog">
+        <button class="btn btn-sm btn-circle btn-ghost">✕</button>
+      </form>
+    </div>
+    <form id="location-modal-form">
+      <div class="form-control mb-3">
+        <label class="label"><span class="label-text">Location Name</span></label>
+        <input type="text" id="loc-modal-name" class="input input-bordered w-full" placeholder="Enter location name" required>
+      </div>
+      <div class="form-control mb-3">
+        <label class="label"><span class="label-text">Location Type</span></label>
+        <select id="loc-modal-type" class="select select-bordered w-full">
+          <option value="outdoor" selected>Outdoor</option>
+          <option value="building">Building</option>
+          <option value="underground">Underground</option>
+          <option value="water">Water</option>
+          <option value="sky">Sky</option>
+        </select>
+      </div>
+    </form>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn btn-ghost" id="loc-modal-cancel">Cancel</button>
+      </form>
+      <button type="submit" form="location-modal-form" class="btn btn-success">Create Location</button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<script>
+  const WORLD_ID = <%= @world.id %>;
+  const API_BASE = '/admin/world_builder/<%= @world.id %>/api';
+  const CSRF_TOKEN = '<%= Rack::Utils.escape_html(csrf_token) %>';
+
+  // Test mode: skip globe loading (add ?test_mode=1 to URL)
+  const TEST_MODE = new URLSearchParams(window.location.search).get('test_mode') === '1';
+
+  // Expose globals for external modules
+  window.API_BASE = API_BASE;
+  window.WORLD_ID = WORLD_ID;
+
+  // Promise-based plain zone modal — used by sub-hex-editor.js
+  window.showPlainZoneModal = function() {
+    return new Promise((resolve, reject) => {
+      const modal = document.getElementById('plainZoneModal');
+      const form = document.getElementById('plain-zone-modal-form');
+      const nameInput = document.getElementById('plain-zone-modal-name');
+      const typeSelect = document.getElementById('plain-zone-modal-type');
+
+      form.reset();
+      nameInput.focus();
+
+      const onSubmit = (e) => {
+        e.preventDefault();
+        const name = nameInput.value.trim();
+        if (!name) return;
+        cleanup();
+        modal.close();
+        resolve({ name, zoneType: typeSelect.value });
+      };
+
+      const onClose = () => {
+        cleanup();
+        reject(new Error('cancelled'));
+      };
+
+      function cleanup() {
+        form.removeEventListener('submit', onSubmit);
+        modal.removeEventListener('close', onClose);
+      }
+
+      form.addEventListener('submit', onSubmit);
+      modal.addEventListener('close', onClose);
+      modal.showModal();
+    });
+  };
+
+  // Promise-based location modal — used by sub-hex-editor.js
+  window.showLocationModal = function() {
+    return new Promise((resolve, reject) => {
+      const modal = document.getElementById('locationModal');
+      const form = document.getElementById('location-modal-form');
+      const nameInput = document.getElementById('loc-modal-name');
+      const typeSelect = document.getElementById('loc-modal-type');
+
+      form.reset();
+      nameInput.focus();
+
+      const onSubmit = (e) => {
+        e.preventDefault();
+        const name = nameInput.value.trim();
+        if (!name) return;
+        cleanup();
+        modal.close();
+        resolve({ name, locationType: typeSelect.value });
+      };
+
+      const onClose = () => {
+        cleanup();
+        reject(new Error('cancelled'));
+      };
+
+      function cleanup() {
+        form.removeEventListener('submit', onSubmit);
+        modal.removeEventListener('close', onClose);
+      }
+
+      form.addEventListener('submit', onSubmit);
+      modal.addEventListener('close', onClose);
+      modal.showModal();
+    });
+  };
+
+  const TERRAIN_TYPES = [
+    // Water - natural blues
+    { id: 'ocean', label: 'Ocean', color: '#2d5f8a' },
+    { id: 'lake', label: 'Lake', color: '#4a8ab5' },
+    // Coastal - warm naturals
+    { id: 'rocky_coast', label: 'Rocky Coast', color: '#8a8a7d' },
+    { id: 'sandy_coast', label: 'Sandy Coast', color: '#d4c9a8' },
+    // Plains - muted sage
+    { id: 'grassy_plains', label: 'Grass Plains', color: '#a8b878' },
+    { id: 'rocky_plains', label: 'Rocky Plains', color: '#b0a88a' },
+    // Forest - natural greens
+    { id: 'light_forest', label: 'Light Forest', color: '#6d9a52' },
+    { id: 'dense_forest', label: 'Dense Forest', color: '#3a6632' },
+    { id: 'jungle', label: 'Jungle', color: '#2d5a2d' },
+    // Wetland
+    { id: 'swamp', label: 'Swamp', color: '#5a6b48' },
+    // Mountains/Hills - warm earthy tones
+    { id: 'mountain', label: 'Mountain', color: '#8a7d6b' },
+    { id: 'grassy_hills', label: 'Grass Hills', color: '#96a07a' },
+    { id: 'rocky_hills', label: 'Rocky Hills', color: '#9a8d78' },
+    // Cold
+    { id: 'tundra', label: 'Tundra', color: '#c8d5d8' },
+    // Arid - muted sand
+    { id: 'desert', label: 'Desert', color: '#c8b48a' },
+    // Volcanic
+    { id: 'volcanic', label: 'Volcanic', color: '#4a2828' },
+    // Urban - lighter grays
+    { id: 'urban', label: 'Urban', color: '#7a7a7a' },
+    { id: 'light_urban', label: 'Light Urban', color: '#9a9a9a' }
+  ];
+
+  const FEATURE_TYPES = [
+    { id: 'road', label: 'Road', color: '#7f8c8d' },
+    { id: 'highway', label: 'Highway', color: '#2c3e50' },
+    { id: 'street', label: 'Street', color: '#bdc3c7' },
+    { id: 'trail', label: 'Trail', color: '#a04000' },
+    { id: 'river', label: 'River', color: '#3498db' },
+    { id: 'canal', label: 'Canal', color: '#2e86c1' },
+    { id: 'railway', label: 'Railway', color: '#1c2833' }
+  ];
+
+  // ===== STATE =====
+  let globeView = null;
+  let hexEditor = null;
+  let minimap = null;
+  let currentMode = 'globe'; // 'globe' or 'editor'
+  let currentTool = 'select';
+  let selectedTerrain = 'grassy_plains';
+  let selectedFeature = 'road';
+  let currentEditHex = null;
+
+  // ===== API FUNCTIONS =====
+  async function fetchGlobeHexes() {
+    try {
+      const response = await fetch(`${API_BASE}/globe_hexes`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      return data.hexes || [];
+    } catch (error) {
+      console.error('Failed to fetch globe hexes:', error);
+      return [];
+    }
+  }
+
+  async function fetchRegion(face, x, y, size = 6) {
+    try {
+      const params = new URLSearchParams({ face, x, y, size });
+      const response = await fetch(`${API_BASE}/globe_region?${params}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to fetch region:', error);
+      return { hexes: [], origin: { face, x, y }, size };
+    }
+  }
+
+  async function saveRegionToAPI(data) {
+    try {
+      const response = await fetch(`${API_BASE}/globe_region`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
+        body: JSON.stringify({
+          face: data.origin.face || 0,
+          origin_x: data.origin.x || 0,
+          origin_y: data.origin.y || 0,
+          hexes: data.hexes.map((hex, i) => ({
+            id: hex.id,
+            globe_hex_id: hex.globe_hex_id,
+            x: hex.x !== undefined ? hex.x : i % 6,
+            y: hex.y !== undefined ? hex.y : Math.floor(i / 6),
+            terrain: hex.terrain,
+            traversable: hex.traversable !== false
+          }))
+        })
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to save region:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // ===== TOOL SELECTION =====
+  function selectTool(tool) {
+    currentTool = tool;
+
+    document.querySelectorAll('.tool-btn').forEach(btn => {
+      const isActive = btn.dataset.tool === tool;
+      btn.classList.toggle('active', isActive);
+      // For non-colored buttons, toggle between primary and ghost
+      if (!btn.classList.contains('btn-outline')) {
+        btn.classList.toggle('btn-primary', isActive);
+        btn.classList.toggle('btn-ghost', !isActive);
+      }
+    });
+
+    // Show/hide palettes
+    document.getElementById('terrain-palette-container').style.display = (tool === 'terrain') ? 'block' : 'none';
+    document.getElementById('feature-palette-container').style.display = (tool === 'feature') ? 'block' : 'none';
+
+    if (hexEditor && currentMode === 'editor') {
+      hexEditor.setTool(tool);
+    }
+  }
+
+  function selectTerrain(terrain) {
+    selectedTerrain = terrain;
+    document.querySelectorAll('.terrain-swatch').forEach(swatch => {
+      swatch.classList.toggle('active', swatch.dataset.terrain === terrain);
+    });
+    if (hexEditor) hexEditor.setTerrain(terrain);
+  }
+
+  function selectFeature(feature) {
+    selectedFeature = feature;
+    document.querySelectorAll('.feature-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.feature === feature);
+    });
+    if (hexEditor) hexEditor.setFeature(feature);
+  }
+
+  // ===== MODE SWITCHING =====
+  async function openEditor(hex) {
+    if (currentMode === 'editor') return;
+
+    currentMode = 'editor';
+    currentEditHex = hex;
+
+    // Hide globe/fallback, show editor
+    const fallback = document.getElementById('globe-fallback');
+    if (fallback) {
+      fallback.classList.add('hidden');
+      fallback.classList.remove('flex');
+    }
+    document.getElementById('globe-container').style.display = 'none';
+    document.getElementById('editor-container').style.display = 'block';
+
+    // Show loading overlay while fetching region data
+    const loadingOverlay = document.getElementById('editor-loading');
+    loadingOverlay.classList.remove('hidden');
+
+    // Show mini globe
+    document.getElementById('globe-mini').classList.remove('hidden');
+
+    // Initialize minimap as a small Globe.gl instance (same rendering as main globe)
+    if (!minimap) {
+      const miniContainer = document.getElementById('globe-mini');
+      const miniGlobe = Globe()
+        .backgroundColor('rgba(0,0,0,0)')
+        .width(200)
+        .height(200)
+        .showAtmosphere(false)
+        .atmosphereAltitude(0.1);
+
+      // Use same terrain texture as the main globe
+      const textureUrl = `${API_BASE}/terrain_texture.png?t=${Date.now()}`;
+      miniGlobe.globeImageUrl(textureUrl);
+
+      // Mount to container
+      miniGlobe(miniContainer);
+
+      // Disable user interaction (click closes editor instead)
+      miniGlobe.controls().enabled = false;
+      miniGlobe.controls().enableZoom = false;
+
+      // Point at the clicked hex location
+      if (hex.lat !== undefined && hex.lng !== undefined) {
+        miniGlobe.pointOfView({ lat: hex.lat, lng: hex.lng, altitude: 2.0 }, 0);
+      }
+
+      // Store minimap reference with Globe.gl API
+      minimap = {
+        globe: miniGlobe,
+        setViewport: (x, y, width, height) => {
+          // Convert viewport grid coords back to lat/lng
+          const centerLng = (x + width / 2) - 180;
+          const centerLat = 90 - (y + height / 2);
+          miniGlobe.pointOfView({ lat: centerLat, lng: centerLng, altitude: 2.0 }, 300);
+        }
+      };
+    } else if (minimap && hex.lat !== undefined && hex.lng !== undefined) {
+      // Re-point existing minimap at the new clicked location
+      minimap.globe.pointOfView({ lat: hex.lat, lng: hex.lng, altitude: 2.0 }, 300);
+    }
+
+    // Initialize hex editor if needed
+    if (!hexEditor) {
+      hexEditor = new HexEditor('editor-container', {
+        worldId: WORLD_ID,
+        onSave: handleEditorSave,
+        onClose: closeEditor,
+        onViewportChange: (viewport) => {
+          document.getElementById('coords-display').textContent =
+            `Position: (${Math.round(viewport.x)}, ${Math.round(viewport.y)})`;
+        }
+      });
+      window.hexEditor = hexEditor;
+      // Connect minimap to editor
+      if (minimap) {
+        hexEditor.minimap = minimap;
+      }
+    }
+
+    // Determine coordinates - use lat/lng for globe worlds, ico coords for others
+    let face, x, y, displayCoords;
+
+    const regionSize = 20;
+
+    if (hex.lat !== undefined && hex.lng !== undefined) {
+      // Globe world: convert lat/lng to pseudo-grid coords
+      // x = 0..360 maps to lng -180..180, y = 0..180 maps to lat 90..-90
+      // Center the region on the clicked hex (offset by half region size)
+      face = 0;
+      x = Math.floor(hex.lng + 180) - Math.floor(regionSize / 2);
+      y = Math.floor(90 - hex.lat) - Math.floor(regionSize / 2);
+      displayCoords = `(${hex.lat.toFixed(1)}°, ${hex.lng.toFixed(1)}°)`;
+    } else {
+      // Icosahedral world: use face/ico coords
+      face = hex.faceIndex ?? hex.ico_face ?? 0;
+      x = Math.floor(hex.ico_x || 0) - Math.floor(regionSize / 2);
+      y = Math.floor(hex.ico_y || 0) - Math.floor(regionSize / 2);
+      displayCoords = `Face ${face} (${x}, ${y})`;
+    }
+
+    document.getElementById('coords-display').textContent = `Loading ${displayCoords}...`;
+
+    const regionData = await fetchRegion(face, x, y, regionSize);
+    loadingOverlay.classList.add('hidden');
+    hexEditor.loadRegion({ face, x, y }, regionData.hexes || [], { isGlobeWorld: regionData.is_globe_world });
+    hexEditor.show();
+    hexEditor.setTool(currentTool);
+    hexEditor.setTerrain(selectedTerrain);
+    hexEditor.setFeature(selectedFeature);
+
+    document.getElementById('coords-display').textContent = `Editing ${displayCoords}`;
+  }
+
+  function closeEditor() {
+    if (currentMode === 'globe') return;
+
+    currentMode = 'globe';
+
+    // Hide editor and loading overlay, show globe/fallback
+    document.getElementById('editor-container').style.display = 'none';
+    document.getElementById('editor-loading').classList.add('hidden');
+    document.getElementById('globe-mini').classList.add('hidden');
+
+    if (hexEditor) hexEditor.hide();
+
+    // Show globe or fallback
+    if (globeView && globeView.globe) {
+      document.getElementById('globe-container').style.display = 'block';
+    } else {
+      document.getElementById('globe-fallback')?.classList.remove('hidden');
+    }
+
+    document.getElementById('coords-display').textContent = 'Position: (0, 0)';
+    currentEditHex = null;
+  }
+
+  async function handleEditorSave(data) {
+    const coordsDisplay = document.getElementById('coords-display');
+    const originalText = coordsDisplay.textContent;
+    coordsDisplay.textContent = 'Saving...';
+
+    try {
+      const result = await saveRegionToAPI(data);
+      if (result.success) {
+        coordsDisplay.textContent = `Saved ${result.saved || 0} hexes`;
+        if (globeView?.refreshData) await globeView.refreshData();
+        setTimeout(() => { coordsDisplay.textContent = originalText; }, 2000);
+      } else {
+        coordsDisplay.textContent = `Error: ${result.error || 'Save failed'}`;
+        setTimeout(() => { coordsDisplay.textContent = originalText; }, 3000);
+      }
+    } catch (error) {
+      coordsDisplay.textContent = `Error: ${error.message}`;
+      setTimeout(() => { coordsDisplay.textContent = originalText; }, 3000);
+    }
+  }
+
+  // ===== PALETTE INITIALIZATION =====
+  function initTerrainPalette() {
+    const palette = document.getElementById('terrain-palette');
+    palette.innerHTML = '';
+    TERRAIN_TYPES.forEach(terrain => {
+      const swatch = document.createElement('div');
+      swatch.className = 'terrain-swatch' + (terrain.id === selectedTerrain ? ' active' : '');
+      swatch.style.backgroundColor = terrain.color;
+      swatch.dataset.terrain = terrain.id;
+      swatch.title = terrain.label;
+      swatch.addEventListener('click', () => selectTerrain(terrain.id));
+      palette.appendChild(swatch);
+    });
+  }
+
+  function initFeaturePalette() {
+    const palette = document.getElementById('feature-palette');
+    palette.innerHTML = '';
+    FEATURE_TYPES.forEach(feature => {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-sm btn-ghost feature-btn' + (feature.id === selectedFeature ? ' active' : '');
+      btn.dataset.feature = feature.id;
+      btn.innerHTML = `<span style="color:${feature.color}">■</span> ${feature.label}`;
+      btn.addEventListener('click', () => selectFeature(feature.id));
+      palette.appendChild(btn);
+    });
+  }
+
+  // ===== EVENT BINDING =====
+  function bindToolButtons() {
+    document.querySelectorAll('.tool-btn').forEach(btn => {
+      btn.addEventListener('click', () => selectTool(btn.dataset.tool));
+    });
+  }
+
+  function bindGranularitySlider() {
+    const slider = document.getElementById('granularity-slider');
+    const display = document.getElementById('granularity-display');
+    const counts = { 1: '~80', 2: '~320', 3: '~1.3K', 4: '~5K' };
+
+    slider.addEventListener('input', (e) => {
+      const level = parseInt(e.target.value);
+      display.textContent = counts[level] || '?';
+      if (globeView) globeView.setGranularity(level);
+    });
+  }
+
+  // ===== INITIALIZATION =====
+  document.addEventListener('DOMContentLoaded', async () => {
+    initTerrainPalette();
+    initFeaturePalette();
+    bindToolButtons();
+    bindGranularitySlider();
+
+    // Mini globe click to close editor
+    document.getElementById('globe-mini').addEventListener('click', closeEditor);
+
+    // Initialize globe (unless test mode)
+    let globeInitialized = false;
+    const globeFallback = document.getElementById('globe-fallback');
+
+    if (TEST_MODE) {
+      console.log('TEST MODE: Skipping globe initialization');
+    } else {
+      try {
+        globeView = new GlobeView('globe-container', {
+          onHexClick: (hex) => {
+            if (currentMode === 'globe') {
+              if (currentTool === 'city') {
+                // Open city modal with hex coordinates
+                document.getElementById('city-hex-x').value = hex.lng || 0;
+                document.getElementById('city-hex-y').value = hex.lat || 0;
+                const globeHexIdField = document.getElementById('city-globe-hex-id');
+                if (globeHexIdField) globeHexIdField.value = hex.globe_hex_id ?? '';
+                document.getElementById('city-coords-display').textContent =
+                  hex.globe_hex_id != null
+                    ? `Hex #${hex.globe_hex_id} (${(hex.lat || 0).toFixed(1)}°, ${(hex.lng || 0).toFixed(1)}°)`
+                    : `Hex: (${(hex.lat || 0).toFixed(1)}°, ${(hex.lng || 0).toFixed(1)}°)`;
+                document.getElementById('cityModal').showModal();
+              } else if (currentTool === 'link') {
+                // Open link cities modal
+                document.getElementById('linkCitiesModal').showModal();
+              } else if (currentTool === 'zone') {
+                // Open zone modal
+                document.getElementById('zoneModal').showModal();
+              } else {
+                // Default: open editor for other tools
+                openEditor(hex);
+              }
+            }
+          }
+        });
+        globeInitialized = true;
+      } catch (error) {
+        console.error('Globe init failed:', error);
+      }
+    }
+
+    // Show fallback if needed
+    if (!globeInitialized || !globeView?.globe) {
+      document.getElementById('globe-container').classList.add('hidden');
+      globeFallback.classList.remove('hidden');
+      globeFallback.classList.add('flex');
+      document.getElementById('globe-loading').classList.add('hidden');
+
+      globeFallback.addEventListener('click', () => {
+        openEditor({ id: 'mock-hex-0', lat: 0, lng: 0, faceIndex: 0, ico_face: 0, ico_x: 0, ico_y: 0 });
+      });
+    }
+
+    // ========================================
+    // World Generation Functions
+    // ========================================
+
+    // Random seed button
+    document.getElementById('btn-random-seed')?.addEventListener('click', () => {
+      document.getElementById('gen-seed').value = Math.floor(Math.random() * 1000000);
+    });
+
+    // Generate procedural button
+    document.getElementById('btn-generate-procedural')?.addEventListener('click', async () => {
+      const preset = document.getElementById('gen-preset').value;
+      const seed = document.getElementById('gen-seed').value || null;
+      const worldSize = parseFloat(document.getElementById('gen-world-size')?.value || '0.5');
+
+      // Calculate approximate hex count for confirmation
+      const hexCounts = {
+        0.1: '~280,000',
+        0.25: '~1.8 million',
+        0.5: '~7 million',
+        0.75: '~15 million',
+        1.0: '~28 million'
+      };
+      const hexCount = hexCounts[worldSize] || '~7 million';
+
+      const confirmMsg = `This will generate ${hexCount} hexes at 3-mile resolution. This process may take several minutes for larger worlds. Continue?`;
+
+      if (!confirm(confirmMsg)) {
+        return;
+      }
+
+      // Show progress
+      const progressContainer = document.getElementById('generation-progress');
+      const progressBar = document.getElementById('progress-bar');
+      const progressStatus = document.getElementById('progress-status');
+      progressContainer.style.display = 'block';
+      progressBar.value = 0;
+      progressStatus.textContent = 'Starting generation...';
+
+      try {
+        const response = await fetch(`${API_BASE}/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': CSRF_TOKEN
+          },
+          body: JSON.stringify({
+            type: 'procedural',
+            options: { preset, seed, flat_grid: true, world_size: worldSize }
+          })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          pollGenerationStatus();
+        } else {
+          progressStatus.textContent = 'Error: ' + (data.error || 'Unknown error');
+        }
+      } catch (error) {
+        console.error('Generation failed:', error);
+        progressStatus.textContent = 'Error: ' + error.message;
+      }
+    });
+
+    // Poll generation status
+    let pollRetryCount = 0;
+    const MAX_POLL_RETRIES = 15;
+
+    async function pollGenerationStatus() {
+      const progressBar = document.getElementById('progress-bar');
+      const progressStatus = document.getElementById('progress-status');
+
+      try {
+        const response = await fetch(`${API_BASE}/generation_status`);
+
+        // Check for non-JSON response (e.g. HTML error page or redirect)
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          throw new Error('Server returned non-JSON response (database may be busy)');
+        }
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || `HTTP ${response.status}: ${response.statusText}`);
+        }
+        const data = await response.json();
+        pollRetryCount = 0; // Reset on success
+
+        if (data.job) {
+          const pct = data.job.progress_percentage || 0;
+          progressBar.value = pct;
+
+          const phaseNames = {
+            'tectonics': 'Generating tectonic plates...',
+            'elevation': 'Calculating elevation...',
+            'climate': 'Simulating climate...',
+            'rivers': 'Tracing rivers...',
+            'biomes': 'Mapping biomes...',
+            'saving': 'Saving to database...',
+            'aggregating': 'Aggregating regions...',
+            'texture': 'Generating texture...'
+          };
+          const subphaseNames = {
+            'grid': 'Building hex grid...',
+            'neighbors': 'Building neighbor cache...',
+            'plates': 'Assigning tectonic plates...'
+          };
+          const subphase = data.job.subphase;
+          progressStatus.textContent = subphaseNames[subphase] || phaseNames[data.job.phase] || 'Processing...';
+
+          if (data.job.status === 'running' || data.job.status === 'pending') {
+            setTimeout(pollGenerationStatus, 2000);
+          } else if (data.job.status === 'completed') {
+            progressStatus.textContent = 'Complete! Refreshing map...';
+            if (globeView && typeof globeView.refreshData === 'function') {
+              await globeView.refreshData();
+            }
+            setTimeout(() => {
+              document.getElementById('generation-progress').style.display = 'none';
+            }, 2000);
+          } else if (data.job.status === 'failed') {
+            progressStatus.textContent = 'Failed: ' + (data.job.error_message || 'Unknown error');
+            progressBar.classList.remove('progress-bar-animated');
+            progressBar.classList.add('progress-error');
+          }
+        }
+      } catch (error) {
+        console.error('Status poll failed:', error);
+        pollRetryCount++;
+        if (pollRetryCount < MAX_POLL_RETRIES) {
+          // Use longer backoff during heavy DB operations (aggregation/texture phases)
+          const delay = pollRetryCount > 5 ? 5000 : 3000;
+          progressStatus.textContent = `Database busy, retrying... (${pollRetryCount}/${MAX_POLL_RETRIES})`;
+          setTimeout(pollGenerationStatus, delay);
+        } else {
+          progressStatus.textContent = 'Lost connection to server. Generation may still be running - try refreshing the page.';
+        }
+      }
+    }
+
+    // Import Earth button
+    document.getElementById('btn-import-earth')?.addEventListener('click', async () => {
+      const confirmMsg = 'This will import real Earth terrain data (~21 million hexes). This process may take several hours. Continue?';
+
+      if (!confirm(confirmMsg)) {
+        return;
+      }
+
+      // Show progress
+      const progressContainer = document.getElementById('generation-progress');
+      const progressBar = document.getElementById('progress-bar');
+      const progressStatus = document.getElementById('progress-status');
+
+      if (progressContainer) progressContainer.style.display = 'block';
+      if (progressBar) {
+        progressBar.value = 0;
+        progressBar.classList.remove('progress-error');
+      }
+      if (progressStatus) progressStatus.textContent = 'Starting Earth import (this takes 30-60 min)...';
+
+      try {
+        const response = await fetch(`${API_BASE}/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': CSRF_TOKEN
+          },
+          body: JSON.stringify({
+            type: 'earth_import',
+            options: { subdivisions: 10 }  // 20 * 4^10 = ~21 million hexes
+          })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          pollEarthImportStatus();
+        } else {
+          if (progressStatus) progressStatus.textContent = 'Error: ' + (data.error || 'Unknown error');
+        }
+      } catch (error) {
+        console.error('Earth import failed:', error);
+        if (progressStatus) progressStatus.textContent = 'Error: ' + error.message;
+      }
+    });
+
+    // Poll Earth import status
+    let earthPollRetryCount = 0;
+
+    async function pollEarthImportStatus() {
+      const progressBar = document.getElementById('progress-bar');
+      const progressStatus = document.getElementById('progress-status');
+      const progressContainer = document.getElementById('generation-progress');
+
+      try {
+        const response = await fetch(`${API_BASE}/generation_status`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        const data = await response.json();
+        earthPollRetryCount = 0;
+
+        if (data.job) {
+          const pct = data.job.progress_percentage || 0;
+          if (progressBar) {
+            progressBar.value = pct;
+          }
+
+          const phaseNames = {
+            'download': 'Downloading Earth data...',
+            'parse': 'Generating hex grid...',
+            'setup': 'Building land mask...',
+            'generate': 'Generating hexes (may take 30+ min)...',
+            'aggregate': 'Aggregating regions...',
+            'texture': 'Generating texture cache...',
+            'elevation': 'Processing elevation...',
+            'terrain': 'Mapping terrain types...',
+            'rivers': 'Tracing rivers...',
+            'save': 'Saving to database...'
+          };
+
+          const phase = data.job.config?.current_phase;
+          if (progressStatus) {
+            progressStatus.textContent = phaseNames[phase] || 'Processing...';
+          }
+
+          if (data.job.status === 'running' || data.job.status === 'pending') {
+            setTimeout(pollEarthImportStatus, 2000);
+          } else if (data.job.status === 'completed') {
+            if (progressStatus) progressStatus.textContent = 'Complete! Refreshing map...';
+            if (typeof globeView !== 'undefined' && globeView && globeView.refreshData) {
+              await globeView.refreshData();
+            }
+            setTimeout(() => {
+              if (progressContainer) progressContainer.style.display = 'none';
+            }, 2000);
+          } else if (data.job.status === 'failed') {
+            if (progressStatus) progressStatus.textContent = 'Failed: ' + (data.job.error_message || 'Unknown error');
+            if (progressBar) {
+              progressBar.classList.add('progress-error');
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Status poll failed:', error);
+        earthPollRetryCount++;
+        if (earthPollRetryCount < MAX_POLL_RETRIES) {
+          if (progressStatus) progressStatus.textContent = `Connection issue, retrying... (${earthPollRetryCount}/${MAX_POLL_RETRIES})`;
+          setTimeout(pollEarthImportStatus, 3000);
+        } else {
+          if (progressStatus) progressStatus.textContent = 'Error checking status: ' + error.message;
+        }
+      }
+    }
+
+    // Globe uses texture-based rendering + server-side click detection
+    // No need to load all hex data client-side
+    if (globeInitialized && globeView) {
+      globeView.hideLoading();
+      // Load city markers so they're clickable on the globe
+      try {
+        const citiesRes = await fetch(`${API_BASE}/cities`);
+        const citiesData = await citiesRes.json();
+        if (citiesData.success && citiesData.cities) {
+          globeView.setCities(citiesData.cities);
+        }
+      } catch (e) {
+        console.warn('Failed to load globe city markers:', e);
+      }
+    }
+
+    // Link cities modal handler
+    const linkToolBtn = document.querySelector('[data-tool="link"]');
+    if (linkToolBtn) {
+      linkToolBtn.addEventListener('click', async () => {
+        try {
+          const response = await fetch(`${API_BASE}/cities`);
+          const data = await response.json();
+          const cities = data.cities || [];
+          const fromSelect = document.getElementById('link-from-city');
+          const toSelect = document.getElementById('link-to-city');
+          fromSelect.innerHTML = toSelect.innerHTML = '<option value="">Select city...</option>';
+          cities.forEach(city => {
+            fromSelect.innerHTML += `<option value="${city.id}">${city.name}</option>`;
+            toSelect.innerHTML += `<option value="${city.id}">${city.name}</option>`;
+          });
+        } catch (e) { console.error(e); }
+        document.getElementById('linkModal').showModal();
+      });
+    }
+
+    // Link form submission
+    document.getElementById('link-cities-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fromId = document.getElementById('link-from-city').value;
+      const toId = document.getElementById('link-to-city').value;
+      if (!fromId || !toId || fromId === toId) return alert('Select two different cities');
+
+      const response = await fetch(`${API_BASE}/link_cities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
+        body: JSON.stringify({
+          from_city_id: parseInt(fromId),
+          to_city_id: parseInt(toId),
+          feature_type: document.getElementById('link-type').value
+        })
+      });
+      const result = await response.json();
+      if (result.success) {
+        document.getElementById('linkModal').close();
+        if (globeView?.refreshData) globeView.refreshData();
+      } else {
+        alert('Failed: ' + (result.error || 'Unknown error'));
+      }
+    });
+
+    // ========================================
+    // City Form Submission
+    // ========================================
+
+    // Earth mode toggle
+    document.getElementById('city-earth-mode')?.addEventListener('change', (e) => {
+      const earthFields = document.getElementById('earth-mode-fields');
+      if (earthFields) {
+        earthFields.style.display = e.target.checked ? 'block' : 'none';
+      }
+    });
+
+    // City form submission
+    // City modal: size preset buttons
+    document.querySelectorAll('.city-size-preset').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('city-horizontal-streets').value = btn.dataset.streets;
+        document.getElementById('city-vertical-streets').value = btn.dataset.avenues;
+        document.getElementById('city-max-height').value = btn.dataset.height;
+        // Highlight selected preset
+        document.querySelectorAll('.city-size-preset').forEach(b => {
+          b.classList.remove('btn-primary');
+          b.classList.add('btn-outline');
+        });
+        btn.classList.add('btn-primary');
+        btn.classList.remove('btn-outline');
+      });
+    });
+
+    // City modal: toggle visibility based on individual controls
+    document.getElementById('city-gen-buildings-toggle')?.addEventListener('change', (e) => {
+      const on = e.target.checked;
+      const roomDescRow = document.getElementById('city-room-desc-row');
+      const greenSpaceRow = document.getElementById('city-green-space-row');
+      const imageConfig = document.getElementById('city-image-config');
+      const inventoryRow = document.getElementById('city-inventory-row');
+      const aiNamesRow = document.getElementById('city-ai-names-row');
+      if (roomDescRow) roomDescRow.style.display = on ? 'block' : 'none';
+      if (greenSpaceRow) greenSpaceRow.style.display = on ? 'block' : 'none';
+      if (imageConfig) imageConfig.style.display = on ? 'block' : 'none';
+      if (inventoryRow) inventoryRow.style.display = on ? 'block' : 'none';
+      if (aiNamesRow) aiNamesRow.style.display = on ? 'block' : 'none';
+      // If buildings off, also turn off NPCs
+      if (!on) {
+        const npcsToggle = document.getElementById('city-gen-npcs-toggle');
+        if (npcsToggle) { npcsToggle.checked = false; npcsToggle.dispatchEvent(new Event('change')); }
+      }
+    });
+
+    document.getElementById('city-gen-npcs-toggle')?.addEventListener('change', (e) => {
+      const npcConfig = document.getElementById('city-npc-config');
+      if (npcConfig) npcConfig.style.display = e.target.checked ? 'block' : 'none';
+    });
+
+    document.getElementById('city-green-space')?.addEventListener('input', (e) => {
+      const label = document.getElementById('city-green-space-label');
+      if (label) label.textContent = e.target.value + '%';
+    });
+
+    document.getElementById('city-npc-density')?.addEventListener('input', (e) => {
+      const label = document.getElementById('city-npc-density-label');
+      if (label) label.textContent = ['Sparse', 'Normal', 'Dense'][parseInt(e.target.value) - 1] || 'Normal';
+    });
+
+    // City modal: toggle name field based on generate toggle
+    document.getElementById('city-generate-name')?.addEventListener('change', (e) => {
+      const nameField = document.getElementById('city-name');
+      if (nameField) {
+        nameField.placeholder = e.target.checked
+          ? 'Leave blank to AI-generate, or enter a name'
+          : 'Enter city name (required)';
+      }
+    });
+
+    // City form submission
+    document.getElementById('city-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const submitBtn = e.target.querySelector('button[type="submit"]') ||
+                        document.querySelector('#cityModal .btn-warning');
+      const originalText = submitBtn?.innerHTML;
+      if (submitBtn) {
+        submitBtn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Creating...';
+        submitBtn.disabled = true;
+      }
+
+      const globeHexIdVal = document.getElementById('city-globe-hex-id')?.value;
+      const zoneId = document.getElementById('city-form')?.dataset?.zoneId;
+
+      const payload = {
+        name: document.getElementById('city-name').value,
+        center_x: parseFloat(document.getElementById('city-hex-x').value),
+        center_y: parseFloat(document.getElementById('city-hex-y').value),
+        globe_hex_id: globeHexIdVal ? parseInt(globeHexIdVal) : null,
+        horizontal_streets: parseInt(document.getElementById('city-horizontal-streets').value) || 10,
+        vertical_streets: parseInt(document.getElementById('city-vertical-streets').value) || 10,
+        max_building_height: parseInt(document.getElementById('city-max-height').value) || 200,
+        use_earth_names: document.getElementById('city-earth-mode')?.checked || false,
+        latitude: parseFloat(document.getElementById('city-latitude')?.value) || null,
+        longitude: parseFloat(document.getElementById('city-longitude')?.value) || null,
+        // Enhanced fields
+        description: document.getElementById('city-description')?.value || null,
+        setting: document.getElementById('city-setting')?.value || 'fantasy',
+        generate_name: document.getElementById('city-generate-name')?.checked ?? true,
+        zone_id: zoneId ? parseInt(zoneId) : null,
+        // Individual generation controls
+        generate_buildings: document.getElementById('city-gen-buildings-toggle')?.checked ?? true,
+        generate_room_descriptions: document.getElementById('city-gen-room-desc')?.checked ?? true,
+        generate_inventory: document.getElementById('city-gen-inventory')?.checked ?? true,
+        use_ai_names: document.getElementById('city-gen-ai-names')?.checked ?? true,
+        green_space_ratio: (parseInt(document.getElementById('city-green-space')?.value) || 50) / 100,
+        generate_npcs: document.getElementById('city-gen-npcs-toggle')?.checked ?? false,
+        generate_portraits: document.getElementById('city-gen-portraits')?.checked ?? false,
+        generate_schedules: document.getElementById('city-gen-schedules')?.checked ?? false,
+        npc_density: parseInt(document.getElementById('city-npc-density')?.value) || 2,
+        generate_images: {
+          overview: document.getElementById('city-gen-overview')?.checked ?? false,
+          street: document.getElementById('city-gen-street')?.checked ?? false,
+          buildings: document.getElementById('city-gen-buildings')?.checked ?? false
+        }
+      };
+
+      try {
+        const response = await fetch(`${API_BASE}/city`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          document.getElementById('cityModal').close();
+          // Clear zone_id after successful creation
+          delete document.getElementById('city-form')?.dataset?.zoneId;
+
+          // Show success message
+          const cityName = result.city?.name || payload.name;
+          console.log('City created:', result);
+
+          // Refresh globe if available
+          if (globeView?.refreshData) await globeView.refreshData();
+
+          // Navigate to city builder if location was created
+          if (result.location_id) {
+            if (confirm(`City "${cityName}" created! Open in City Builder?`)) {
+              window.location.href = `/admin/city_builder/${result.location_id}`;
+            }
+          } else {
+            alert(`City "${cityName}" zone created successfully.`);
+          }
+        } else {
+          const errorMsg = result.errors?.join(', ') || result.error || 'Unknown error';
+          alert('Failed to create city: ' + errorMsg);
+        }
+      } catch (error) {
+        console.error('City creation failed:', error);
+        alert('Error: ' + error.message);
+      } finally {
+        if (submitBtn) {
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
+        }
+      }
+    });
+
+    // Zone form submission
+    document.getElementById('zone-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const submitBtn = document.querySelector('#zoneModal .btn-info');
+      const originalText = submitBtn?.innerHTML;
+      if (submitBtn) {
+        submitBtn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Creating...';
+        submitBtn.disabled = true;
+      }
+
+      const pointsJson = document.getElementById('zone-polygon-points')?.value;
+      let polygonPoints = [];
+      try {
+        polygonPoints = JSON.parse(pointsJson || '[]');
+      } catch (err) {
+        console.error('Failed to parse zone points:', err);
+      }
+
+      const payload = {
+        name: document.getElementById('zone-name').value,
+        zone_type: document.getElementById('zone-type').value,
+        danger_level: parseInt(document.getElementById('zone-danger').value) || 1,
+        polygon_points: polygonPoints
+      };
+
+      try {
+        const response = await fetch(`${API_BASE}/zone`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          document.getElementById('zoneModal').close();
+
+          // Reset zone drawing state
+          if (hexEditor) {
+            hexEditor.zonePoints = [];
+            hexEditor.isDrawingZone = false;
+            hexEditor.render();
+          }
+
+          // Refresh data
+          if (globeView?.refreshData) await globeView.refreshData();
+
+          alert(`Zone "${result.zone?.name}" created successfully.`);
+        } else {
+          const errorMsg = result.errors?.join(', ') || result.error || 'Unknown error';
+          alert('Failed to create zone: ' + errorMsg);
+        }
+      } catch (error) {
+        console.error('Zone creation failed:', error);
+        alert('Error: ' + error.message);
+      } finally {
+        if (submitBtn) {
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
+        }
+      }
+    });
+
+    // ========================================
+    // Bulk Traversable Buttons
+    // ========================================
+
+    document.getElementById('btn-all-traversable')?.addEventListener('click', async () => {
+      if (!confirm('Mark ALL hexes as traversable? This affects pathfinding for the entire world.')) return;
+
+      const btn = document.getElementById('btn-all-traversable');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Updating...';
+      btn.disabled = true;
+
+      try {
+        const response = await fetch(`${API_BASE}/bulk_traversable`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
+          body: JSON.stringify({ traversable: true })
+        });
+        const result = await response.json();
+        if (result.success) {
+          alert(`Success! Updated ${result.updated_hexes || 'all'} hexes to traversable.`);
+        } else {
+          alert('Failed: ' + (result.error || 'Unknown error'));
+        }
+      } catch (error) {
+        alert('Error: ' + error.message);
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById('btn-none-traversable')?.addEventListener('click', async () => {
+      if (!confirm('Mark ALL hexes as non-traversable? This will block all pathfinding until you enable specific regions.')) return;
+
+      const btn = document.getElementById('btn-none-traversable');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Updating...';
+      btn.disabled = true;
+
+      try {
+        const response = await fetch(`${API_BASE}/bulk_traversable`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
+          body: JSON.stringify({ traversable: false })
+        });
+        const result = await response.json();
+        if (result.success) {
+          alert(`Success! Updated ${result.updated_hexes || 'all'} hexes to non-traversable.`);
+        } else {
+          alert('Failed: ' + (result.error || 'Unknown error'));
+        }
+      } catch (error) {
+        alert('Error: ' + error.message);
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    });
+
+    // ========================================
+    // Landmass Traversable Toggle
+    // ========================================
+
+    let landmassMode = null; // null, 'traversable', or 'non-traversable'
+
+    document.getElementById('btn-landmass-traversable')?.addEventListener('click', () => {
+      if (landmassMode) {
+        // Cancel landmass mode
+        landmassMode = null;
+        document.getElementById('btn-landmass-traversable').classList.remove('btn-active');
+        document.getElementById('coords-display').textContent = 'Landmass mode cancelled';
+        setTimeout(() => {
+          document.getElementById('coords-display').textContent = 'Position: (0, 0)';
+        }, 1500);
+        return;
+      }
+
+      const makeTraversable = confirm('Make landmass traversable?\n\nOK = Traversable\nCancel = Non-traversable');
+      landmassMode = makeTraversable ? 'traversable' : 'non-traversable';
+      document.getElementById('btn-landmass-traversable').classList.add('btn-active');
+      document.getElementById('coords-display').textContent = `Click a land hex to set landmass ${landmassMode}`;
+    });
+
+    // Patch hex editor click handler for landmass mode when it becomes available
+    const landmassObserver = setInterval(() => {
+      if (hexEditor && !hexEditor._landmassPatched) {
+        const originalHandleHexClick = hexEditor.handleHexClick.bind(hexEditor);
+        hexEditor.handleHexClick = function(worldX, worldY) {
+          if (landmassMode) {
+            performLandmassToggle(worldX, worldY);
+            return;
+          }
+          originalHandleHexClick(worldX, worldY);
+        };
+        hexEditor._landmassPatched = true;
+        clearInterval(landmassObserver);
+      }
+    }, 500);
+
+    async function performLandmassToggle(worldX, worldY) {
+      const key = `${worldX},${worldY}`;
+      const hexInfo = hexEditor.hexCache.get(key) || {};
+      const traversable = landmassMode === 'traversable';
+
+      const btn = document.getElementById('btn-landmass-traversable');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Processing...';
+      btn.disabled = true;
+
+      document.getElementById('coords-display').textContent = 'Flood-filling landmass...';
+
+      try {
+        const payload = { traversable };
+        if (hexInfo.globe_hex_id != null) {
+          payload.globe_hex_id = hexInfo.globe_hex_id;
+        } else if (hexInfo.lat != null && hexInfo.lng != null) {
+          payload.lat = hexInfo.lat;
+          payload.lng = hexInfo.lng;
+        }
+
+        const response = await fetch(`${API_BASE}/landmass_traversable`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          alert(`Updated ${result.updated_hexes} hexes to ${traversable ? 'traversable' : 'non-traversable'}.`);
+          // Reload hex data to reflect changes
+          hexEditor.hexCache.clear();
+          hexEditor.loadVisibleHexes();
+        } else {
+          alert('Failed: ' + (result.error || 'Unknown error'));
+        }
+      } catch (error) {
+        alert('Error: ' + error.message);
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        btn.classList.remove('btn-active');
+        landmassMode = null;
+        document.getElementById('coords-display').textContent = 'Position: (0, 0)';
+      }
+    }
+
+    console.log('World Builder initialized');
+  });
+</script>
+<!-- Globe.gl (bundles Three.js internally) -->
+<script src="https://unpkg.com/globe.gl@2.27.0/dist/globe.gl.min.js"></script>
+<script src="/js/world-builder/icosahedral-grid.js"></script>
+<script src="/js/world-builder/globe-view.js"></script>
+<script src="/js/world-builder/hex-editor.js?v=<%= Time.now.to_i %>"></script>
+<script src="/js/world-builder/sub-hex-editor.js?v=<%= Time.now.to_i %>"></script>

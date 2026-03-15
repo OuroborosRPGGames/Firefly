@@ -1,0 +1,148 @@
+<% @page_title = "#{@scene.id ? 'Edit' : 'Create'} Arranged Scene - Admin" %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Arranged Scenes', path: '/admin/arranged_scenes' }, { label: @scene.id ? 'Edit' : 'Create' }] %>
+
+<%= admin_content_start %>
+      <h2 class="mb-4 text-2xl font-bold"><%= @scene.id ? 'Edit' : 'Create' %> Arranged Scene</h2>
+
+      <form action="<%= @scene.id ? "/admin/arranged_scenes/#{@scene.id}" : '/admin/arranged_scenes/create' %>" method="POST">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <div class="form-control mb-4">
+              <label class="label" for="scene_name">
+                <span class="label-text">Scene Name</span>
+              </label>
+              <input type="text" class="input input-bordered w-full" id="scene_name" name="scene_name"
+                     value="<%= @scene.scene_name %>" placeholder="Meeting with the Merchant">
+              <label class="label">
+                <span class="label-text-alt text-base-content/60">Display name for this scene (optional)</span>
+              </label>
+            </div>
+
+            <div class="form-control mb-4">
+              <label class="label" for="npc_character_id">
+                <span class="label-text">NPC</span>
+              </label>
+              <select class="select select-bordered w-full" id="npc_character_id" name="npc_character_id" required>
+                <option value="">Select an NPC...</option>
+                <% @npcs.each do |npc| %>
+                  <option value="<%= npc.id %>" <%= @scene.npc_character_id == npc.id ? 'selected' : '' %>>
+                    <%= h npc.full_name %>
+                  </option>
+                <% end %>
+              </select>
+            </div>
+
+            <div class="form-control mb-4">
+              <label class="label" for="pc_character_id">
+                <span class="label-text">PC</span>
+              </label>
+              <select class="select select-bordered w-full" id="pc_character_id" name="pc_character_id" required>
+                <option value="">Select a PC...</option>
+                <% @pcs.each do |pc| %>
+                  <option value="<%= pc.id %>" <%= @scene.pc_character_id == pc.id ? 'selected' : '' %>>
+                    <%= h pc.full_name %>
+                  </option>
+                <% end %>
+              </select>
+            </div>
+
+            <div class="form-control mb-4">
+              <label class="label" for="meeting_room_id">
+                <span class="label-text">Meeting Room</span>
+              </label>
+              <select class="select select-bordered w-full" id="meeting_room_id" name="meeting_room_id" required>
+                <option value="">Select where PC triggers the scene...</option>
+                <% @rooms.each do |room| %>
+                  <option value="<%= room.id %>" <%= @scene.meeting_room_id == room.id ? 'selected' : '' %>>
+                    <%= h room.name %>
+                  </option>
+                <% end %>
+              </select>
+              <label class="label">
+                <span class="label-text-alt text-base-content/60">PC goes here to trigger the scene</span>
+              </label>
+            </div>
+
+            <div class="form-control mb-4">
+              <label class="label" for="rp_room_id">
+                <span class="label-text">RP Room</span>
+              </label>
+              <select class="select select-bordered w-full" id="rp_room_id" name="rp_room_id" required>
+                <option value="">Select where the RP happens...</option>
+                <% @rooms.each do |room| %>
+                  <option value="<%= room.id %>" <%= @scene.rp_room_id == room.id ? 'selected' : '' %>>
+                    <%= h room.name %>
+                  </option>
+                <% end %>
+              </select>
+              <label class="label">
+                <span class="label-text-alt text-base-content/60">PC and NPC are teleported here for the scene</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <div class="form-control mb-4">
+              <label class="label" for="npc_instructions">
+                <span class="label-text">NPC Instructions</span>
+              </label>
+              <textarea class="textarea textarea-bordered w-full" id="npc_instructions" name="npc_instructions" rows="4"
+                        placeholder="The NPC should mention the weather and offer a special discount..."><%= @scene.npc_instructions %></textarea>
+              <label class="label">
+                <span class="label-text-alt text-base-content/60">Instructions seeded to the NPC when scene starts</span>
+              </label>
+            </div>
+
+            <div class="form-control mb-4">
+              <label class="label" for="invitation_message">
+                <span class="label-text">Invitation Message</span>
+              </label>
+              <textarea class="textarea textarea-bordered w-full" id="invitation_message" name="invitation_message" rows="3"
+                        placeholder="You have been invited to meet with..."><%= @scene.invitation_message %></textarea>
+              <label class="label">
+                <span class="label-text-alt text-base-content/60">Message sent to PC when scene is created (optional)</span>
+              </label>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="form-control mb-4">
+                <label class="label" for="available_from">
+                  <span class="label-text">Available From</span>
+                </label>
+                <input type="datetime-local" class="input input-bordered w-full" id="available_from" name="available_from"
+                       value="<%= @scene.available_from&.strftime('%Y-%m-%dT%H:%M') %>">
+                <label class="label">
+                  <span class="label-text-alt text-base-content/60">Optional: when scene becomes available</span>
+                </label>
+              </div>
+              <div class="form-control mb-4">
+                <label class="label" for="expires_at">
+                  <span class="label-text">Expires At</span>
+                </label>
+                <input type="datetime-local" class="input input-bordered w-full" id="expires_at" name="expires_at"
+                       value="<%= @scene.expires_at&.strftime('%Y-%m-%dT%H:%M') %>">
+                <label class="label">
+                  <span class="label-text-alt text-base-content/60">Optional: when scene expires</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="flex justify-between">
+          <a href="/admin/arranged_scenes" class="btn btn-outline btn-ghost">Cancel</a>
+          <button type="submit" class="btn btn-primary">
+            <%= @scene.id ? 'Update' : 'Create' %> Scene
+          </button>
+        </div>
+      </form>
+
+      <% if @scene.id %>
+        <div class="divider"></div>
+        <div class="text-right">
+          <%= partial 'admin/delete_button', locals: { path: "/admin/arranged_scenes/#{@scene.id}/delete", label: 'scene' } %>
+        </div>
+      <% end %>
+<%= admin_content_end %>

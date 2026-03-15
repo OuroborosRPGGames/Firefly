@@ -1,0 +1,473 @@
+/**
+ * Activity Builder CSS
+ * Two-panel layout with SVG canvas for round flow editing
+ */
+
+/* ============================================
+   Container & Layout
+   ============================================ */
+
+.activity-builder-container {
+  display: flex;
+  height: calc(100vh - 56px); /* Full height minus nav */
+  background: #1a1a2e;
+  overflow: hidden;
+}
+
+.activity-panel {
+  display: flex;
+  flex-direction: column;
+  background: #16213e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.left-panel {
+  width: 340px;
+  flex-shrink: 0;
+  border-right: none;
+}
+
+.center-panel {
+  flex: 1;
+  min-width: 0; /* Allow shrinking */
+}
+
+/* ============================================
+   Panel Header/Footer
+   ============================================ */
+
+.panel-header {
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.panel-header h5 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.panel-footer {
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.panel-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px;
+}
+
+/* ============================================
+   Collapsible Sidebar Sections
+   ============================================ */
+
+.sidebar-section {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.sidebar-section h6 {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 12px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.section-header h6 {
+  margin-bottom: 0;
+}
+
+.section-chevron {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  transition: transform 0.2s ease;
+}
+
+.sidebar-section.collapsed .section-chevron {
+  transform: rotate(-90deg);
+}
+
+.sidebar-section.collapsed .section-body {
+  display: none;
+}
+
+/* ============================================
+   Round Palette
+   ============================================ */
+
+.round-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.palette-item {
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.palette-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================
+   Canvas Container
+   ============================================ */
+
+.canvas-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+#round-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.canvas-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* ============================================
+   Round Nodes (SVG)
+   ============================================ */
+
+.round-node {
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.round-node:hover {
+  filter: brightness(1.1);
+}
+
+/* ============================================
+   Round Context Menu
+   ============================================ */
+
+.round-context-menu {
+  position: absolute;
+  z-index: 100;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  min-width: 140px;
+  width: fit-content;
+  display: flex;
+  flex-direction: column;
+}
+
+.round-context-menu.hidden {
+  display: none;
+}
+
+.round-context-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 4px;
+  text-align: left;
+}
+
+.round-context-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.round-context-btn-danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+/* ============================================
+   Form Styling
+   ============================================ */
+
+.form-label {
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 4px;
+}
+
+.form-control,
+.form-select {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.form-control:focus,
+.form-select:focus {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: #4a90d9;
+  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.2);
+  color: #fff;
+}
+
+.form-control::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.form-check-input {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.form-check-input:checked {
+  background-color: #4a90d9;
+  border-color: #4a90d9;
+}
+
+.form-check-label {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ============================================
+   Custom Button Colors
+   ============================================ */
+
+.btn-outline-purple {
+  color: #8b5cf6;
+  border-color: #8b5cf6;
+}
+
+.btn-outline-purple:hover {
+  color: #fff;
+  background-color: #8b5cf6;
+  border-color: #8b5cf6;
+}
+
+.btn-outline-pink {
+  color: #ec4899;
+  border-color: #ec4899;
+}
+
+.btn-outline-pink:hover {
+  color: #fff;
+  background-color: #ec4899;
+  border-color: #ec4899;
+}
+
+/* ============================================
+   NPC Selector Modal
+   ============================================ */
+
+.npc-check {
+  padding: 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  transition: background 0.2s ease;
+}
+
+.npc-check:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================
+   Round Config Modal
+   ============================================ */
+
+.round-config-modal .modal-box {
+  max-width: 900px;
+  width: 90vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.round-config-modal .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.round-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 16px;
+}
+
+.round-modal-header .round-type-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #fff;
+}
+
+.round-modal-tabs {
+  margin-bottom: 16px;
+}
+
+.round-modal-tab-content {
+  min-height: 300px;
+}
+
+/* Branch choices list */
+.branch-choice-item {
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+.branch-choice-item .choice-number {
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  min-width: 20px;
+}
+
+.branch-choice-item .description-editor-container {
+  min-height: 60px;
+}
+
+/* Cascading room selector */
+.cascading-room-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Description editor in modal */
+.round-config-modal .description-editor-container {
+  min-height: 100px;
+}
+
+/* ============================================
+   Toast Container
+   ============================================ */
+
+.toast-container {
+  z-index: 9999;
+}
+
+/* ============================================
+   Scrollbar Styling
+   ============================================ */
+
+.panel-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.panel-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.panel-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.panel-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.round-config-modal .modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.round-config-modal .modal-body::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.round-config-modal .modal-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+/* ============================================
+   Responsive Adjustments
+   ============================================ */
+
+@media (max-width: 1200px) {
+  .left-panel {
+    width: 300px;
+  }
+}
+
+@media (max-width: 992px) {
+  .activity-builder-container {
+    flex-direction: column;
+    height: auto;
+    min-height: calc(100vh - 56px);
+  }
+
+  .left-panel {
+    width: 100%;
+    max-height: 300px;
+  }
+
+  .center-panel {
+    min-height: 400px;
+  }
+}
+
+/* ============================================
+   Activity List (Index Page) Styles
+   ============================================ */
+
+.activity-card .card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.activity-card .card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* Badge for pink (persuade type) */
+.badge.bg-pink {
+  background-color: #ec4899 !important;
+}

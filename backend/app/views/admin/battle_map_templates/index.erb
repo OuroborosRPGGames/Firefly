@@ -1,0 +1,125 @@
+<% @page_title = 'Battle Map Templates - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Map Templates' }] %>
+
+<%= admin_content_start %>
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold">Battle Map Templates</h2>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="card bg-base-200 text-center">
+      <div class="card-body">
+        <h3 class="text-3xl font-bold text-primary"><%= @templates.count %></h3>
+        <p class="text-base-content/70">Total Templates</p>
+      </div>
+    </div>
+    <div class="card bg-base-200 text-center">
+      <div class="card-body">
+        <h3 class="text-3xl font-bold text-success"><%= @templates.map(&:category).uniq.count %></h3>
+        <p class="text-base-content/70">Categories</p>
+      </div>
+    </div>
+    <div class="card bg-base-200 text-center">
+      <div class="card-body">
+        <h3 class="text-3xl font-bold text-warning"><%= @templates.map(&:shape_key).uniq.count %></h3>
+        <p class="text-base-content/70">Shape Types</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card bg-base-200">
+    <div class="p-4 border-b border-base-content/10 flex justify-between items-center">
+      <h5 class="font-semibold">Templates</h5>
+      <div class="flex gap-2">
+        <% categories = @templates.map(&:category).uniq.sort %>
+        <% if categories.length > 1 %>
+          <select id="category-filter" class="select select-bordered select-sm" onchange="filterTemplates()">
+            <option value="">All Categories</option>
+            <% categories.each do |cat| %>
+              <option value="<%= cat %>"><%= cat.capitalize %></option>
+            <% end %>
+          </select>
+        <% end %>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <% if @templates.empty? %>
+        <div class="p-8 text-center text-base-content/70">
+          <i class="bi bi-grid-3x3 text-4xl block mb-3"></i>
+          <p>No battle map templates found.</p>
+          <p class="text-sm">Generate templates with: <code>bundle exec ruby scripts/generate_battle_map_templates.rb</code></p>
+        </div>
+      <% else %>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra" id="templates-table">
+            <thead>
+              <tr>
+                <th>Preview</th>
+                <th>Category</th>
+                <th>Shape</th>
+                <th>Variant</th>
+                <th>Size</th>
+                <th>Hexes</th>
+                <th>Lights</th>
+                <th>Last Used</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @templates.each do |t| %>
+                <%
+                  hex_data = t.hex_data
+                  hexes = hex_data.respond_to?(:to_a) ? hex_data.to_a : (hex_data.is_a?(Array) ? hex_data : [])
+                  traversable = hexes.count { |h| h['traversable'] != false && !%w[wall off_map].include?(h['hex_type']) }
+                  lights = t.light_sources
+                  light_count = lights.respond_to?(:length) ? lights.length : 0
+                %>
+                <tr data-category="<%= t.category %>">
+                  <td>
+                    <% if t.image_url %>
+                      <img src="<%= t.image_url %>" alt="Preview" class="w-16 h-16 object-cover rounded">
+                    <% else %>
+                      <div class="w-16 h-16 bg-base-300 rounded flex items-center justify-center">
+                        <i class="bi bi-image text-base-content/30"></i>
+                      </div>
+                    <% end %>
+                  </td>
+                  <td><span class="badge badge-neutral"><%= t.category %></span></td>
+                  <td><%= t.shape_key.gsub('_', ' ') %></td>
+                  <td><%= t.variant %></td>
+                  <td><%= t.width_feet.to_i %> x <%= t.height_feet.to_i %> ft</td>
+                  <td>
+                    <%= hexes.size %> total
+                    <br><span class="text-base-content/50 text-sm"><%= traversable %> traversable</span>
+                  </td>
+                  <td><%= light_count %></td>
+                  <td>
+                    <% if t.last_used_at %>
+                      <span class="text-sm"><%= t.last_used_at.strftime('%Y-%m-%d') %></span>
+                    <% else %>
+                      <span class="text-base-content/50">-</span>
+                    <% end %>
+                  </td>
+                  <td class="text-right">
+                    <a href="/admin/battle_map_templates/<%= t.id %>/edit" class="btn btn-sm btn-outline btn-primary">
+                      <i class="bi bi-pencil-square"></i> Edit
+                    </a>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <script>
+  function filterTemplates() {
+    const cat = document.getElementById('category-filter')?.value || '';
+    document.querySelectorAll('#templates-table tbody tr').forEach(row => {
+      row.style.display = (!cat || row.dataset.category === cat) ? '' : 'none';
+    });
+  }
+  </script>
+<%= admin_content_end %>

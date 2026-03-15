@@ -1,0 +1,111 @@
+<% @page_title = 'Activity Builder - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Activity Builder' }] %>
+
+<%= admin_content_start %>
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold"><i class="bi bi-journal-text mr-2"></i>Activity Builder</h2>
+        <a href="/admin/activity_builder/new" class="btn btn-success">
+          <i class="bi bi-plus-lg mr-1"></i>New Activity
+        </a>
+      </div>
+
+      <!-- Filter tabs by type -->
+      <div class="tabs tabs-boxed mb-4 bg-base-200">
+        <a class="tab tab-active" data-filter="all" href="#">All</a>
+        <a class="tab" data-filter="mission" href="#">
+          <i class="bi bi-compass mr-1"></i>Missions
+        </a>
+        <a class="tab" data-filter="competition" href="#">
+          <i class="bi bi-trophy mr-1"></i>Competitions
+        </a>
+        <a class="tab" data-filter="task" href="#">
+          <i class="bi bi-check2-square mr-1"></i>Tasks
+        </a>
+      </div>
+
+      <!-- Activities list -->
+      <% if @activities.empty? %>
+        <%= partial 'shared/empty_state', locals: { message: 'No activities found. Create one to get started!' } %>
+      <% else %>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="activities-list">
+          <% @activities.each do |activity| %>
+            <div class="activity-card" data-type="<%= activity.atype %>">
+              <div class="card bg-base-200 h-full shadow-lg">
+                <div class="p-4 border-b border-base-content/10 flex justify-between items-center">
+                  <span>
+                    <i class="bi bi-<%= activity_icon(activity.atype) %> mr-2"></i>
+                    <%= h(activity.aname) %>
+                  </span>
+                  <span class="badge badge-<%= activity_badge_color(activity.atype) %>">
+                    <%= activity.type_display %>
+                  </span>
+                </div>
+                <div class="card-body">
+                  <% if activity.adesc && !activity.adesc.empty? %>
+                    <p class="text-sm text-base-content/70 mb-2"><%= h(activity.adesc.to_s[0, 100]) %><%= '...' if activity.adesc.to_s.length > 100 %></p>
+                  <% end %>
+                  <div class="mb-2 text-sm">
+                    <span class="text-base-content/60">Rounds:</span> <%= activity.total_rounds %><br>
+                    <span class="text-base-content/60">Launch:</span> <%= h(activity.launch_mode || 'creator') %>
+                    <% if activity.anchored_to_item? %>
+                      <i class="bi bi-pin-angle ml-1 text-warning" title="Item Anchored"></i>
+                    <% end %>
+                  </div>
+                  <div class="flex gap-1 flex-wrap">
+                    <% if activity.is_public %>
+                      <span class="badge badge-success"><i class="bi bi-globe mr-1"></i>Public</span>
+                    <% else %>
+                      <span class="badge badge-neutral"><i class="bi bi-lock mr-1"></i>Private</span>
+                    <% end %>
+                    <% if activity.repeatable %>
+                      <span class="badge badge-info"><i class="bi bi-arrow-repeat mr-1"></i>Repeatable</span>
+                    <% end %>
+                    <% if activity.task? && activity.auto_start_task? %>
+                      <span class="badge badge-warning"><i class="bi bi-lightning mr-1"></i>Auto-start</span>
+                    <% end %>
+                  </div>
+                </div>
+                <div class="p-4 border-t border-base-content/10 flex gap-2">
+                  <a href="/admin/activity_builder/<%= activity.id %>" class="btn btn-sm btn-outline btn-primary flex-grow">
+                    <i class="bi bi-pencil mr-1"></i>Edit
+                  </a>
+                  <button type="button" class="btn btn-sm btn-outline btn-error"
+                          onclick="confirmDelete(<%= activity.id %>, '<%= h(activity.aname) %>')">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+
+      <!-- Quick stats -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+        <div class="card bg-base-200 shadow-lg">
+          <div class="card-body text-center py-4">
+            <h3 class="text-2xl font-bold"><%= Activity.count %></h3>
+            <p class="text-base-content/70 text-sm">Total Activities</p>
+          </div>
+        </div>
+        <div class="card bg-base-200 shadow-lg">
+          <div class="card-body text-center py-4">
+            <h3 class="text-2xl font-bold"><%= Activity.where(activity_type: %w[mission adventure encounter]).count %></h3>
+            <p class="text-base-content/70 text-sm">Missions</p>
+          </div>
+        </div>
+        <div class="card bg-base-200 shadow-lg">
+          <div class="card-body text-center py-4">
+            <h3 class="text-2xl font-bold"><%= Activity.where(activity_type: %w[competition tcompetition elimination]).count %></h3>
+            <p class="text-base-content/70 text-sm">Competitions</p>
+          </div>
+        </div>
+        <div class="card bg-base-200 shadow-lg">
+          <div class="card-body text-center py-4">
+            <h3 class="text-2xl font-bold"><%= Activity.where(activity_type: 'task').count %></h3>
+            <p class="text-base-content/70 text-sm">Tasks</p>
+          </div>
+        </div>
+      </div>
+    
+<%= admin_content_end %>

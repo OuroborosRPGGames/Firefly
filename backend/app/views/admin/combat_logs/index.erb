@@ -1,0 +1,75 @@
+<% @page_title = 'Combat Logs - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Combat Logs', path: '/admin/combat_logs' }] %>
+
+<%= admin_content_start %>
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-2xl font-bold">
+      <i class="bi bi-journal-text mr-2"></i>Combat Logs
+    </h2>
+    <div class="flex gap-2">
+      <% @log_dates.each do |date| %>
+        <a href="/admin/combat_logs?date=<%= date %>"
+           class="btn btn-sm <%= date == @selected_date ? 'btn-primary' : 'btn-outline' %>">
+          <%= date %>
+        </a>
+      <% end %>
+    </div>
+  </div>
+
+  <% if @fights.empty? %>
+    <div class="card bg-base-200">
+      <div class="card-body text-center text-base-content/60">
+        <i class="bi bi-inbox text-4xl mb-2"></i>
+        <p>No combat logs for <%= @selected_date %></p>
+      </div>
+    </div>
+  <% else %>
+    <div class="card bg-base-200 mb-4">
+      <div class="card-body p-0">
+        <div class="flex justify-between items-center px-4 py-3 border-b border-base-content/10">
+          <h5 class="font-semibold">Fights on <%= @selected_date %></h5>
+          <span class="badge badge-neutral"><%= @fights.length %> fights</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>Fight ID</th>
+                <th>Time</th>
+                <th>Room</th>
+                <th>Rounds</th>
+                <th>Participants</th>
+                <th>Battle Map</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @fights.each do |fight| %>
+                <tr>
+                  <td class="font-mono">#<%= fight[:fight_id] %></td>
+                  <td><%= fight[:first_time] %></td>
+                  <td><%= fight[:room] %></td>
+                  <td><%= fight[:rounds].length %></td>
+                  <td><%= fight[:participants].join(', ') %></td>
+                  <td>
+                    <% if fight[:battle_map] %>
+                      <span class="badge badge-success badge-sm">Yes</span>
+                    <% else %>
+                      <span class="badge badge-ghost badge-sm">No</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <a href="/admin/combat_logs/<%= fight[:fight_id] %>?date=<%= @selected_date %>"
+                       class="btn btn-sm btn-outline btn-primary">
+                      <i class="bi bi-eye"></i> View
+                    </a>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  <% end %>
+<%= admin_content_end %>

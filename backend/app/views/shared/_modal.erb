@@ -1,0 +1,47 @@
+<%#
+  Modal Component
+
+  Usage:
+    <%= render 'shared/modal', id: 'myModal', title: 'Edit Item' do %>
+      <p>Modal content here</p>
+    <% end %>
+
+  Parameters:
+    - id: (required) Unique identifier for the modal
+    - title: (required) Modal title text
+    - size: (optional) 'sm', 'lg', or 'xl' - defaults to medium
+    - submit_text: (optional) Text for submit button - defaults to 'Save'
+    - footer: (optional) Set to false to hide footer
+%>
+<div class="modal-overlay animate__animated" id="<%= id %>-overlay" data-modal-close style="display: none;">
+  <div class="modal-container mx-auto px-4" data-modal-close>
+    <div class="modal-dialog<%=" modal-dialog--#{size}" if local_assigns[:size] %> animate__animated"
+         role="dialog"
+         aria-labelledby="<%= id %>-title"
+         aria-modal="true">
+
+      <header class="modal-header">
+        <h2 class="modal-title" id="<%= id %>-title"><%= title %></h2>
+        <button type="button" class="modal-close" data-modal-close aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </header>
+
+      <div class="modal-body">
+        <%= yield %>
+      </div>
+
+      <% unless local_assigns[:footer] == false %>
+        <footer class="modal-footer">
+          <% if local_assigns[:footer_content] %>
+            <%= footer_content %>
+          <% else %>
+            <button type="button" class="btn btn--secondary" data-modal-close>Cancel</button>
+            <button type="submit" class="btn btn--primary"><%= local_assigns[:submit_text] || 'Save' %></button>
+          <% end %>
+        </footer>
+      <% end %>
+
+    </div>
+  </div>
+</div>

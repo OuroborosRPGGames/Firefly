@@ -1,0 +1,773 @@
+{
+  "version": 2,
+  "workflows": {
+    "posture_cycle": {
+      "group": "status",
+      "description": "Cycle through all postures with output verification",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "stand" },
+        { "action": "execute", "command": "sit", "expect_success": true, "output_contains": "sit" },
+        { "action": "execute", "command": "lie", "expect_success": true, "output_contains": "lie" },
+        { "action": "execute", "command": "stand", "expect_success": true, "output_contains": "stand" },
+        { "action": "execute", "command": "sit", "expect_success": true },
+        { "action": "execute", "command": "stand", "expect_success": true }
+      ]
+    },
+    "afk_toggle": {
+      "group": "status",
+      "description": "Toggle AFK on and off with output verification",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "afk", "expect_success": true, "output_contains": "AFK" },
+        { "action": "execute", "command": "afk", "expect_success": true }
+      ]
+    },
+    "semiafk_toggle": {
+      "group": "status",
+      "description": "Toggle semi-AFK on and off",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "semiafk", "expect_success": true },
+        { "action": "execute", "command": "semiafk", "expect_success": true }
+      ]
+    },
+    "quiet_toggle": {
+      "group": "status",
+      "description": "Toggle quiet mode on and off",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "quiet", "expect_success": true },
+        { "action": "execute", "command": "quiet", "expect_success": true }
+      ]
+    },
+    "accessibility_toggle": {
+      "group": "status",
+      "description": "Run accessibility command",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "accessibility", "expect_success": true }
+      ]
+    },
+    "gtg_toggle": {
+      "group": "status",
+      "description": "Set GTG status with timer, then clear it",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "gtg 10", "expect_success": true, "output_contains": "GTG" },
+        { "action": "execute", "command": "gtg", "expect_success": true, "output_contains": "cleared" }
+      ]
+    },
+    "narrate_toggle": {
+      "group": "status",
+      "description": "Toggle TTS narration on and off",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "narrate", "expect_success": true, "output_contains": "narration" },
+        { "action": "execute", "command": "narrate", "expect_success": true, "output_contains": "narration" }
+      ]
+    },
+    "private_mode_toggle": {
+      "group": "status",
+      "description": "Toggle private mode on and off",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "private", "expect_success": true },
+        { "action": "execute", "command": "private", "expect_success": true }
+      ]
+    },
+
+    "walk_round_trip": {
+      "group": "navigation",
+      "description": "Verify exits and look work from a room with exits",
+      "agents_needed": 1,
+      "setup": ["teleport_to_navigation_room"],
+      "steps": [
+        { "action": "snapshot_room", "save_as": "before" },
+        { "action": "execute", "command": "exits", "expect_success": true },
+        { "action": "execute", "command": "look", "expect_success": true }
+      ]
+    },
+    "exits_accuracy": {
+      "group": "navigation",
+      "description": "Run exits command and verify output shows directions",
+      "agents_needed": 1,
+      "setup": ["teleport_to_navigation_room"],
+      "steps": [
+        { "action": "execute", "command": "exits", "expect_success": true }
+      ]
+    },
+    "look_basic": {
+      "group": "navigation",
+      "description": "Run look and verify room name appears",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "look", "expect_success": true, "output_contains": "Command Test Chamber" }
+      ]
+    },
+    "look_at_character": {
+      "group": "navigation",
+      "description": "Look at another character and verify name appears",
+      "agents_needed": 2,
+      "setup": ["ensure_second_agent"],
+      "steps": [
+        { "action": "execute", "command": "look {agent2}", "expect_success": true }
+      ]
+    },
+    "places_and_map": {
+      "group": "navigation",
+      "description": "Run places and map commands",
+      "agents_needed": 1,
+      "setup": ["teleport_to_navigation_room"],
+      "steps": [
+        { "action": "execute", "command": "places", "expect_success": true },
+        { "action": "execute", "command": "map", "expect_success": true }
+      ]
+    },
+    "observe_room": {
+      "group": "navigation",
+      "description": "Use observe command to watch the room",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "observe", "expect_success": true }
+      ]
+    },
+
+    "say_visible": {
+      "group": "communication",
+      "description": "Agent1 says a message",
+      "agents_needed": 2,
+      "setup": ["ensure_second_agent"],
+      "steps": [
+        { "action": "execute", "command": "say testing the say command" }
+      ]
+    },
+    "emote_visible": {
+      "group": "communication",
+      "description": "Agent1 emotes and verifies command succeeds",
+      "agents_needed": 2,
+      "setup": ["ensure_second_agent"],
+      "steps": [
+        { "action": "execute", "command": "emote waves wildly", "expect_success": true }
+      ]
+    },
+    "whisper_private": {
+      "group": "communication",
+      "description": "Agent1 whispers to agent2",
+      "agents_needed": 2,
+      "setup": ["ensure_second_agent"],
+      "steps": [
+        { "action": "execute", "command": "whisper {agent2} secretword456" }
+      ]
+    },
+    "ooc_message": {
+      "group": "communication",
+      "description": "Agent1 sends an OOC message to agent2",
+      "agents_needed": 2,
+      "setup": ["ensure_second_agent"],
+      "steps": [
+        { "action": "execute", "command": "ooc {agent2} testing ooc channel" }
+      ]
+    },
+    "think_private": {
+      "group": "communication",
+      "description": "Think command produces no visible output (by design)",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "think deep thoughts", "expect_success": true }
+      ]
+    },
+    "dm_system": {
+      "group": "communication",
+      "description": "Test DM/reply system basics",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "ooc", "expect_success": true },
+        { "action": "execute", "command": "reply" }
+      ]
+    },
+
+    "fight_full_cycle": {
+      "group": "combat",
+      "description": "Start combat, attack, verify combat status shows fight",
+      "agents_needed": 2,
+      "setup": ["ensure_second_agent"],
+      "steps": [
+        { "action": "execute", "command": "fight {agent2}", "expect_success": true },
+        { "action": "execute", "command": "attack {agent2}", "expect_success": true },
+        { "action": "execute", "command": "combat", "expect_success": true }
+      ]
+    },
+    "spar_cycle": {
+      "group": "combat",
+      "description": "Initiate spar with agent2",
+      "agents_needed": 2,
+      "setup": ["ensure_second_agent"],
+      "steps": [
+        { "action": "execute", "command": "spar {agent2}", "expect_success": true }
+      ]
+    },
+    "combat_info_accuracy": {
+      "group": "combat",
+      "description": "Start combat and verify combat command works",
+      "agents_needed": 2,
+      "setup": ["ensure_second_agent"],
+      "steps": [
+        { "action": "execute", "command": "fight {agent2}", "expect_success": true },
+        { "action": "execute", "command": "combat", "expect_success": true }
+      ]
+    },
+    "combat_multiple_attacks": {
+      "group": "combat",
+      "description": "Attack multiple times in combat",
+      "agents_needed": 2,
+      "setup": ["ensure_second_agent"],
+      "steps": [
+        { "action": "execute", "command": "fight {agent2}", "expect_success": true },
+        { "action": "execute", "command": "attack {agent2}", "expect_success": true },
+        { "action": "wait", "seconds": 1 },
+        { "action": "execute", "command": "attack {agent2}", "expect_success": true }
+      ]
+    },
+    "combat_quickmenu": {
+      "group": "combat",
+      "description": "Start fight and verify attack works",
+      "agents_needed": 2,
+      "setup": ["ensure_second_agent"],
+      "steps": [
+        { "action": "execute", "command": "fight {agent2}", "expect_success": true },
+        { "action": "execute", "command": "attack {agent2}", "expect_success": true }
+      ]
+    },
+
+    "get_drop_cycle": {
+      "group": "inventory",
+      "description": "Grant item, verify in inventory, drop it, verify gone",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "api_call", "method": "POST", "path": "/api/test/grant_item", "body": { "type": "weapon", "name": "Workflow Test Blade" }, "expect_success": true },
+        { "action": "verify_command", "command": "inventory", "output_contains": "Workflow Test Blade" },
+        { "action": "execute", "command": "drop blade", "expect_success": true },
+        { "action": "verify_command", "command": "inventory", "output_not_contains": "Workflow Test Blade" }
+      ]
+    },
+    "hold_pocket_cycle": {
+      "group": "inventory",
+      "description": "Test hold and pocket commands respond",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "hold" },
+        { "action": "execute", "command": "pocket" }
+      ]
+    },
+    "give_item": {
+      "group": "inventory",
+      "description": "Grant item and attempt give to agent2",
+      "agents_needed": 2,
+      "setup": ["ensure_second_agent"],
+      "steps": [
+        { "action": "api_call", "method": "POST", "path": "/api/test/grant_item", "body": { "type": "weapon", "name": "Workflow Pendant" }, "expect_success": true },
+        { "action": "execute", "command": "give pendant to {agent2}" }
+      ]
+    },
+    "wear_remove_cycle": {
+      "group": "inventory",
+      "description": "Grant clothing item, attempt wear, check equipment",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "api_call", "method": "POST", "path": "/api/test/grant_item", "body": { "type": "clothing", "name": "Workflow Hat" }, "expect_success": true },
+        { "action": "execute", "command": "wear hat" },
+        { "action": "execute", "command": "equipment", "expect_success": true }
+      ]
+    },
+    "outfit_management": {
+      "group": "inventory",
+      "description": "Test outfit command",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "outfit", "expect_success": true }
+      ]
+    },
+    "inventory_listing": {
+      "group": "inventory",
+      "description": "Grant item and verify it appears in inventory",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "api_call", "method": "POST", "path": "/api/test/grant_item", "body": { "type": "weapon", "name": "Workflow Trinket" }, "expect_success": true },
+        { "action": "verify_command", "command": "inventory", "output_contains": "Workflow Trinket" }
+      ]
+    },
+    "equipment_display": {
+      "group": "inventory",
+      "description": "Verify equipment and worn commands work",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "equipment", "expect_success": true },
+        { "action": "execute", "command": "worn", "expect_success": true }
+      ]
+    },
+
+    "balance_check": {
+      "group": "economy",
+      "description": "Grant currency and verify balance shows wallet",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "api_call", "method": "POST", "path": "/api/test/grant_currency", "body": { "amount": 1000 }, "expect_success": true },
+        { "action": "verify_command", "command": "balance", "output_contains": "Gold" }
+      ]
+    },
+    "shop_browse": {
+      "group": "economy",
+      "description": "Run shop command",
+      "agents_needed": 1,
+      "setup": ["ensure_shop"],
+      "steps": [
+        { "action": "execute", "command": "shop" }
+      ]
+    },
+    "buy_item": {
+      "group": "economy",
+      "description": "Run buy command",
+      "agents_needed": 1,
+      "setup": ["ensure_shop", "ensure_currency"],
+      "steps": [
+        { "action": "execute", "command": "shop" }
+      ]
+    },
+    "deposit_withdraw": {
+      "group": "economy",
+      "description": "Grant currency and check balance",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "api_call", "method": "POST", "path": "/api/test/grant_currency", "body": { "amount": 5000 }, "expect_success": true },
+        { "action": "verify_command", "command": "balance", "output_contains": "Gold" }
+      ]
+    },
+
+    "score_accuracy": {
+      "group": "information",
+      "description": "Verify score shows HP info",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "verify_command", "command": "score", "output_contains": "HP" }
+      ]
+    },
+    "stats_display": {
+      "group": "information",
+      "description": "Verify stats command shows attributes",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "verify_command", "command": "stats", "output_contains": "STR" }
+      ]
+    },
+    "who_listing": {
+      "group": "information",
+      "description": "Verify who command shows characters",
+      "agents_needed": 2,
+      "setup": ["ensure_second_agent"],
+      "steps": [
+        { "action": "execute", "command": "who", "expect_success": true }
+      ]
+    },
+    "help_system": {
+      "group": "information",
+      "description": "Verify help works for general and specific topics",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "verify_command", "command": "help", "output_contains": "help" },
+        { "action": "execute", "command": "help look", "expect_success": true },
+        { "action": "execute", "command": "help say", "expect_success": true }
+      ]
+    },
+    "finger_profile": {
+      "group": "information",
+      "description": "Finger another player and check own profile",
+      "agents_needed": 2,
+      "setup": ["ensure_second_agent"],
+      "steps": [
+        { "action": "execute", "command": "finger Agent {agent2}" },
+        { "action": "execute", "command": "profile", "expect_success": true }
+      ]
+    },
+    "commands_listing": {
+      "group": "information",
+      "description": "Verify commands list displays categories",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "verify_command", "command": "commands", "output_contains": "combat" }
+      ]
+    },
+
+    "helpless_tie_untie": {
+      "group": "prisoner",
+      "description": "Agent2 goes helpless, agent1 ties then unties them",
+      "agents_needed": 2,
+      "setup": ["ensure_second_agent"],
+      "steps": [
+        { "action": "agent2_execute", "command": "helpless", "expect_success": true },
+        { "action": "execute", "command": "tie {agent2}", "expect_success": true },
+        { "action": "execute", "command": "untie {agent2}", "expect_success": true },
+        { "action": "agent2_execute", "command": "helpless", "expect_success": true }
+      ]
+    },
+    "helpless_blindfold_gag": {
+      "group": "prisoner",
+      "description": "Agent2 goes helpless, agent1 blindfolds and gags",
+      "agents_needed": 2,
+      "setup": ["ensure_second_agent"],
+      "steps": [
+        { "action": "agent2_execute", "command": "helpless", "expect_success": true },
+        { "action": "execute", "command": "blindfold {agent2}", "expect_success": true },
+        { "action": "execute", "command": "gag {agent2}", "expect_success": true }
+      ]
+    },
+    "helpless_search": {
+      "group": "prisoner",
+      "description": "Agent2 goes helpless, agent1 searches them",
+      "agents_needed": 2,
+      "setup": ["ensure_second_agent"],
+      "steps": [
+        { "action": "agent2_execute", "command": "helpless", "expect_success": true },
+        { "action": "execute", "command": "search {agent2}", "expect_success": true },
+        { "action": "agent2_execute", "command": "helpless", "expect_success": true }
+      ]
+    },
+    "helpless_toggle": {
+      "group": "prisoner",
+      "description": "Toggle helpless status on and off",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "helpless", "expect_success": true, "output_contains": "helpless" },
+        { "action": "execute", "command": "helpless", "expect_success": true, "output_contains": "no longer" }
+      ]
+    },
+
+    "event_lifecycle": {
+      "group": "events",
+      "description": "Create event, start it, end it",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "create event Lifecycle Test", "expect_success": true },
+        { "action": "execute", "command": "start event", "expect_success": true },
+        { "action": "execute", "command": "end event", "expect_success": true }
+      ]
+    },
+    "event_join_leave": {
+      "group": "events",
+      "description": "Create event, start it, agent2 enters then leaves",
+      "agents_needed": 2,
+      "setup": ["ensure_second_agent"],
+      "steps": [
+        { "action": "execute", "command": "create event Agent Join Test", "expect_success": true },
+        { "action": "execute", "command": "start event", "expect_success": true },
+        { "action": "wait", "seconds": 1 },
+        { "action": "agent2_execute", "command": "enter event" },
+        { "action": "agent2_execute", "command": "leave event" },
+        { "action": "execute", "command": "end event" }
+      ]
+    },
+    "event_listing": {
+      "group": "events",
+      "description": "Create event and verify events command works",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "create event Listing Test", "expect_success": true },
+        { "action": "execute", "command": "events", "expect_success": true },
+        { "action": "execute", "command": "start event" },
+        { "action": "execute", "command": "end event" }
+      ]
+    },
+    "event_info": {
+      "group": "events",
+      "description": "Create event and check event info",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "create event Info Test Event", "expect_success": true },
+        { "action": "execute", "command": "event info Info Test Event", "expect_success": true },
+        { "action": "execute", "command": "start event" },
+        { "action": "execute", "command": "end event" }
+      ]
+    },
+
+    "dress_strip": {
+      "group": "clothing",
+      "description": "Grant clothing, attempt wear, strip all",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "api_call", "method": "POST", "path": "/api/test/grant_item", "body": { "type": "clothing", "name": "Workflow Coat" }, "expect_success": true },
+        { "action": "execute", "command": "wear coat" },
+        { "action": "execute", "command": "strip all" },
+        { "action": "execute", "command": "equipment", "expect_success": true }
+      ]
+    },
+    "cover_expose": {
+      "group": "clothing",
+      "description": "Test cover and expose commands exist",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "cover" },
+        { "action": "execute", "command": "expose" }
+      ]
+    },
+    "unzip_zipup": {
+      "group": "clothing",
+      "description": "Test unzip and zipup commands exist",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "unzip" },
+        { "action": "execute", "command": "zipup" }
+      ]
+    },
+
+    "dice_basic": {
+      "group": "dice",
+      "description": "Roll standard dice and verify result",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "verify_command", "command": "roll 2d6", "output_contains": "roll" }
+      ]
+    },
+    "diceroll_2d6": {
+      "group": "dice",
+      "description": "Diceroll 2d6 shows individual dice values",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "verify_command", "command": "diceroll 2d6", "output_contains": "2d6" }
+      ]
+    },
+    "diceroll_1d20": {
+      "group": "dice",
+      "description": "Diceroll 1d20 produces a result",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "verify_command", "command": "diceroll 1d20", "output_contains": "1d20" }
+      ]
+    },
+    "stat_roll_str": {
+      "group": "dice",
+      "description": "Roll against STR stat",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "verify_command", "command": "roll str", "output_contains": "STR" }
+      ]
+    },
+    "stat_roll_dex": {
+      "group": "dice",
+      "description": "Roll against DEX stat",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "verify_command", "command": "roll dex", "output_contains": "DEX" }
+      ]
+    },
+
+    "time_weather": {
+      "group": "environment",
+      "description": "Check time and weather commands",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "time", "expect_success": true },
+        { "action": "execute", "command": "weather", "expect_success": true }
+      ]
+    },
+    "channel_listing": {
+      "group": "environment",
+      "description": "List available channels",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "channels", "expect_success": true }
+      ]
+    },
+
+    "customization_describe": {
+      "group": "customization",
+      "description": "Test describe command opens editor",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "describe", "expect_success": true }
+      ]
+    },
+    "customization_profile": {
+      "group": "customization",
+      "description": "View own profile",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "verify_command", "command": "profile", "output_contains": "Profile" }
+      ]
+    },
+
+    "crafting_fabricate": {
+      "group": "crafting",
+      "description": "Check fabrication system is accessible",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "fabricate", "expect_success": true }
+      ]
+    },
+    "crafting_make": {
+      "group": "crafting",
+      "description": "Check make command shows available types",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "verify_command", "command": "make", "output_contains": "Make what" }
+      ]
+    },
+
+    "delve_commands": {
+      "group": "delve",
+      "description": "Check delve help shows available dungeon commands",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "verify_command", "command": "delve", "output_contains": "Delve" }
+      ]
+    },
+
+    "clan_system": {
+      "group": "social",
+      "description": "Check clan command shows available clan actions",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "verify_command", "command": "clan", "output_contains": "Clan" }
+      ]
+    },
+    "group_system": {
+      "group": "social",
+      "description": "Check group command shows clan info",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "group", "expect_success": true }
+      ]
+    },
+
+    "snapshot_system": {
+      "group": "timeline",
+      "description": "Test snapshot command is accessible",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "snapshot", "expect_success": true }
+      ]
+    },
+
+    "building_room_info": {
+      "group": "building",
+      "description": "Check room command shows room info",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "execute", "command": "room", "expect_success": true }
+      ]
+    },
+    "building_npc_info": {
+      "group": "building",
+      "description": "Check NPC management command",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "verify_command", "command": "npc", "output_contains": "NPC" }
+      ]
+    },
+
+    "api_status_endpoint": {
+      "group": "api",
+      "description": "Verify /api/agent/status returns valid character data",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "verify_status", "field": "instance.status", "equals": "alive" }
+      ]
+    },
+    "api_room_endpoint": {
+      "group": "api",
+      "description": "Verify /api/agent/room returns valid room data",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "verify_room", "field": "room.name", "equals": "Command Test Chamber" }
+      ]
+    },
+    "api_test_state": {
+      "group": "api",
+      "description": "Verify /api/test/get_state returns character state",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "api_call", "method": "GET", "path": "/api/test/get_state", "expect_success": true }
+      ]
+    },
+    "api_grant_and_verify": {
+      "group": "api",
+      "description": "Grant item via API and verify via get_state",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "api_call", "method": "POST", "path": "/api/test/grant_item", "body": { "type": "weapon", "name": "API Verify Sword" }, "expect_success": true },
+        { "action": "verify_command", "command": "inventory", "output_contains": "API Verify Sword" }
+      ]
+    },
+    "api_currency_and_verify": {
+      "group": "api",
+      "description": "Grant currency via API and verify via balance",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "api_call", "method": "POST", "path": "/api/test/grant_currency", "body": { "amount": 500 }, "expect_success": true },
+        { "action": "verify_command", "command": "balance", "output_contains": "Gold" }
+      ]
+    },
+    "api_reset_character": {
+      "group": "api",
+      "description": "Reset character state via API and verify clean state",
+      "agents_needed": 1,
+      "setup": ["teleport_to_test_room"],
+      "steps": [
+        { "action": "api_call", "method": "POST", "path": "/api/test/reset_character", "expect_success": true },
+        { "action": "execute", "command": "score", "expect_success": true }
+      ]
+    }
+  }
+}

@@ -1,0 +1,231 @@
+<% @page_title = "#{@monster.id ? 'Edit' : 'New'} Monster Template - Admin" %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Monsters', path: '/admin/monsters' }, { label: @monster.id ? 'Edit' : 'New' }] %>
+
+<%= admin_content_start %>
+      <h2 class="text-2xl font-bold mb-6"><%= @monster.id ? 'Edit Monster Template' : 'New Monster Template' %></h2>
+
+      <form action="<%= @monster.id ? "/admin/monsters/#{@monster.id}" : '/admin/monsters/create' %>" method="post">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2">
+            <div class="card bg-base-200 mb-4">
+              <div class="p-4 border-b border-base-content/10">Basic Information</div>
+              <div class="card-body">
+                <div class="form-control mb-4">
+                  <label class="label">
+                    <span class="label-text">Name *</span>
+                  </label>
+                  <input type="text" class="input input-bordered w-full" id="name" name="name"
+                         value="<%= h @monster.name %>" required placeholder="e.g., Fire Drake, Stone Colossus">
+                </div>
+
+                <div class="form-control mb-4">
+                  <label class="label">
+                    <span class="label-text">Description</span>
+                  </label>
+                  <textarea class="textarea textarea-bordered w-full" id="description" name="description" rows="3"
+                            placeholder="A massive creature that..."><%= h @monster.description %></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text">Monster Type *</span>
+                    </label>
+                    <select class="select select-bordered w-full" id="monster_type" name="monster_type" required>
+                      <option value="colossus" <%= @monster.monster_type == 'colossus' ? 'selected' : '' %>>Colossus</option>
+                      <option value="dragon" <%= @monster.monster_type == 'dragon' ? 'selected' : '' %>>Dragon</option>
+                      <option value="behemoth" <%= @monster.monster_type == 'behemoth' ? 'selected' : '' %>>Behemoth</option>
+                      <option value="titan" <%= @monster.monster_type == 'titan' ? 'selected' : '' %>>Titan</option>
+                    </select>
+                  </div>
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text">Base Archetype (for stats)</span>
+                    </label>
+                    <select class="select select-bordered w-full" id="npc_archetype_id" name="npc_archetype_id">
+                      <option value="">None</option>
+                      <% @archetypes.each do |a| %>
+                        <option value="<%= a.id %>" <%= @monster.npc_archetype_id == a.id ? 'selected' : '' %>>
+                          <%= h a.name %>
+                        </option>
+                      <% end %>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text">Total HP *</span>
+                    </label>
+                    <input type="number" class="input input-bordered w-full" id="total_hp" name="total_hp"
+                           value="<%= @monster.total_hp || 500 %>" required min="100">
+                  </div>
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text">Defeat Threshold %</span>
+                    </label>
+                    <input type="number" class="input input-bordered w-full" id="defeat_threshold_percent" name="defeat_threshold_percent"
+                           value="<%= @monster.defeat_threshold_percent || 50 %>" min="1" max="100">
+                    <label class="label">
+                      <span class="label-text-alt text-base-content/70">Monster is defeated when HP drops below this %</span>
+                    </label>
+                  </div>
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text">Climb Distance (hexes)</span>
+                    </label>
+                    <input type="number" class="input input-bordered w-full" id="climb_distance" name="climb_distance"
+                           value="<%= @monster.climb_distance || 3 %>" min="1" max="10">
+                    <label class="label">
+                      <span class="label-text-alt text-base-content/70">Steps to reach weak point</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text">Hex Width</span>
+                    </label>
+                    <input type="number" class="input input-bordered w-full" id="hex_width" name="hex_width"
+                           value="<%= @monster.hex_width || 3 %>" min="1" max="10">
+                  </div>
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text">Hex Height</span>
+                    </label>
+                    <input type="number" class="input input-bordered w-full" id="hex_height" name="hex_height"
+                           value="<%= @monster.hex_height || 3 %>" min="1" max="10">
+                  </div>
+                </div>
+
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text">Image URL</span>
+                  </label>
+                  <input type="text" class="input input-bordered w-full" id="image_url" name="image_url"
+                         value="<%= h @monster.image_url %>" placeholder="https://...">
+                </div>
+              </div>
+            </div>
+
+            <div class="flex gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg mr-1"></i><%= @monster.id ? 'Save Changes' : 'Create Monster' %>
+              </button>
+              <a href="/admin/monsters" class="btn btn-outline btn-secondary">Cancel</a>
+            </div>
+          </div>
+
+          <div class="lg:col-span-1">
+            <div class="card bg-base-200">
+              <div class="p-4 border-b border-base-content/10">Preview</div>
+              <div class="card-body">
+                <div class="hex-grid-preview grid gap-1" style="grid-template-columns: repeat(<%= @monster.hex_width || 3 %>, 30px);">
+                  <% ((@monster.hex_height || 3) * (@monster.hex_width || 3)).times do %>
+                    <div class="w-7 h-7 bg-base-300 rounded"></div>
+                  <% end %>
+                </div>
+                <small class="text-base-content/70 block mt-2">
+                  <%= @monster.hex_width || 3 %>x<%= @monster.hex_height || 3 %> hexes
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+
+      <% if @monster.id %>
+        <div class="divider my-8"></div>
+
+        <h3 class="text-xl font-bold mb-3">Body Segments</h3>
+        <p class="text-base-content/70 mb-4">Define the parts of the monster that can be attacked. Each segment has its own HP pool and attack capabilities.</p>
+
+        <% if @segments && @segments.any? %>
+          <div class="overflow-x-auto mb-4">
+            <table class="table table-zebra">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>HP %</th>
+                  <th>Attacks</th>
+                  <th>Damage</th>
+                  <th>Flags</th>
+                  <th>Hex Offset</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @segments.each do |segment| %>
+                  <tr>
+                    <td><%= h segment.name %></td>
+                    <td><span class="badge badge-secondary"><%= segment.segment_type %></span></td>
+                    <td><%= segment.hp_percent %>%</td>
+                    <td><%= segment.attacks_per_round %>/round @ speed <%= segment.attack_speed %></td>
+                    <td><%= segment.damage_dice %> (reach <%= segment.reach %>)</td>
+                    <td>
+                      <% if segment.is_weak_point %>
+                        <span class="badge badge-warning">Weak Point</span>
+                      <% end %>
+                      <% if segment.required_for_mobility %>
+                        <span class="badge badge-info">Mobility</span>
+                      <% end %>
+                    </td>
+                    <td>(<%= segment.hex_offset_x %>, <%= segment.hex_offset_y %>)</td>
+                    <td>
+                      <div class="flex gap-1">
+                        <button type="button" class="btn btn-outline btn-primary btn-sm"
+                                onclick="document.getElementById('editSegmentModal<%= segment.id %>').showModal()" title="Edit">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <%= partial 'admin/delete_button', locals: { path: "/admin/monsters/#{@monster.id}/segments/#{segment.id}/delete", label: 'segment' } %>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <!-- Edit Segment Modal -->
+                  <%
+                    _edit_segment_content =
+                      '<form action="/admin/monsters/' + @monster.id.to_s + '/segments/' + segment.id.to_s + '" method="post">' +
+                      '<h3 class="font-bold text-lg mb-4">Edit Segment: ' + h(segment.name) + '</h3>' +
+                      render('admin/monsters/_segment_fields', locals: { segment: segment, prefix: '' }) +
+                      '<div class="modal-action">' +
+                        '<button type="button" class="btn btn-ghost" onclick="document.getElementById('editSegmentModal' + segment.id.to_s + '').close()">Cancel</button>' +
+                        '<button type="submit" class="btn btn-primary">Save Changes</button>' +
+                      '</div>' +
+                      '</form>'
+                  %>
+                  <%= partial 'admin/modal', locals: {
+                    id: 'editSegmentModal' + segment.id.to_s,
+                    title: 'Edit Segment',
+                    content: _edit_segment_content,
+                    auto_actions: false
+                  } %>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% else %>
+          <div class="alert alert-info mb-4">
+            No segments defined yet. Add at least one body segment for combat.
+          </div>
+        <% end %>
+
+        <!-- Add Segment Form -->
+        <div class="card bg-base-200">
+          <div class="p-4 border-b border-base-content/10 flex items-center gap-2">
+            <i class="bi bi-plus-lg"></i>Add New Segment
+          </div>
+          <div class="card-body">
+            <form action="/admin/monsters/<%= @monster.id %>/segments/create" method="post">
+              <%= render('admin/monsters/_segment_fields', locals: { segment: MonsterSegmentTemplate.new, prefix: '' }) %>
+              <button type="submit" class="btn btn-success">
+                <i class="bi bi-plus-lg mr-1"></i>Add Segment
+              </button>
+            </form>
+          </div>
+        </div>
+      <% end %>
+<%= admin_content_end %>

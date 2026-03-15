@@ -1,0 +1,120 @@
+<% @page_title = 'PC Reputations - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'PC Reputations', path: '/admin/reputations' }] %>
+
+<%= admin_content_start %>
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h2 class="text-2xl font-bold flex items-center gap-2">
+          <i class="bi bi-star"></i>PC Reputation Management
+        </h2>
+        <form method="post" action="/admin/reputations/regenerate_all">
+          <%= csrf_tag %>
+          <button type="submit" class="btn btn-warning"
+                  onclick="return confirm('Regenerate all PC reputations from world memories? This may take several minutes.')">
+            <i class="bi bi-arrow-clockwise"></i>Regenerate All
+          </button>
+        </form>
+      </div>
+
+      <div class="card bg-base-200 mb-6">
+        <div class="p-4 border-b border-base-content/10">
+          <h5 class="font-semibold flex items-center gap-2">
+            <i class="bi bi-info-circle"></i>About Reputation Tiers
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <h6 class="text-success font-semibold flex items-center gap-2 mb-2">
+                <i class="bi bi-megaphone"></i>Tier 1: Public
+              </h6>
+              <p class="text-base-content/70 text-sm">What almost everyone might have heard. Reserved for remarkable deeds or public events. Most characters have nothing notable here.</p>
+            </div>
+            <div>
+              <h6 class="text-info font-semibold flex items-center gap-2 mb-2">
+                <i class="bi bi-people"></i>Tier 2: Social Circles
+              </h6>
+              <p class="text-base-content/70 text-sm">What someone in similar social circles would know - moderate accomplishments, regular activities, and known associations.</p>
+            </div>
+            <div>
+              <h6 class="text-warning font-semibold flex items-center gap-2 mb-2">
+                <i class="bi bi-person-badge"></i>Tier 3: Close Associates
+              </h6>
+              <p class="text-base-content/70 text-sm">What close associates or thorough investigators would know - personal details, motivations, secrets, and detailed history.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card bg-base-200">
+        <div class="p-4 border-b border-base-content/10">
+          <h5 class="font-semibold">Player Characters</h5>
+        </div>
+        <div class="card-body">
+          <% if @characters.empty? %>
+            <p class="text-base-content/70">No player characters found.</p>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra">
+                <thead>
+                  <tr>
+                    <th>Character</th>
+                    <th>Tier 1 (Public)</th>
+                    <th>Tier 2 (Social)</th>
+                    <th>Tier 3 (Close)</th>
+                    <th>Last Updated</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @characters.each do |char| %>
+                  <tr class="hover">
+                    <td><%= h char.full_name %></td>
+                    <td>
+                      <% if char.tier_1_reputation && !char.tier_1_reputation.empty? &&
+                            !char.tier_1_reputation.downcase.include?('nothing notable') %>
+                        <span class="badge badge-success tooltip" data-tip="<%= h char.tier_1_reputation.to_s[0, 100] %>">
+                          <i class="bi bi-star-fill"></i> Has reputation
+                        </span>
+                      <% else %>
+                        <span class="text-base-content/50">None</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if char.tier_2_reputation && !char.tier_2_reputation.empty? %>
+                        <span class="badge badge-info tooltip" data-tip="<%= h char.tier_2_reputation.to_s[0, 100] %>">
+                          <i class="bi bi-check"></i> Set
+                        </span>
+                      <% else %>
+                        <span class="text-base-content/50">None</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if char.tier_3_reputation && !char.tier_3_reputation.empty? %>
+                        <span class="badge badge-warning tooltip" data-tip="<%= h char.tier_3_reputation.to_s[0, 100] %>">
+                          <i class="bi bi-check"></i> Set
+                        </span>
+                      <% else %>
+                        <span class="text-base-content/50">None</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if char.reputation_updated_at %>
+                        <span class="text-base-content/70 text-sm"><%= char.reputation_updated_at.strftime('%Y-%m-%d %H:%M') %></span>
+                      <% else %>
+                        <span class="text-base-content/50">Never</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <a href="/admin/reputations/<%= char.id %>" class="btn btn-sm btn-outline btn-primary">
+                        <i class="bi bi-pencil"></i> Edit
+                      </a>
+                    </td>
+                  </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+      </div>
+<%= admin_content_end %>

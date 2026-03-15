@@ -1,0 +1,78 @@
+<% @page_title = 'Connection Logs' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Moderation', path: '/admin/moderation' }, { label: 'Connections', path: '/admin/moderation/connections' }] %>
+
+<%= admin_content_start %>
+      <h2 class="text-2xl font-bold mb-4"><i class="bi bi-plug mr-2"></i>Connection Logs</h2>
+
+      <div class="card bg-base-200 shadow-lg">
+        <div class="p-4 border-b border-base-content/10">
+          <h5 class="font-semibold">Recent Connections</h5>
+        </div>
+        <div class="card-body">
+          <% if @logs.empty? %>
+            <p class="text-base-content/70">No connection logs found.</p>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra table-sm">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>IP Address</th>
+                    <th>User</th>
+                    <th>Type</th>
+                    <th>Outcome</th>
+                    <th>User Agent</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @logs.each do |log| %>
+                  <tr>
+                    <td class="whitespace-nowrap"><%= log.created_at&.strftime('%Y-%m-%d %H:%M:%S') %></td>
+                    <td>
+                      <a href="/admin/moderation/connections/ip/<%= CGI.escape(log.ip_address) %>" class="link link-info">
+                        <%= log.ip_address %>
+                      </a>
+                    </td>
+                    <td>
+                      <% if log.user %>
+                        <a href="/admin/moderation/connections/user/<%= log.user_id %>" class="link link-primary">
+                          <%= h log.user.username %>
+                        </a>
+                      <% else %>
+                        <span class="text-base-content/70">-</span>
+                      <% end %>
+                    </td>
+                    <td><span class="badge badge-neutral"><%= log.connection_type %></span></td>
+                    <td>
+                      <% case log.outcome %>
+                      <% when 'success' %>
+                        <span class="badge badge-success">Success</span>
+                      <% when 'banned_ip' %>
+                        <span class="badge badge-error">IP Banned</span>
+                      <% when 'suspended' %>
+                        <span class="badge badge-warning">Suspended</span>
+                      <% when 'invalid_credentials' %>
+                        <span class="badge badge-error">Invalid Credentials</span>
+                      <% else %>
+                        <span class="badge badge-neutral"><%= log.outcome %></span>
+                      <% end %>
+                      <% if log.failure_reason %>
+                        <br><small class="text-base-content/70"><%= truncate_text(log.failure_reason, 50) %></small>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if log.user_agent %>
+                        <small class="text-base-content/70" title="<%= log.user_agent %>"><%= truncate_text(log.user_agent, 40) %></small>
+                      <% else %>
+                        <span class="text-base-content/70">-</span>
+                      <% end %>
+                    </td>
+                  </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+      </div>
+<%= admin_content_end %>

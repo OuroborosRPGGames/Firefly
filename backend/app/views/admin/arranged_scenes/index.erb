@@ -1,0 +1,88 @@
+<% @page_title = 'Arranged Scenes - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Arranged Scenes' }] %>
+
+<%= admin_content_start %>
+      <h2 class="mb-4 text-2xl font-bold">Arranged Scenes</h2>
+
+      <div class="flex justify-between items-center mb-4">
+        <div class="join">
+          <a href="/admin/arranged_scenes?filter=all" class="btn join-item <%= @filter == 'all' ? 'btn-primary' : 'btn-outline' %>">All</a>
+          <a href="/admin/arranged_scenes?filter=pending" class="btn join-item <%= @filter == 'pending' ? 'btn-primary' : 'btn-outline' %>">Pending</a>
+          <a href="/admin/arranged_scenes?filter=active" class="btn join-item <%= @filter == 'active' ? 'btn-primary' : 'btn-outline' %>">Active</a>
+          <a href="/admin/arranged_scenes?filter=completed" class="btn join-item <%= @filter == 'completed' ? 'btn-primary' : 'btn-outline' %>">Completed</a>
+        </div>
+        <a href="/admin/arranged_scenes/new" class="btn btn-success">
+          <i class="bi bi-plus-circle mr-1"></i>New Scene
+        </a>
+      </div>
+
+      <% if @scenes.empty? %>
+        <%= partial 'shared/empty_state', locals: { message: "No #{@filter} scenes found." } %>
+      <% else %>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Scene Name</th>
+                <th>NPC</th>
+                <th>PC</th>
+                <th>Meeting Room</th>
+                <th>RP Room</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @scenes.each do |scene| %>
+                <tr>
+                  <td><%= scene.id %></td>
+                  <td><%= scene.display_name %></td>
+                  <td><%= h(scene.npc_character&.full_name || 'Unknown') %></td>
+                  <td><%= h(scene.pc_character&.full_name || 'Unknown') %></td>
+                  <td><%= h(scene.meeting_room&.name || 'Unknown') %></td>
+                  <td><%= h(scene.rp_room&.name || 'Unknown') %></td>
+                  <td>
+                    <% if scene.status == 'pending' %>
+                      <span class="badge badge-warning">Pending</span>
+                      <% if scene.respond_to?(:available?) && scene.available? %>
+                        <span class="badge badge-success">Ready</span>
+                      <% elsif scene.expires_at && Time.now >= scene.expires_at %>
+                        <span class="badge badge-error">Expired</span>
+                      <% end %>
+                    <% elsif scene.status == 'active' %>
+                      <span class="badge badge-primary">Active</span>
+                    <% elsif scene.status == 'completed' %>
+                      <span class="badge badge-success">Completed</span>
+                    <% elsif scene.status == 'cancelled' %>
+                      <span class="badge badge-neutral">Cancelled</span>
+                    <% else %>
+                      <span class="badge"><%= scene.status %></span>
+                    <% end %>
+                  </td>
+                  <td><%= scene.created_at&.strftime('%Y-%m-%d %H:%M') %></td>
+                  <td>
+                    <div class="join">
+                      <a href="/admin/arranged_scenes/<%= scene.id %>/show" class="btn btn-info btn-outline btn-sm join-item" title="View">
+                        <i class="bi bi-eye"></i>
+                      </a>
+                      <a href="/admin/arranged_scenes/<%= scene.id %>" class="btn btn-primary btn-outline btn-sm join-item" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </a>
+                      <% if scene.pending? %>
+                        <form action="/admin/arranged_scenes/<%= scene.id %>/cancel" method="POST" class="inline">
+                          <button type="submit" class="btn btn-warning btn-outline btn-sm join-item" title="Cancel" onclick="return confirm('Cancel this scene?')">
+                            <i class="bi bi-x-circle"></i>
+                          </button>
+                        </form>
+                      <% end %>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+<%= admin_content_end %>

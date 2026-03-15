@@ -1,0 +1,282 @@
+<div class="prose max-w-none">
+  <h1><%= h @character.full_name %></h1>
+</div>
+
+<% if @character.deleted_at %>
+<div class="alert alert-warning shadow-lg my-4">
+  <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+  </svg>
+  <div>
+    <h3 class="font-bold">Character Scheduled for Deletion</h3>
+    <div class="text-sm">
+      This character will be permanently deleted in <%= @character.days_until_permanent_deletion %> days.
+      You can recover it before then.
+    </div>
+  </div>
+  <form action="/characters/<%= @character.id %>/recover" method="post">
+    <%= csrf_tag %>
+    <button type="submit" class="btn btn-sm btn-success">Recover Character</button>
+  </form>
+</div>
+<% end %>
+
+<div class="grid lg:grid-cols-3 gap-6 mt-8">
+  <div class="lg:col-span-2">
+    <!-- Character Details Card -->
+    <div class="card bg-base-200 shadow-xl">
+      <div class="card-body">
+        <div class="flex justify-between items-start mb-4">
+          <h2 class="card-title">Character Details</h2>
+          <div class="flex gap-2">
+            <form action="/characters/<%= @character.id %>/select" method="post" class="inline">
+              <%= csrf_tag %>
+              <button type="submit" class="btn btn-sm btn-primary">Play as <%= h @character.full_name %></button>
+            </form>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <h3 class="font-bold mb-2">Basic Information</h3>
+            <dl class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <dt class="font-semibold">Status:</dt>
+                <dd><%= @character.active ? 'Active' : 'Inactive' %></dd>
+              </div>
+              <div class="flex justify-between">
+                <dt class="font-semibold">Created:</dt>
+                <dd><%= @character.created_at&.strftime('%B %d, %Y') || 'Unknown' %></dd>
+              </div>
+              <% if @character.gender %>
+              <div class="flex justify-between">
+                <dt class="font-semibold">Gender:</dt>
+                <dd><%= h @character.gender %></dd>
+              </div>
+              <% end %>
+              <% if @character.age %>
+              <div class="flex justify-between">
+                <dt class="font-semibold">Age:</dt>
+                <dd><%= @character.age %></dd>
+              </div>
+              <% end %>
+            </dl>
+          </div>
+
+          <% if @character.short_desc || @character.distinctive_color %>
+          <div>
+            <h3 class="font-bold mb-2">Appearance</h3>
+            <dl class="space-y-2 text-sm">
+              <% if @character.short_desc %>
+              <div class="flex justify-between">
+                <dt class="font-semibold">Description:</dt>
+                <dd><%= h @character.short_desc %></dd>
+              </div>
+              <% end %>
+              <% if @character.distinctive_color %>
+              <div class="flex justify-between items-center">
+                <dt class="font-semibold">Distinctive Color:</dt>
+                <dd class="flex items-center gap-2">
+                  <span style="display: inline-block; width: 20px; height: 20px; border-radius: 50%; background-color: <%= h @character.distinctive_color %>; border: 1px solid #555;"></span>
+                </dd>
+              </div>
+              <% end %>
+            </dl>
+          </div>
+          <% end %>
+        </div>
+
+
+        <% if @character.respond_to?(:custom_attributes) && @character.custom_attributes %>
+          <div class="divider"></div>
+          <div>
+            <h3 class="font-bold mb-2">Attributes</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+              <% begin %>
+                <% JSON.parse(@character.custom_attributes).each do |key, value| %>
+                  <div class="badge badge-lg badge-outline">
+                    <%= h key %>: <%= h value %>
+                  </div>
+                <% end %>
+              <% rescue %>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions Sidebar -->
+  <div>
+    <div class="card bg-base-200 shadow-xl">
+      <div class="card-body">
+        <h2 class="card-title">Quick Actions</h2>
+        <div class="flex flex-col gap-2">
+          <% if @character.deleted_at %>
+            <!-- Deleted character - show recovery options -->
+            <form action="/characters/<%= @character.id %>/recover" method="post">
+              <%= csrf_tag %>
+              <button type="submit" class="btn btn-success w-full">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Recover Character
+              </button>
+            </form>
+            <a href="/dashboard" class="btn btn-outline">Back to Dashboard</a>
+          <% else %>
+            <!-- Active character - show normal options -->
+            <form action="/characters/<%= @character.id %>/select" method="post">
+              <%= csrf_tag %>
+              <button type="submit" class="btn btn-primary w-full">Enter Game</button>
+            </form>
+            <div class="divider my-2"></div>
+            <h3 class="font-semibold text-sm mb-2">Content</h3>
+            <a href="/characters/<%= @character.id %>/export" class="btn btn-outline btn-sm w-full mb-2">
+              <i class="bi bi-download mr-1"></i>
+              Export Character
+            </a>
+            <button type="button" class="btn btn-outline btn-sm w-full" onclick="document.getElementById('import-modal').showModal()">
+              <i class="bi bi-upload mr-1"></i>
+              Import Content
+            </button>
+            <div class="divider my-2"></div>
+            <button type="button" class="btn btn-outline btn-error btn-sm" onclick="document.getElementById('delete-modal').showModal()">
+              <i class="bi bi-trash mr-1"></i>
+              Delete Character
+            </button>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Character Story Section -->
+<%= render('characters/_character_story') %>
+
+<% unless @character.deleted_at %>
+<!-- Import Content Modal (DaisyUI) -->
+<dialog id="import-modal" class="modal">
+  <div class="modal-box">
+    <h3 class="font-bold text-lg mb-4">
+      <i class="bi bi-upload mr-2"></i>Import Content
+    </h3>
+    <p class="text-sm text-base-content/70 mb-4">
+      Upload a ZIP file exported from another character to import descriptions, items, outfits, and supported profile metadata.
+    </p>
+    <form id="import-form" enctype="multipart/form-data">
+      <div class="form-control mb-4">
+        <label class="label">
+          <span class="label-text">Content Package (.zip)</span>
+        </label>
+        <input type="file" name="content_package" accept=".zip" class="file-input file-input-bordered w-full" required>
+      </div>
+      <div id="import-status" class="mb-4 hidden">
+        <div class="alert">
+          <span id="import-status-text"></span>
+        </div>
+      </div>
+      <div class="modal-action">
+        <button type="button" class="btn" onclick="document.getElementById('import-modal').close()">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="import-submit-btn">
+          <i class="bi bi-upload mr-1"></i>Import
+        </button>
+      </div>
+    </form>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<script>
+document.getElementById('import-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const form = e.target;
+  const submitBtn = document.getElementById('import-submit-btn');
+  const statusDiv = document.getElementById('import-status');
+  const statusText = document.getElementById('import-status-text');
+
+  const fileInput = form.querySelector('input[type="file"]');
+  if (!fileInput.files.length) {
+    statusDiv.classList.remove('hidden');
+    statusDiv.querySelector('.alert').className = 'alert alert-warning';
+    statusText.textContent = 'Please select a file to import.';
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Importing...';
+  statusDiv.classList.add('hidden');
+
+  const formData = new FormData();
+  formData.append('content_package', fileInput.files[0]);
+  const csrfToken =
+    document.querySelector('meta[name="csrf-token"]')?.content ||
+    document.querySelector('input[name="_csrf"]')?.value ||
+    '';
+  if (csrfToken) formData.append('_csrf', csrfToken);
+
+  try {
+    const response = await fetch('/characters/<%= @character.id %>/import', {
+      method: 'POST',
+      body: formData
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      statusDiv.classList.remove('hidden');
+      statusDiv.querySelector('.alert').className = 'alert alert-success';
+      statusText.textContent = result.message || 'Import successful!';
+      setTimeout(() => {
+        document.getElementById('import-modal').close();
+        window.location.reload();
+      }, 1500);
+    } else {
+      statusDiv.classList.remove('hidden');
+      statusDiv.querySelector('.alert').className = 'alert alert-error';
+      statusText.textContent = result.error || 'Import failed.';
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="bi bi-upload mr-1"></i>Import';
+    }
+  } catch (err) {
+    statusDiv.classList.remove('hidden');
+    statusDiv.querySelector('.alert').className = 'alert alert-error';
+    statusText.textContent = 'Network error: ' + err.message;
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="bi bi-upload mr-1"></i>Import';
+  }
+});
+</script>
+
+<!-- Delete Confirmation Modal (DaisyUI) -->
+<dialog id="delete-modal" class="modal">
+  <div class="modal-box">
+    <h3 class="font-bold text-lg text-error">
+      <i class="bi bi-exclamation-triangle mr-2"></i>Delete Character
+    </h3>
+    <p class="py-4">Are you sure you want to delete <strong><%= h @character.full_name %></strong>?</p>
+    <p class="text-base-content/70 text-sm">
+      Your character will be marked for deletion. You have 30 days to recover it before it's permanently deleted.
+    </p>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn">Cancel</button>
+      </form>
+      <form action="/characters/<%= @character.id %>/delete" method="post">
+        <%= csrf_tag %>
+        <button type="submit" class="btn btn-error">Delete Character</button>
+      </form>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+<% end %>

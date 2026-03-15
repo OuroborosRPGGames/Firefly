@@ -1,0 +1,272 @@
+<!-- Page Banner -->
+<section class="page-banner" style="background-image: url('/images/library.jpg');">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <div class="breadcrumbs text-sm">
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li>Dashboard</li>
+        </ul>
+      </div>
+      <h1>Welcome Back, <span class="text-primary"><%= h @current_user.username %></span></h1>
+    </div>
+  </div>
+</section>
+
+<section class="py-12">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Main Content -->
+      <div class="lg:col-span-8">
+        <!-- Characters Section -->
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body">
+            <div class="flex justify-between items-center mb-4">
+              <span class="card-title"><i class="bi bi-people mr-2"></i>Your Characters</span>
+              <a href="/characters/new" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-lg mr-1"></i>Create Character
+              </a>
+            </div>
+            <% if @characters && @characters.any? %>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <% @characters.each do |character| %>
+                  <div class="card bg-base-200 border border-base-content/10 h-full">
+                    <div class="card-body text-center">
+                      <!-- Character Portrait -->
+                      <div class="mb-3">
+                        <% if character.picture_url && !character.picture_url.empty? %>
+                          <img src="<%= character.picture_url %>" alt="<%= h character.full_name %>"
+                               class="rounded-lg w-[100px] h-[100px] object-cover mx-auto">
+                        <% else %>
+                          <div class="inline-flex items-center justify-center rounded-lg bg-base-300 w-[100px] h-[100px] mx-auto">
+                            <span class="text-4xl text-primary"><%= h character.forename[0] %><%= character.surname ? h(character.surname[0]) : '' %></span>
+                          </div>
+                        <% end %>
+                      </div>
+
+                      <!-- Character Info -->
+                      <h5 class="card-title justify-center mb-1"><%= h character.full_name %></h5>
+                      <% if character.nickname && !character.nickname.to_s.strip.empty? && character.nickname != character.forename %>
+                        <p class="text-base-content/70 font-accent mb-2">"<%= h character.nickname %>"</p>
+                      <% end %>
+
+                      <div class="mb-2">
+                        <span class="badge badge-neutral mr-1"><%= h(character.gender || 'Unknown') %></span>
+                        <% if character.age %>
+                          <span class="badge badge-neutral">Age <%= character.age %></span>
+                        <% end %>
+                      </div>
+
+                      <% if character.short_desc %>
+                        <p class="text-sm text-base-content/70 mb-3"><%= h character.short_desc %></p>
+                      <% end %>
+
+                      <!-- Actions -->
+                      <div class="flex flex-col gap-2">
+                        <% timeline_instances = character.timeline_instances %>
+                        <% if timeline_instances.any? %>
+                          <!-- Dropdown for characters with timeline instances -->
+                          <div class="join w-full">
+                            <% if character.default_instance %>
+                              <a href="/webclient?character_instance=<%= character.default_instance.id %>" target="_blank" class="btn btn-primary join-item flex-1">
+                                <i class="bi bi-play-fill mr-1"></i>Play
+                              </a>
+                            <% else %>
+                              <a href="/webclient?character=<%= character.id %>" target="_blank" class="btn btn-primary join-item flex-1">
+                                <i class="bi bi-play-fill mr-1"></i>Play
+                              </a>
+                            <% end %>
+                            <div class="dropdown dropdown-end join-item">
+                              <label tabindex="0" class="btn btn-primary">
+                                <i class="bi bi-chevron-down"></i>
+                              </label>
+                              <ul tabindex="0" class="dropdown-content menu bg-base-200 rounded-box z-[1] w-52 p-2 shadow-lg">
+                                <li class="menu-title">Select Timeline</li>
+                                <li>
+                                  <% if character.default_instance %>
+                                    <a href="/webclient?character_instance=<%= character.default_instance.id %>" target="_blank">
+                                      <i class="bi bi-clock-fill text-primary"></i>Present
+                                    </a>
+                                  <% else %>
+                                    <a href="/webclient?character=<%= character.id %>" target="_blank">
+                                      <i class="bi bi-clock-fill text-primary"></i>Present
+                                    </a>
+                                  <% end %>
+                                </li>
+                                <li class="divider"></li>
+                                <% timeline_instances.each do |inst| %>
+                                  <li>
+                                    <a href="/webclient?character_instance=<%= inst.id %>" target="_blank">
+                                      <i class="bi bi-clock-history text-base-content/50"></i>
+                                      <%= h(inst.timeline&.display_name || 'Unknown Timeline') %>
+                                      <% if inst.online %>
+                                        <span class="badge badge-success badge-sm ml-2">ACTIVE</span>
+                                      <% end %>
+                                    </a>
+                                  </li>
+                                <% end %>
+                              </ul>
+                            </div>
+                          </div>
+                        <% else %>
+                          <!-- Simple play button for characters without timeline instances -->
+                          <% if character.default_instance %>
+                            <a href="/webclient?character_instance=<%= character.default_instance.id %>" target="_blank" class="btn btn-primary">
+                              <i class="bi bi-play-fill mr-1"></i>Play
+                            </a>
+                          <% else %>
+                            <a href="/webclient?character=<%= character.id %>" target="_blank" class="btn btn-primary">
+                              <i class="bi bi-play-fill mr-1"></i>Play
+                            </a>
+                          <% end %>
+                        <% end %>
+                        <a href="/characters/<%= character.id %>" class="btn btn-outline btn-neutral btn-sm">View Profile</a>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            <% else %>
+              <div class="text-center py-12">
+                <i class="bi bi-person-plus text-6xl text-base-content/70 mb-3 block"></i>
+                <h4 class="text-xl font-bold">No Characters Yet</h4>
+                <p class="text-base-content/70 mb-4">Create your first character to begin your story</p>
+                <a href="/characters/new" class="btn btn-primary btn-lg">
+                  <i class="bi bi-plus-lg mr-2"></i>Create Your First Character
+                </a>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Your Properties Section -->
+        <% if @owned_rooms && @owned_rooms.any? %>
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body">
+            <div class="flex justify-between items-center mb-4">
+              <span class="card-title"><i class="bi bi-house-door mr-2"></i>Your Properties</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <% @owned_rooms.each do |room| %>
+                <div class="card bg-base-200 border border-base-content/10 h-full">
+                  <div class="card-body">
+                    <h6 class="card-title text-base mb-1"><%= h room.name %></h6>
+                    <p class="text-base-content/70 text-sm mb-2"><%= room.location ? h(room.location.name) : 'Unknown Location' %></p>
+                    <% if room.short_description %>
+                      <p class="text-sm text-base-content/70 mb-3"><%= truncate_text(room.short_description, 80) %></p>
+                    <% end %>
+                    <a href="/room_builder/<%= room.id %>" class="btn btn-outline btn-primary btn-sm">
+                      <i class="bi bi-house-gear mr-1"></i>Decorate
+                    </a>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+        <% end %>
+
+      </div>
+
+      <!-- Sidebar -->
+      <div class="lg:col-span-4">
+        <!-- Account Info -->
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body">
+            <h2 class="card-title">
+              <i class="bi bi-person-circle mr-2"></i>Account
+            </h2>
+            <div class="grid grid-cols-2 gap-2">
+              <span class="text-base-content/70">Username</span>
+              <span class="text-right"><%= h @current_user.username %></span>
+
+              <span class="text-base-content/70">Email</span>
+              <span class="text-right truncate" title="<%= h @current_user.email %>"><%= h @current_user.email %></span>
+
+              <span class="text-base-content/70">Member Since</span>
+              <span class="text-right"><%= @current_user.created_at ? @current_user.created_at.strftime('%B %Y') : 'Unknown' %></span>
+
+              <span class="text-base-content/70">Characters</span>
+              <span class="text-right"><span class="badge badge-primary"><%= @characters ? @characters.count : 0 %></span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body">
+            <h2 class="card-title">
+              <i class="bi bi-lightning mr-2"></i>Quick Actions
+            </h2>
+            <ul class="menu bg-base-200 rounded-box p-0">
+              <li>
+                <a href="/characters/new" class="border-b border-base-content/10">
+                  <i class="bi bi-person-plus text-primary"></i>New Character
+                </a>
+              </li>
+              <li>
+                <a href="/settings" class="border-b border-base-content/10">
+                  <i class="bi bi-gear text-primary"></i>Settings
+                </a>
+              </li>
+              <li>
+                <a href="/info/getting-started">
+                  <i class="bi bi-question-circle text-primary"></i>Help & Docs
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Game Status -->
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body">
+            <h2 class="card-title">
+              <span class="status-indicator online mr-2"></span>Game Status
+            </h2>
+            <div class="flex justify-between mb-2">
+              <span class="text-base-content/70">Server</span>
+              <span class="text-success"><i class="bi bi-check-circle mr-1"></i>Online</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-base-content/70">Players Online</span>
+              <span class="badge badge-primary"><%= @players_online || 0 %></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upcoming Events -->
+        <div class="card bg-base-200">
+          <div class="card-body">
+            <h2 class="card-title">
+              <i class="bi bi-calendar-event mr-2"></i>Upcoming Events
+            </h2>
+            <% if @upcoming_events && @upcoming_events.any? %>
+              <ul class="menu bg-base-200 p-0">
+                <% @upcoming_events.each do |event| %>
+                  <li class="border-b border-base-content/10 py-2">
+                    <div class="flex flex-col items-start">
+                      <div class="flex w-full justify-between">
+                        <h6 class="font-semibold mb-1"><%= h event.name %></h6>
+                        <small class="text-base-content/70"><%= event.starts_at&.strftime('%b %d') %></small>
+                      </div>
+                      <% if event.description %>
+                        <small class="text-base-content/70"><%= truncate_text(event.description, 60) %></small>
+                      <% end %>
+                    </div>
+                  </li>
+                <% end %>
+              </ul>
+            <% else %>
+              <p class="text-base-content/70 text-center mb-0 py-2">
+                <i class="bi bi-calendar-x block mb-2"></i>
+                No upcoming events scheduled
+              </p>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+

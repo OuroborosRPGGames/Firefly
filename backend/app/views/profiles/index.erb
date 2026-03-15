@@ -1,0 +1,146 @@
+<!-- Page Banner -->
+<section class="page-banner" style="background-image: url('/images/library.jpg');">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <div class="breadcrumbs text-sm">
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li>Characters</li>
+        </ul>
+      </div>
+      <h1>Character <span class="text-primary">Directory</span></h1>
+      <p class="lead">Browse the citizens of our world</p>
+    </div>
+  </div>
+</section>
+
+<section class="py-12">
+  <div class="container mx-auto px-4">
+    <!-- Search and Filters -->
+    <div class="card bg-base-200 mb-4">
+      <div class="card-body">
+        <form method="get" action="/profiles" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+          <div class="md:col-span-6">
+            <label for="search" class="label"><span class="label-text">Search</span></label>
+            <input type="text" class="input input-bordered w-full" id="search" name="search"
+                   placeholder="Search by name..." value="<%= Rack::Utils.escape_html(request.params['search'].to_s) %>">
+          </div>
+          <div class="md:col-span-3">
+            <label class="label cursor-pointer justify-start gap-2">
+              <input class="checkbox checkbox-primary" type="checkbox" id="online" name="online" value="1"
+                     <%= request.params['online'] == '1' ? 'checked' : '' %>>
+              <span class="label-text">
+                <span class="status-indicator online mr-1"></span>Online Only
+              </span>
+            </label>
+          </div>
+          <div class="md:col-span-3">
+            <button type="submit" class="btn btn-primary w-full">
+              <i class="bi bi-search mr-2"></i>Search
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Results Count -->
+    <div class="flex justify-between items-center mb-4">
+      <p class="text-base-content/70 mb-0">
+        Showing <%= @characters.count %> of <%= @total_count %> characters
+      </p>
+      <% if request.params['search'] || request.params['online'] %>
+        <a href="/profiles" class="btn btn-outline btn-sm">
+          <i class="bi bi-x-lg mr-1"></i>Clear Filters
+        </a>
+      <% end %>
+    </div>
+
+    <!-- Character Grid -->
+    <% if @characters.any? %>
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <% @characters.each do |character| %>
+          <a href="/profiles/<%= character.id %>" class="no-underline">
+            <div class="card h-full bg-base-200 border border-base-content/10 character-card">
+              <div class="card-body text-center p-3">
+                <!-- Character Portrait -->
+                <div class="relative inline-block mb-3">
+                  <% if character.picture_url && !character.picture_url.to_s.empty? %>
+                    <img src="<%= character.picture_url %>" alt="<%= h character.full_name %>"
+                         class="rounded-lg" style="width: 80px; height: 80px; object-fit: cover;">
+                  <% else %>
+                    <div class="inline-flex items-center justify-center rounded-lg bg-base-300"
+                         style="width: 80px; height: 80px;">
+                      <span class="text-2xl text-primary"><%= h character.forename[0] %><%= character.surname ? h(character.surname[0]) : '' %></span>
+                    </div>
+                  <% end %>
+                  <% if character.character_instances.any?(&:online) %>
+                    <span class="absolute bottom-0 right-0 translate-y-1/2">
+                      <span class="status-indicator online"></span>
+                    </span>
+                  <% end %>
+                </div>
+
+                <!-- Character Info -->
+                <h6 class="card-title mb-1 text-base-content truncate text-sm"><%= h character.full_name %></h6>
+                <% if character.short_desc && !character.short_desc.to_s.empty? %>
+                  <p class="text-xs text-base-content/70 truncate mb-0"><%= h character.short_desc %></p>
+                <% end %>
+              </div>
+            </div>
+          </a>
+        <% end %>
+      </div>
+
+      <!-- Pagination -->
+      <% if @total_pages > 1 %>
+        <nav class="mt-8" aria-label="Character directory pagination">
+          <div class="join flex justify-center">
+            <% if @page > 1 %>
+              <a class="join-item btn btn-outline" href="/profiles?page=<%= @page - 1 %><%= request.params['search'] ? "&search=#{CGI.escape(request.params['search'])}" : '' %><%= request.params['online'] ? '&online=1' : '' %>">
+                <i class="bi bi-chevron-left"></i>
+              </a>
+            <% end %>
+
+            <% (1..@total_pages).each do |page_num| %>
+              <% if page_num == @page %>
+                <button class="join-item btn btn-primary"><%= page_num %></button>
+              <% elsif (page_num - @page).abs <= 2 || page_num == 1 || page_num == @total_pages %>
+                <a class="join-item btn btn-outline" href="/profiles?page=<%= page_num %><%= request.params['search'] ? "&search=#{CGI.escape(request.params['search'])}" : '' %><%= request.params['online'] ? '&online=1' : '' %>"><%= page_num %></a>
+              <% elsif (page_num - @page).abs == 3 %>
+                <button class="join-item btn btn-disabled">...</button>
+              <% end %>
+            <% end %>
+
+            <% if @page < @total_pages %>
+              <a class="join-item btn btn-outline" href="/profiles?page=<%= @page + 1 %><%= request.params['search'] ? "&search=#{CGI.escape(request.params['search'])}" : '' %><%= request.params['online'] ? '&online=1' : '' %>">
+                <i class="bi bi-chevron-right"></i>
+              </a>
+            <% end %>
+          </div>
+        </nav>
+      <% end %>
+    <% else %>
+      <!-- No Results -->
+      <div class="card bg-base-200">
+        <div class="card-body text-center py-12">
+          <i class="bi bi-search text-6xl text-base-content/70 mb-3"></i>
+          <h4>No Characters Found</h4>
+          <p class="text-base-content/70 mb-4">Try adjusting your search filters.</p>
+          <a href="/profiles" class="btn btn-primary">
+            <i class="bi bi-arrow-left mr-2"></i>View All Characters
+          </a>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</section>
+
+<style>
+.character-card {
+  transition: transform 0.2s, border-color 0.2s;
+}
+.character-card:hover {
+  transform: translateY(-4px);
+  border-color: oklch(var(--p)) !important;
+}
+</style>

@@ -1,0 +1,163 @@
+<% @page_title = "#{@thread.name} - Narrative - Admin" %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Narrative', path: '/admin/narrative' }, { label: @thread.name }] %>
+
+<%= admin_content_start %>
+      <div class="flex items-center gap-2 mb-4">
+        <a href="/admin/narrative" class="btn btn-ghost btn-sm">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <h2 class="text-2xl font-bold flex-1"><%= h @thread.name %></h2>
+        <%
+          badge_class = case @thread.status
+                        when 'emerging' then 'badge-info'
+                        when 'active' then 'badge-success'
+                        when 'climax' then 'badge-warning'
+                        when 'dormant' then 'badge-ghost'
+                        when 'resolved' then 'badge-neutral'
+                        else 'badge-ghost'
+                        end
+        %>
+        <span class="badge badge-lg <%= badge_class %>"><%= @thread.status %></span>
+      </div>
+
+      <!-- Edit Form -->
+      <div class="card bg-base-200 shadow-sm mb-6">
+        <div class="card-body">
+          <form method="post" action="/admin/narrative/threads/<%= @thread.id %>">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="form-control">
+                <label class="label"><span class="label-text">Thread Name</span></label>
+                <input type="text" name="name" value="<%= h @thread.name %>" class="input input-bordered" />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text">Status</span></label>
+                <select name="status" class="select select-bordered">
+                  <% NarrativeThread::STATUSES.each do |s| %>
+                    <option value="<%= s %>" <%= 'selected' if @thread.status == s %>><%= s.capitalize %></option>
+                  <% end %>
+                </select>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text">Importance</span></label>
+                <input type="number" name="importance" value="<%= @thread.importance %>" min="0" max="10" step="0.1" class="input input-bordered" />
+              </div>
+            </div>
+            <div class="mt-4">
+              <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-check-lg mr-1"></i>Update
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <% if @thread.summary %>
+      <div class="card bg-base-200 shadow-sm mb-6">
+        <div class="card-body">
+          <h3 class="card-title text-lg">Summary</h3>
+          <p class="text-base-content/80"><%= h @thread.summary %></p>
+        </div>
+      </div>
+      <% end %>
+
+      <!-- Themes -->
+      <% themes = @thread.themes || [] %>
+      <% if themes.any? %>
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold mb-2">Themes</h3>
+        <div class="flex flex-wrap gap-2">
+          <% themes.each do |theme| %>
+            <span class="badge badge-primary badge-outline"><%= theme %></span>
+          <% end %>
+        </div>
+      </div>
+      <% end %>
+
+      <!-- Entities -->
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold mb-2">Entities (<%= @entities.size %>)</h3>
+        <% if @entities.any? %>
+          <div class="overflow-x-auto">
+            <table class="table table-zebra table-sm">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Centrality</th>
+                  <th>Role</th>
+                  <th>Importance</th>
+                  <th>Mentions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @entities.each do |te| %>
+                  <tr>
+                    <td class="font-medium"><%= h te[:entity].name %></td>
+                    <td>
+                      <span class="badge badge-sm badge-outline"><%= te[:entity].entity_type %></span>
+                    </td>
+                    <td>
+                      <div class="flex items-center gap-1">
+                        <progress class="progress progress-accent w-16" value="<%= (te[:centrality] * 100).to_i %>" max="100"></progress>
+                        <span class="text-xs"><%= (te[:centrality] * 100).to_i %>%</span>
+                      </div>
+                    </td>
+                    <td>
+                      <% if te[:role] %>
+                        <%
+                          role_class = case te[:role]
+                                       when 'protagonist' then 'badge-success'
+                                       when 'antagonist' then 'badge-error'
+                                       when 'catalyst' then 'badge-warning'
+                                       when 'setting' then 'badge-info'
+                                       when 'theme' then 'badge-accent'
+                                       else 'badge-ghost'
+                                       end
+                        %>
+                        <span class="badge badge-sm <%= role_class %>"><%= te[:role] %></span>
+                      <% else %>
+                        <span class="text-base-content/40">—</span>
+                      <% end %>
+                    </td>
+                    <td><%= te[:entity].importance.round(1) %></td>
+                    <td><%= te[:entity].mention_count %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% else %>
+          <%= partial 'shared/empty_state', locals: { message: 'No entities linked to this thread.' } %>
+        <% end %>
+      </div>
+
+      <!-- Memory Timeline -->
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold mb-2">Memory Timeline (<%= @memories.size %>)</h3>
+        <% if @memories.any? %>
+          <div class="space-y-2">
+            <% @memories.each do |memory| %>
+              <div class="card bg-base-200 shadow-sm">
+                <div class="card-body py-3 px-4">
+                  <div class="flex items-start gap-2">
+                    <div class="text-xs text-base-content/50 whitespace-nowrap mt-0.5">
+                      <%= memory.memory_at&.strftime('%Y-%m-%d %H:%M') || '—' %>
+                    </div>
+                    <div class="flex-1">
+                      <p class="text-sm"><%= h memory.summary %></p>
+                      <div class="flex gap-2 mt-1">
+                        <span class="badge badge-xs">importance: <%= memory.importance %></span>
+                        <span class="badge badge-xs badge-outline"><%= memory.publicity_level %></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <%= partial 'shared/empty_state', locals: { message: 'No memories linked to this thread.' } %>
+        <% end %>
+      </div>
+<%= admin_content_end %>

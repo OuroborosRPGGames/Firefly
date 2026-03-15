@@ -1,0 +1,157 @@
+<!-- Page Banner -->
+<section class="page-banner" style="background-image: url('/images/ballroom.jpg');">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <div class="breadcrumbs text-sm">
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/events">Events</a></li>
+          <li>Event Logs</li>
+        </ul>
+      </div>
+      <h1><%= h @event.name %> <span class="text-primary">Logs</span></h1>
+    </div>
+  </div>
+</section>
+
+<section class="py-12">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Main Content -->
+      <div class="lg:col-span-8">
+        <!-- Event Logs -->
+        <div class="card bg-base-200">
+          <div class="card-body">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="card-title"><i class="bi bi-journal-text mr-2"></i>Event Log</h2>
+              <span class="badge badge-ghost"><%= @logs.length %> entries</span>
+            </div>
+            <% if @logs && @logs.any? %>
+              <div class="log-content font-mono max-h-[600px] overflow-y-auto">
+                <% @logs.each do |log| %>
+                  <div class="log-entry mb-2 pb-2 border-b border-base-content/10">
+                    <div class="flex justify-between items-start">
+                      <div class="log-text">
+                        <% if log[:html_content] %>
+                          <%= log[:html_content] %>
+                        <% else %>
+                          <span class="<%= log[:log_type] == 'emote' ? 'text-warning' : '' %>">
+                            <%= log[:text] %>
+                          </span>
+                        <% end %>
+                      </div>
+                      <small class="text-base-content/70 ml-2 whitespace-nowrap log-time" data-iso="<%= log[:created_at] %>">
+                        <%= log[:created_at] %>
+                      </small>
+                    </div>
+                    <% if log[:camera] %>
+                      <span class="badge badge-warning"><i class="bi bi-camera mr-1"></i>Spotlight</span>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% else %>
+              <div class="text-center py-12">
+                <i class="bi bi-journal-x text-6xl text-base-content/70 mb-3 block"></i>
+                <h4 class="text-xl font-semibold">No Logs Available</h4>
+                <% if @access_denied %>
+                  <p class="text-base-content/70">You don't have permission to view these logs.</p>
+                <% else %>
+                  <p class="text-base-content/70">No roleplay content was logged for this event.</p>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="lg:col-span-4">
+        <!-- Event Info -->
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body">
+            <h2 class="card-title"><i class="bi bi-info-circle mr-2"></i>Event Details</h2>
+            <dl class="grid grid-cols-2 gap-2">
+              <dt class="text-base-content/70">Status</dt>
+              <dd class="text-right">
+                <span class="badge badge-<%= @event.status == 'completed' ? 'ghost' : @event.status == 'active' ? 'success' : 'info' %>">
+                  <%= @event.status.capitalize %>
+                </span>
+              </dd>
+              <dt class="text-base-content/70">Type</dt>
+              <dd class="text-right"><%= @event.event_type.capitalize %></dd>
+              <dt class="text-base-content/70">Host</dt>
+              <dd class="text-right"><%= h(@event.organizer&.name || 'Unknown') %></dd>
+              <dt class="text-base-content/70">Location</dt>
+              <dd class="text-right"><%= h(@event.room&.name || @event.location&.name || 'Unknown') %></dd>
+              <dt class="text-base-content/70">Started</dt>
+              <dd class="text-right event-time" data-iso="<%= @event.started_at&.iso8601 %>">
+                <%= @event.started_at ? @event.started_at.strftime('%b %d, %Y %I:%M %p') : 'N/A' %>
+              </dd>
+              <% if @event.ended_at %>
+                <dt class="text-base-content/70">Ended</dt>
+                <dd class="text-right event-time" data-iso="<%= @event.ended_at.iso8601 %>">
+                  <%= @event.ended_at.strftime('%b %d, %Y %I:%M %p') %>
+                </dd>
+              <% end %>
+              <dt class="text-base-content/70">Attendees</dt>
+              <dd class="text-right"><%= @event.attendee_count %></dd>
+            </dl>
+          </div>
+        </div>
+
+        <!-- Log Visibility Info -->
+        <div class="card bg-base-200">
+          <div class="card-body">
+            <h2 class="card-title"><i class="bi bi-eye mr-2"></i>Log Visibility</h2>
+            <% case @event.logs_visible_to %>
+            <% when 'public' %>
+              <p class="text-success mb-0">
+                <i class="bi bi-globe mr-1"></i>These logs are publicly visible.
+              </p>
+            <% when 'attendees' %>
+              <p class="text-warning mb-0">
+                <i class="bi bi-people mr-1"></i>Only event attendees can view these logs.
+              </p>
+            <% when 'organizer' %>
+              <p class="text-error mb-0">
+                <i class="bi bi-person-lock mr-1"></i>Only the organizer can view these logs.
+              </p>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Format log timestamps in local timezone
+  document.querySelectorAll('.log-time').forEach(function(el) {
+    const iso = el.dataset.iso;
+    if (iso) {
+      const date = new Date(iso);
+      el.textContent = date.toLocaleTimeString(undefined, {
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+    }
+  });
+
+  // Format event times in local timezone
+  document.querySelectorAll('.event-time').forEach(function(el) {
+    const iso = el.dataset.iso;
+    if (iso) {
+      const date = new Date(iso);
+      el.textContent = date.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+    }
+  });
+});
+</script>

@@ -1,0 +1,860 @@
+<link rel="stylesheet" href="/css/descriptions.css?v=3">
+<style>
+  .room-builder-container {
+    display: flex;
+    height: calc(100vh - 120px);
+    gap: 0;
+  }
+  .room-builder-sidebar {
+    width: 420px;
+    flex-shrink: 0;
+    background: oklch(var(--b2));
+    border-right: 1px solid oklch(var(--bc) / 0.1);
+    overflow-y: auto;
+  }
+  .room-builder-canvas {
+    flex: 1;
+    background: oklch(var(--b3));
+    position: relative;
+    overflow: hidden;
+  }
+  .tool-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .tool-btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: oklch(var(--bc) / 0.7);
+    border-radius: 0.5rem;
+    transition: all 0.15s;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  .tool-btn:hover {
+    background: oklch(var(--b3));
+    color: oklch(var(--bc));
+  }
+  .tool-btn.active {
+    background: oklch(var(--p));
+    color: oklch(var(--pc));
+  }
+  .sidebar-section {
+    padding: 0;
+    border-bottom: 1px solid oklch(var(--bc) / 0.1);
+  }
+  .sidebar-section h6 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: oklch(var(--bc) / 0.5);
+    margin-bottom: 0;
+    padding: 6px 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .sidebar-section h6:hover {
+    color: oklch(var(--bc) / 0.7);
+    background: oklch(var(--bc) / 0.05);
+  }
+  .sidebar-section h6::after {
+    content: '\25B8'; /* right triangle */
+    font-size: 10px;
+    transition: transform 0.15s;
+  }
+  .sidebar-section.open h6::after {
+    transform: rotate(90deg);
+  }
+  .sidebar-section .section-body {
+    padding: 4px 10px 6px;
+    display: none;
+  }
+  .sidebar-section.open .section-body {
+    display: block;
+  }
+  .elements-item {
+    padding: 4px 8px;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.1s;
+  }
+  .elements-item:hover {
+    background: oklch(var(--b3));
+  }
+  #roomCanvas {
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+  }
+  #roomCanvas .room-bg {
+    fill: oklch(var(--b2));
+    stroke: oklch(var(--bc) / 0.3);
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+  }
+  #roomCanvas .furniture {
+    fill: oklch(var(--bc) / 0.3);
+    stroke: oklch(var(--bc) / 0.5);
+    stroke-width: 1;
+    cursor: pointer;
+    vector-effect: non-scaling-stroke;
+  }
+  #roomCanvas .furniture:hover {
+    fill: oklch(var(--bc) / 0.4);
+  }
+  #roomCanvas .furniture.selected {
+    stroke: oklch(var(--p));
+    stroke-width: 2;
+  }
+  #roomCanvas .decoration {
+    fill: oklch(var(--se) / 0.3);
+    stroke: oklch(var(--se) / 0.6);
+    stroke-width: 1;
+    cursor: pointer;
+  }
+  #roomCanvas .decoration:hover {
+    fill: oklch(var(--se) / 0.5);
+  }
+  #roomCanvas .decoration.selected {
+    stroke: oklch(var(--er));
+    stroke-width: 2;
+  }
+  #roomCanvas .subroom {
+    stroke: oklch(var(--bc) / 0.5);
+    stroke-width: 2;
+    cursor: pointer;
+    vector-effect: non-scaling-stroke;
+  }
+  #roomCanvas .subroom:hover {
+    stroke: oklch(var(--bc) / 0.7);
+    filter: brightness(1.1);
+  }
+  #roomCanvas .subroom.selected {
+    stroke: oklch(var(--su));
+    stroke-width: 3;
+  }
+  #roomCanvas .subroom-feature-indicator {
+    pointer-events: none;
+    vector-effect: non-scaling-stroke;
+  }
+  #roomCanvas .feature-door {
+    stroke: #8B4513;
+    stroke-width: 4;
+    cursor: pointer;
+    vector-effect: non-scaling-stroke;
+  }
+  #roomCanvas .feature-door.selected {
+    stroke-width: 6;
+    filter: drop-shadow(0 0 4px #8B4513);
+  }
+  #roomCanvas .feature-window {
+    stroke: #87CEEB;
+    stroke-width: 2;
+    stroke-dasharray: 6 3;
+    cursor: pointer;
+    vector-effect: non-scaling-stroke;
+  }
+  #roomCanvas .feature-window.selected {
+    stroke-width: 6;
+    filter: drop-shadow(0 0 4px #87CEEB);
+  }
+  #roomCanvas .feature-other {
+    stroke: oklch(var(--wa));
+    stroke-width: 3;
+    cursor: pointer;
+    vector-effect: non-scaling-stroke;
+  }
+  #roomCanvas .feature-other.selected {
+    stroke-width: 6;
+    filter: drop-shadow(0 0 4px oklch(var(--wa)));
+  }
+  #roomCanvas .feature-floor {
+    fill: oklch(var(--bc) / 0.08);
+    stroke: #6B5B3D;
+    stroke-width: 2;
+    stroke-dasharray: 4 2;
+    cursor: pointer;
+    vector-effect: non-scaling-stroke;
+  }
+  #roomCanvas .feature-floor.selected {
+    stroke-width: 4;
+    fill: oklch(var(--bc) / 0.15);
+    filter: drop-shadow(0 0 4px #6B5B3D);
+  }
+  #roomCanvas .exit-arrow {
+    fill: oklch(var(--er));
+    cursor: pointer;
+  }
+  #roomCanvas .exit-arrow:hover {
+    fill: oklch(var(--er) / 0.8);
+  }
+  #roomCanvas .exit-arrow.selected {
+    fill: oklch(var(--su));
+  }
+  #roomCanvas .grid-line {
+    stroke: oklch(var(--bc) / 0.35);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+  .property-field {
+    margin-bottom: 6px;
+  }
+  .property-field label {
+    font-size: 12px;
+    color: oklch(var(--bc) / 0.6);
+    margin-bottom: 4px;
+    display: block;
+  }
+  .canvas-status {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: oklch(var(--b1) / 0.8);
+    padding: 6px 12px;
+    border-radius: 0.5rem;
+    font-size: 12px;
+    color: oklch(var(--bc) / 0.7);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .scale-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .scale-bar-line {
+    height: 2px;
+    background: oklch(var(--bc) / 0.5);
+    min-width: 30px;
+    position: relative;
+  }
+  .scale-bar-line::before,
+  .scale-bar-line::after {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 8px;
+    background: oklch(var(--bc) / 0.5);
+    top: -3px;
+  }
+  .scale-bar-line::before { left: 0; }
+  .scale-bar-line::after { right: 0; }
+  .zoom-controls {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: oklch(var(--b1) / 0.8);
+    padding: 4px;
+    border-radius: 0.5rem;
+    display: flex;
+    gap: 4px;
+  }
+  .zoom-controls button {
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: oklch(var(--b2));
+    color: oklch(var(--bc));
+    border-radius: 0.25rem;
+    cursor: pointer;
+  }
+  .zoom-controls button:hover {
+    background: oklch(var(--b3));
+  }
+  .floor-controls {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    background: oklch(var(--b1) / 0.8);
+    padding: 4px;
+    border-radius: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .floor-btn {
+    width: 36px;
+    height: 30px;
+    border: none;
+    background: oklch(var(--b2));
+    color: oklch(var(--bc) / 0.7);
+    border-radius: 0.25rem;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+  .floor-btn:hover {
+    background: oklch(var(--b3));
+    color: oklch(var(--bc));
+  }
+  .floor-btn.active {
+    background: oklch(var(--p));
+    color: oklch(var(--pc));
+  }
+</style>
+
+<div class="flex justify-between items-center mb-3 px-4 pt-4">
+  <div class="flex items-center gap-3">
+    <% back_url = @room.inside_room_id ? "/admin/room_builder/#{@room.inside_room_id}" : "/admin/room_builder" %>
+    <a href="<%= back_url %>" class="btn btn-sm btn-ghost">
+      <i class="bi bi-arrow-left"></i> Back
+    </a>
+    <% if @room.location %>
+      <% wb_world = @room.location.world %>
+      <div class="flex items-center gap-1 text-xs text-base-content/50">
+        <% if wb_world %>
+          <a href="/admin/world_builder/<%= wb_world.id %>" class="hover:text-base-content link link-hover">
+            <i class="bi bi-globe"></i> <%= h(wb_world.name) %>
+          </a>
+          <span>/</span>
+        <% end %>
+        <% loc_url = wb_world ? "/admin/world_builder/#{wb_world.id}/location/#{@room.location_id}" : "/admin/world_builder/location/#{@room.location_id}" %>
+        <a href="<%= loc_url %>" class="hover:text-base-content link link-hover">
+          <i class="bi bi-map"></i> <%= h(@room.location.name) %>
+        </a>
+        <span>/</span>
+      </div>
+    <% end %>
+    <% if @room.location&.city_built_at %>
+      <a href="/admin/city_builder/<%= @room.location_id %>" class="btn btn-sm btn-outline btn-info" title="Edit city blocks and buildings">
+        <i class="bi bi-building"></i> <%= h(@room.location.city_name || @room.location.name) %>
+      </a>
+    <% end %>
+    <h1 class="text-xl font-bold">
+      <i class="bi bi-house-gear mr-2"></i><%= h(@room.name) %>
+    </h1>
+    <span class="badge badge-neutral ml-2"><%= @room.room_type %></span>
+    <% if @room.owner %>
+      <span class="badge badge-info ml-2">Owner: <%= h(@room.owner.name) %></span>
+    <% end %>
+  </div>
+  <div>
+    <button id="saveBtn" class="btn btn-sm btn-success">
+      <i class="bi bi-check-lg"></i> Save Changes
+    </button>
+  </div>
+</div>
+
+<div class="room-builder-container">
+  <!-- Left Sidebar -->
+  <div class="room-builder-sidebar">
+    <div class="sidebar-section open">
+      <h6>Tools</h6>
+      <div class="section-body">
+        <div class="tool-row">
+          <button class="tool-btn active" data-tool="select" title="Select"><i class="bi bi-cursor"></i></button>
+          <button class="tool-btn" data-tool="subroom" title="Sub-room"><i class="bi bi-bounding-box"></i></button>
+          <button class="tool-btn" data-tool="furniture" title="Furniture / Places"><i class="bi bi-lamp-fill"></i></button>
+          <button class="tool-btn" data-tool="door" title="Door"><i class="bi bi-door-open"></i></button>
+          <button class="tool-btn" data-tool="window" title="Window"><i class="bi bi-window"></i></button>
+          <button class="tool-btn" data-tool="decoration" title="Decoration"><i class="bi bi-brush"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section" id="drawingModeSection" style="display: none;">
+      <h6>Drawing Mode</h6>
+      <div class="section-body">
+        <div class="join w-full">
+          <input type="radio" class="join-item btn btn-sm" name="drawingMode" id="simpleMode" value="simple" checked aria-label="Simple">
+          <input type="radio" class="join-item btn btn-sm" name="drawingMode" id="advancedMode" value="advanced" aria-label="Polygon">
+        </div>
+        <span class="text-base-content/50 text-sm mt-2 block" id="drawingModeHelp">
+          Simple: Drag to draw rectangles
+        </span>
+      </div>
+    </div>
+
+    <div class="sidebar-section open">
+      <h6>View</h6>
+      <div class="section-body">
+        <label class="label cursor-pointer justify-start gap-2">
+          <input type="checkbox" class="toggle toggle-sm" id="showGrid" checked>
+          <span class="label-text">Show Grid</span>
+        </label>
+        <label class="label cursor-pointer justify-start gap-2">
+          <input type="checkbox" class="toggle toggle-sm" id="snapToGrid" checked>
+          <span class="label-text">Snap to Grid</span>
+        </label>
+        <label class="label cursor-pointer justify-start gap-2">
+          <input type="checkbox" class="toggle toggle-sm" id="showLabels" checked>
+          <span class="label-text">Show Labels</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h6>Room Info</h6>
+      <div class="section-body">
+        <div class="mb-1">
+          <span class="text-base-content/50 text-sm">Location:</span>
+          <span class="text-sm"><%= @room.location ? h(@room.location.name) : 'None' %></span>
+        </div>
+        <div class="mb-1">
+          <span class="text-base-content/50 text-sm">Dimensions:</span>
+          <span class="text-sm" id="roomDimensions">Loading...</span>
+        </div>
+        <% if @room.inside_room %>
+          <div class="mb-1">
+            <span class="text-base-content/50 text-sm">Inside:</span>
+            <a href="/admin/room_builder/<%= @room.inside_room_id %>" class="link link-info text-sm">
+              <%= h(@room.inside_room.name) %>
+            </a>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="sidebar-section open">
+      <h6>Room Elements</h6>
+      <div class="section-body">
+        <div id="elementsList">
+          <div class="text-base-content/50 text-sm">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h6>Properties</h6>
+      <div class="section-body">
+        <div id="propertiesPanel">
+          <div class="text-base-content/50 text-sm">Select an item to edit its properties</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section open" id="roomPropertiesSection">
+      <h6>Room Properties</h6>
+      <div class="section-body">
+      <div class="grid grid-cols-2 gap-2">
+        <div class="property-field col-span-2">
+          <label>Name</label>
+          <div id="roomNameEditor"
+               class="description-editor-container"
+               style="min-height: 32px;"
+               data-initial="<%= h(@room.name || '') %>">
+          </div>
+          <input type="hidden" id="roomNameValue" value="<%= h(@room.name || '') %>">
+        </div>
+        <div class="property-field">
+          <label>Room Type</label>
+          <select id="roomType" class="select select-bordered select-sm w-full">
+            <% Room::ROOM_TYPES.each do |category, types| %>
+              <optgroup label="<%= category.to_s.split('_').map(&:capitalize).join(' ') %>">
+                <% types.each do |t| %>
+                  <option value="<%= t %>" <%= @room.room_type == t ? 'selected' : '' %>><%= t.split('_').map(&:capitalize).join(' ') %></option>
+                <% end %>
+              </optgroup>
+            <% end %>
+          </select>
+        </div>
+        <div class="property-field">
+          <label>Publicity</label>
+          <select id="roomPublicity" class="select select-bordered select-sm w-full">
+            <option value="public" <%= @room.respond_to?(:publicity) && @room.publicity == 'public' ? 'selected' : '' %>>Public</option>
+            <option value="semi_public" <%= @room.respond_to?(:publicity) && @room.publicity == 'semi_public' ? 'selected' : '' %>>Semi-Public</option>
+            <option value="secluded" <%= @room.respond_to?(:publicity) && @room.publicity == 'secluded' ? 'selected' : '' %>>Secluded (Private)</option>
+          </select>
+        </div>
+        <div class="property-field">
+          <label class="label cursor-pointer justify-start gap-2">
+            <input type="checkbox" class="toggle toggle-sm" id="roomIndoors" <%= @room.respond_to?(:indoors) && @room.indoors ? 'checked' : '' %>>
+            <span class="label-text">Indoors</span>
+          </label>
+        </div>
+      </div>
+      <div class="collapse collapse-arrow bg-base-300 mt-1 mb-1">
+        <input type="checkbox" id="roomFlagsToggle">
+        <div class="collapse-title text-sm font-medium py-1 min-h-0">Room Flags</div>
+        <div class="collapse-content">
+          <label class="label cursor-pointer justify-start gap-2 py-1">
+            <input type="checkbox" class="toggle toggle-sm toggle-success" id="roomSafeRoom" <%= @room.respond_to?(:safe_room) && @room.safe_room ? 'checked' : '' %>>
+            <span class="label-text">Safe room (no combat)</span>
+          </label>
+          <label class="label cursor-pointer justify-start gap-2 py-1">
+            <input type="checkbox" class="toggle toggle-sm toggle-info" id="roomTutorialRoom" <%= @room.respond_to?(:tutorial_room) && @room.tutorial_room ? 'checked' : '' %>>
+            <span class="label-text">Tutorial room</span>
+          </label>
+          <label class="label cursor-pointer justify-start gap-2 py-1">
+            <input type="checkbox" class="toggle toggle-sm toggle-secondary" id="roomIsVault" <%= @room.respond_to?(:is_vault) && @room.is_vault ? 'checked' : '' %>>
+            <span class="label-text">Vault / secure storage</span>
+          </label>
+        </div>
+      </div>
+      <div class="property-field mt-1">
+        <label>Description</label>
+        <div id="roomDescriptionEditor"
+             class="description-editor-container"
+             style="min-height: 80px;"
+             data-initial="<%= h(@room.long_description || @room.short_description || '') %>">
+        </div>
+        <input type="hidden" id="roomDescriptionValue" value="<%= h(@room.long_description || @room.short_description || '') %>">
+      </div>
+      <div class="property-field">
+        <label>Background Image</label>
+        <div class="flex gap-2">
+          <input type="file" id="roomBackgroundUpload" class="file-input file-input-sm file-input-bordered w-full" accept="image/*">
+          <button id="uploadImageBtn" class="btn btn-sm btn-square btn-primary">
+            <i class="bi bi-upload"></i>
+          </button>
+        </div>
+        <input type="text" id="roomBackground" class="input input-sm input-bordered w-full mt-1" value="<%= h(@room.default_background_url || '') %>" placeholder="Or paste image URL">
+      </div>
+      <div class="collapse collapse-arrow bg-base-300 mt-1">
+        <input type="checkbox" id="seasonalToggle">
+        <div class="collapse-title text-sm font-medium py-1 min-h-0">Time & Season Variants</div>
+        <div class="collapse-content">
+          <div class="grid grid-cols-5 gap-1 text-xs mt-1">
+            <div></div>
+            <div class="text-center font-bold">Spring</div>
+            <div class="text-center font-bold">Summer</div>
+            <div class="text-center font-bold">Fall</div>
+            <div class="text-center font-bold">Winter</div>
+            <% %w[dawn day dusk night].each do |time| %>
+              <div class="font-bold py-1"><%= time.capitalize %></div>
+              <% %w[spring summer fall winter].each do |season| %>
+                <% sd = @room.respond_to?(:seasonal_descriptions) ? @room.seasonal_descriptions : nil; val = (sd.respond_to?(:dig) ? (sd.dig(time, season) || '') : '') %>
+                <textarea class="textarea textarea-bordered textarea-xs w-full seasonal-desc" data-time="<%= time %>" data-season="<%= season %>" rows="2" placeholder="<%= time %> / <%= season %>"><%= h(val) %></textarea>
+              <% end %>
+            <% end %>
+          </div>
+          <button class="btn btn-xs btn-outline btn-primary w-full mt-2" id="aiGenerateSeasonalBtn">
+            <i class="bi bi-stars"></i> AI Generate All Variants
+          </button>
+        </div>
+      </div>
+      </div><!-- section-body for Room Properties -->
+    </div>
+
+    <div class="sidebar-section">
+      <h6><i class="bi bi-stars"></i> AI Tools</h6>
+      <div class="section-body">
+        <div class="flex flex-col gap-1">
+          <button class="btn btn-sm btn-outline btn-primary w-full" id="aiGenerateDescBtn">
+            <i class="bi bi-body-text"></i> Generate Description
+          </button>
+          <button class="btn btn-sm btn-outline btn-primary w-full" id="aiGenerateNameBtn">
+            <i class="bi bi-fonts"></i> Generate Name
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h6>Actions</h6>
+      <div class="section-body">
+        <button class="btn btn-sm btn-outline btn-error w-full" id="deleteSelectedBtn" disabled>
+          <i class="bi bi-trash"></i> Delete Selected
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Canvas -->
+  <div class="room-builder-canvas">
+    <svg id="roomCanvas">
+      <defs>
+        <pattern id="gridPattern" width="20" height="20" patternUnits="userSpaceOnUse">
+          <path d="M 20 0 L 0 0 0 20" fill="none" class="grid-line"/>
+        </pattern>
+      </defs>
+      <g id="zoneLayer"></g>
+      <g id="roomLayer"></g>
+      <g id="gridLayer"></g>
+      <g id="subroomLayer"></g>
+      <g id="furnitureLayer"></g>
+      <g id="featureLayer"></g>
+      <g id="exitLayer"></g>
+      <g id="decorationLayer"></g>
+      <g id="selectionLayer"></g>
+    </svg>
+    <div class="floor-controls" id="floorControls" style="display:none;"></div>
+    <div class="canvas-status">
+      <span id="cursorPosition">X: 0, Y: 0</span>
+      <span id="floorLabel"></span>
+      <span id="zoomLevel">Zoom: 100%</span>
+      <div class="scale-bar">
+        <div class="scale-bar-line" id="scaleBarLine"></div>
+        <span id="scaleBarLabel">10 ft</span>
+      </div>
+    </div>
+    <div class="zoom-controls">
+      <button id="zoomOut" title="Zoom Out"><i class="bi bi-dash"></i></button>
+      <button id="zoomReset" title="Reset Zoom">1:1</button>
+      <button id="zoomIn" title="Zoom In"><i class="bi bi-plus"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- Furniture Catalog Modal -->
+<dialog class="modal" id="furnitureCatalogModal">
+  <div class="modal-box max-w-5xl bg-base-200">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-bold text-lg"><i class="bi bi-couch mr-2"></i>Furniture / Places</h3>
+      <form method="dialog">
+        <button class="btn btn-sm btn-circle btn-ghost">✕</button>
+      </form>
+    </div>
+
+    <div class="grid grid-cols-12 gap-4">
+      <!-- Left: Custom Creation Form (primary) -->
+      <div class="col-span-12 md:col-span-7">
+        <h6 class="font-semibold mb-3 text-sm uppercase tracking-wide text-base-content/60">Create Furniture / Place</h6>
+        <div class="grid grid-cols-2 gap-2 mb-2">
+          <div class="col-span-2">
+            <label class="label py-1"><span class="label-text text-xs">Name</span></label>
+            <input type="text" id="customFurnitureName" class="input input-bordered input-sm w-full" placeholder="Wooden Chair">
+          </div>
+        </div>
+        <div class="grid grid-cols-4 gap-2 mb-2">
+          <div>
+            <label class="label py-1"><span class="label-text text-xs">Icon</span></label>
+            <div class="flex gap-1">
+              <div class="input input-bordered input-sm flex-1 flex items-center justify-center text-lg" id="customFurnitureIconPreview">
+                <span class="text-base-content/30 text-sm">None</span>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline" id="customFurnitureIconPickerBtn">Pick</button>
+            </div>
+            <input type="hidden" id="customFurnitureIcon" value="">
+          </div>
+          <div>
+            <label class="label py-1"><span class="label-text text-xs">Seats</span></label>
+            <input type="number" id="customFurnitureCapacity" class="input input-bordered input-sm w-full" placeholder="1" value="1" min="0">
+          </div>
+          <div>
+            <label class="label py-1"><span class="label-text text-xs">Action</span></label>
+            <select id="customFurnitureAction" class="select select-bordered select-sm w-full">
+              <option value="sit">sit</option>
+              <option value="stand">stand</option>
+              <option value="lean">lean</option>
+              <option value="rest">rest</option>
+              <option value="kneel">kneel</option>
+              <option value="lounge">lounge</option>
+              <option value="perch">perch</option>
+            </select>
+          </div>
+          <div>
+            <label class="label py-1"><span class="label-text text-xs">Preposition</span></label>
+            <select id="customFurniturePreposition" class="select select-bordered select-sm w-full">
+              <option value="on">on</option>
+              <option value="at">at</option>
+              <option value="near">near</option>
+              <option value="around">around</option>
+              <option value="against">against</option>
+              <option value="in">in</option>
+              <option value="beside">beside</option>
+              <option value="behind">behind</option>
+              <option value="before">before</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <div>
+            <label class="label py-1"><span class="label-text text-xs">Width (ft)</span></label>
+            <input type="number" id="customFurnitureWidth" class="input input-bordered input-sm w-full" value="4" min="1">
+          </div>
+          <div>
+            <label class="label py-1"><span class="label-text text-xs">Height (ft)</span></label>
+            <input type="number" id="customFurnitureHeight" class="input input-bordered input-sm w-full" value="4" min="1">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="label py-1"><span class="label-text text-xs">Description (optional)</span></label>
+          <textarea id="customFurnitureDescription" class="textarea textarea-bordered textarea-sm w-full" rows="2" placeholder="A sturdy wooden chair..."></textarea>
+        </div>
+        <button class="btn btn-primary w-full" id="addCustomFurniture">
+          <i class="bi bi-plus-circle mr-2"></i>Place Furniture
+        </button>
+      </div>
+
+      <!-- Right: Presets (fill the form) -->
+      <div class="col-span-12 md:col-span-5 border-l border-base-content/10 pl-4">
+        <h6 class="font-semibold mb-3 text-sm uppercase tracking-wide text-base-content/60">Presets <small class="font-normal text-xs">(click to fill form)</small></h6>
+        <div id="catalogContent" class="overflow-y-auto" style="max-height: 400px;">
+          <div class="text-base-content/50 text-sm">Loading presets...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<script src="/js/gradient-ciede2000.js?v=3"></script>
+<script src="/js/gradient-creator.js?v=3"></script>
+<script src="/js/gradient-picker.js?v=3"></script>
+<script src="/js/description-editor.js?v=6"></script>
+<script>
+  window.ROOM_ID = <%= @room.id %>;
+  window.ROOM_DATA = null; // Will be loaded via API
+</script>
+<script src="/js/room-builder/icon-picker.js?v=4"></script>
+<script src="/js/room-builder/api-client.js?v=4"></script>
+<script src="/js/room-builder/room-editor.js?v=6"></script>
+<script src="/js/room-builder/floor-controls.js?v=1"></script>
+<script src="/js/room-builder/property-panel.js?v=4"></script>
+<script src="/js/room-builder/furniture-catalog.js?v=4"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const roomId = <%= @room.id %>;
+
+  // Collapsible sidebar sections - click h6 to toggle
+  document.querySelectorAll('.sidebar-section > h6').forEach(h6 => {
+    h6.addEventListener('click', (e) => {
+      // Don't toggle if clicking a link or button inside h6
+      if (e.target.closest('a, button')) return;
+      h6.parentElement.classList.toggle('open');
+    });
+  });
+
+  // AI Generate Description
+  document.getElementById('aiGenerateDescBtn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('aiGenerateDescBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Generating...';
+    try {
+      const res = await fetch(`/admin/room_builder/${roomId}/api/generate/description`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success && data.description) {
+        const hiddenInput = document.getElementById('roomDescriptionValue');
+        if (hiddenInput) hiddenInput.value = data.description;
+        if (window.roomDescEditor && window.roomDescEditor.editorEl) {
+          window.roomDescEditor.editorEl.innerHTML = data.description;
+        }
+      } else {
+        alert('Generation failed: ' + (data.error || 'Unknown error'));
+      }
+    } catch (e) {
+      alert('Error: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-body-text"></i> Generate Description';
+    }
+  });
+
+  // AI Generate Name
+  document.getElementById('aiGenerateNameBtn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('aiGenerateNameBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Generating...';
+    try {
+      const res = await fetch(`/admin/room_builder/${roomId}/api/generate/name`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success && data.name) {
+        document.getElementById('roomName').value = data.name;
+      } else {
+        alert('Generation failed: ' + (data.error || 'Unknown error'));
+      }
+    } catch (e) {
+      alert('Error: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-fonts"></i> Generate Name';
+    }
+  });
+
+  // AI Generate Seasonal Variants
+  document.getElementById('aiGenerateSeasonalBtn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('aiGenerateSeasonalBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Generating...';
+    try {
+      const res = await fetch(`/admin/room_builder/${roomId}/api/generate/seasonal`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success && data.seasonal_descriptions) {
+        for (const [time, seasons] of Object.entries(data.seasonal_descriptions)) {
+          for (const [season, desc] of Object.entries(seasons)) {
+            const ta = document.querySelector(`.seasonal-desc[data-time="${time}"][data-season="${season}"]`);
+            if (ta) ta.value = desc;
+          }
+        }
+      } else {
+        alert('Generation failed: ' + (data.error || 'Unknown error'));
+      }
+    } catch (e) {
+      alert('Error: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-stars"></i> AI Generate All Variants';
+    }
+  });
+
+  // Image Upload
+  document.getElementById('uploadImageBtn')?.addEventListener('click', async () => {
+    const fileInput = document.getElementById('roomBackgroundUpload');
+    const file = fileInput?.files?.[0];
+    if (!file) { alert('Please select a file first.'); return; }
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const btn = document.getElementById('uploadImageBtn');
+    btn.disabled = true;
+    try {
+      const res = await fetch(`/admin/room_builder/${roomId}/api/upload_image`, { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.success && data.url) {
+        document.getElementById('roomBackground').value = data.url;
+        fileInput.value = '';
+      } else {
+        alert('Upload failed: ' + (data.error || 'Unknown error'));
+      }
+    } catch (e) {
+      alert('Upload error: ' + e.message);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // Initialize rich text description editor
+  const descContainer = document.getElementById('roomDescriptionEditor');
+  if (descContainer && typeof DescriptionEditor !== 'undefined') {
+    const initialContent = descContainer.dataset.initial || '';
+    window.roomDescEditor = new DescriptionEditor('#roomDescriptionEditor', {
+      placeholder: 'Enter room description...',
+      maxLength: 5000,
+      onChange: (html) => {
+        const hiddenInput = document.getElementById('roomDescriptionValue');
+        if (hiddenInput) hiddenInput.value = html;
+      }
+    });
+    // Set initial HTML content after initialization
+    if (initialContent && window.roomDescEditor.content) {
+      window.roomDescEditor.content.innerHTML = initialContent;
+    }
+  }
+
+  // Initialize rich text name editor
+  const nameContainer = document.getElementById('roomNameEditor');
+  if (nameContainer && typeof DescriptionEditor !== 'undefined') {
+    const initialName = nameContainer.dataset.initial || '';
+    window.roomNameEditor = new DescriptionEditor('#roomNameEditor', {
+      placeholder: 'Enter room name...',
+      maxLength: 200,
+      enableGradients: true,
+      onChange: (html) => {
+        const hiddenInput = document.getElementById('roomNameValue');
+        if (hiddenInput) hiddenInput.value = html;
+      }
+    });
+    if (initialName && window.roomNameEditor.content) {
+      window.roomNameEditor.content.innerHTML = initialName;
+    }
+  }
+});
+</script>

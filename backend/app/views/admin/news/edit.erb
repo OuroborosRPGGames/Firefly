@@ -1,0 +1,131 @@
+<%
+is_new = @article.new?
+@title = is_new ? 'New Article' : "Edit: #{@article.title}"
+@breadcrumbs = [
+  { label: 'Admin', path: '/admin' },
+  { label: 'News', path: '/admin/news' },
+  { label: is_new ? 'New' : @article.title, path: is_new ? '/admin/news/new' : "/admin/news/#{@article.id}" }
+]
+%>
+
+<%= admin_content_start %>
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-9">
+          <h2 class="text-2xl font-bold mb-4"><i class="bi bi-newspaper mr-2"></i><%= is_new ? 'New Article' : 'Edit Article' %></h2>
+
+          <form method="post" action="<%= is_new ? '/admin/news/new' : "/admin/news/#{@article.id}" %>">
+            <div class="card bg-base-200 mb-4">
+              <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
+                  <div class="md:col-span-4">
+                    <label for="news_type" class="label">
+                      <span class="label-text">Type</span>
+                    </label>
+                    <select name="news_type" id="news_type" class="select select-bordered w-full" required>
+                      <option value="">Select type...</option>
+                      <option value="announcement" <%= @article.news_type == 'announcement' ? 'selected' : '' %>>Announcement</option>
+                      <option value="ic" <%= @article.news_type == 'ic' ? 'selected' : '' %>>IC News</option>
+                      <option value="ooc" <%= @article.news_type == 'ooc' ? 'selected' : '' %>>OOC News</option>
+                    </select>
+                  </div>
+                  <div class="md:col-span-8">
+                    <label for="title" class="label">
+                      <span class="label-text">Title</span>
+                    </label>
+                    <input type="text" name="title" id="title" class="input input-bordered w-full"
+                           value="<%= h(@article.title || '') %>" maxlength="200" required>
+                  </div>
+                </div>
+
+                <div class="form-control mb-4">
+                  <label for="content" class="label">
+                    <span class="label-text">Content</span>
+                  </label>
+                  <textarea name="content" id="content" class="textarea textarea-bordered h-64" data-grammar-check required><%= h(@article.content || '') %></textarea>
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/70">Plain text. Use blank lines to separate paragraphs.</span>
+                  </label>
+                </div>
+
+                <div class="form-control mb-4">
+                  <label class="label cursor-pointer justify-start gap-3">
+                    <input type="checkbox" name="is_published" id="is_published" class="checkbox"
+                           value="1" <%= @article.is_published || is_new ? 'checked' : '' %>>
+                    <span class="label-text">Published</span>
+                  </label>
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/70">Unpublished articles are drafts and won't be visible to players.</span>
+                  </label>
+                </div>
+
+                <div class="flex gap-2">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg mr-1"></i><%= is_new ? 'Create Article' : 'Save Changes' %>
+                  </button>
+                  <a href="/admin/news" class="btn btn-outline">Cancel</a>
+                </div>
+              </div>
+            </div>
+          </form>
+
+          <% unless is_new %>
+            <div class="card bg-base-200 border border-error">
+              <div class="card-body">
+                <h5 class="card-title text-error">
+                  <i class="bi bi-exclamation-triangle mr-2"></i>Danger Zone
+                </h5>
+                <%= partial 'admin/delete_button', locals: { path: "/admin/news/#{@article.id}/delete", label: 'article' } %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Info Sidebar -->
+        <div class="lg:col-span-3">
+          <% unless is_new %>
+            <div class="card bg-base-200 mb-4">
+              <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-info-circle mr-2"></i>Article Info</h5>
+                <dl class="space-y-2">
+                  <div>
+                    <dt class="font-semibold text-sm">ID</dt>
+                    <dd class="text-base-content/70">#<%= @article.id %></dd>
+                  </div>
+                  <div>
+                    <dt class="font-semibold text-sm">Created By</dt>
+                    <dd class="text-base-content/70"><%= h(@article.created_by_user&.username || 'Unknown') %></dd>
+                  </div>
+                  <div>
+                    <dt class="font-semibold text-sm">Created</dt>
+                    <dd class="text-base-content/70"><%= @article.created_at&.strftime('%Y-%m-%d %H:%M') %></dd>
+                  </div>
+                  <% if @article.published_at %>
+                    <div>
+                      <dt class="font-semibold text-sm">Published</dt>
+                      <dd class="text-base-content/70"><%= @article.published_at.strftime('%Y-%m-%d %H:%M') %></dd>
+                    </div>
+                  <% end %>
+                </dl>
+              </div>
+            </div>
+          <% end %>
+
+          <div class="card bg-base-200">
+            <div class="card-body">
+              <h5 class="card-title"><i class="bi bi-lightbulb mr-2"></i>Tips</h5>
+              <ul class="text-sm text-base-content/70 space-y-2">
+                <li>
+                  <strong>Announcements</strong> are for important game-wide updates (maintenance, new features).
+                </li>
+                <li>
+                  <strong>IC News</strong> is for in-character world events and lore updates.
+                </li>
+                <li>
+                  <strong>OOC News</strong> is for community updates, events, and social announcements.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+<%= admin_content_end %>

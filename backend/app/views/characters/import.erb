@@ -1,0 +1,132 @@
+<!-- Page Banner -->
+<section class="page-banner" style="background-image: url('/images/library.jpg');">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <div class="breadcrumbs text-sm mb-2">
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/dashboard">Dashboard</a></li>
+          <li><a href="/characters/<%= @character.id %>"><%= @character.nickname || @character.forename %></a></li>
+          <li>Import Content</li>
+        </ul>
+      </div>
+      <h1>Import Character Content</h1>
+    </div>
+  </div>
+</section>
+
+<section class="py-12">
+  <div class="container mx-auto px-4">
+    <div class="flex justify-center">
+      <div class="w-full max-w-3xl">
+        <!-- Info Alert -->
+        <div class="alert alert-info mb-4">
+          <i class="bi bi-info-circle text-xl"></i>
+          <div>
+            <h5 class="font-bold">What Gets Imported</h5>
+            <p class="mb-2">Importing content will add the following to your character:</p>
+            <ul class="list-disc list-inside text-sm">
+              <li><strong>Descriptions:</strong> Body position descriptions with images and formatting</li>
+              <li><strong>Items:</strong> Clothing, equipment, and inventory items with full pattern data</li>
+              <li><strong>Outfits:</strong> Saved outfit configurations</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Warning Alert -->
+        <div class="alert alert-warning mb-4">
+          <i class="bi bi-exclamation-triangle text-xl"></i>
+          <span>
+            <strong>Note:</strong> Importing will <em>add</em> content to your character, not replace existing content.
+            If items with matching patterns already exist, new copies will be created.
+          </span>
+        </div>
+
+        <!-- Import Form -->
+        <div class="card bg-base-200 shadow-xl">
+          <div class="card-body">
+            <h2 class="card-title">
+              <i class="bi bi-upload mr-2"></i>Upload Content Package
+            </h2>
+            <form action="/characters/<%= @character.id %>/import" method="post" enctype="multipart/form-data" class="mt-4">
+              <%= csrf_tag %>
+
+              <!-- JSON File -->
+              <div class="form-control mb-4">
+                <label for="content_package" class="label">
+                  <span class="label-text">Content Package (ZIP) <span class="text-error">*</span></span>
+                </label>
+                <input type="file" class="file-input file-input-bordered w-full" id="content_package" name="content_package" accept=".zip" required>
+                <label class="label">
+                  <span class="label-text-alt text-base-content/70">
+                    Select the ZIP file exported from another Firefly game. Contains character data and images.
+                  </span>
+                </label>
+              </div>
+
+              <!-- Alternative: Separate JSON + Images -->
+              <div class="divider">OR</div>
+
+              <p class="text-base-content/70 mb-4 text-sm">
+                <i class="bi bi-lightning mr-1"></i>Alternatively, upload JSON and images separately:
+              </p>
+
+              <div class="form-control mb-4">
+                <label for="json_file" class="label">
+                  <span class="label-text">JSON Data File</span>
+                </label>
+                <input type="file" class="file-input file-input-bordered w-full" id="json_file" name="json_file" accept=".json">
+                <label class="label">
+                  <span class="label-text-alt text-base-content/70">Character export data in JSON format</span>
+                </label>
+              </div>
+
+              <div class="form-control mb-4">
+                <label for="images_zip" class="label">
+                  <span class="label-text">Images Archive (Optional)</span>
+                </label>
+                <input type="file" class="file-input file-input-bordered w-full" id="images_zip" name="images_zip" accept=".zip">
+                <label class="label">
+                  <span class="label-text-alt text-base-content/70">ZIP file containing character images</span>
+                </label>
+              </div>
+
+              <!-- Submit -->
+              <div class="flex justify-between items-center mt-6">
+                <a href="/characters/<%= @character.id %>" class="btn btn-ghost">
+                  <i class="bi bi-arrow-left mr-1"></i>Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                  <i class="bi bi-upload mr-2"></i>Import Content
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Help Section -->
+        <div class="card bg-base-200 shadow-xl mt-4">
+          <div class="card-body">
+            <h2 class="card-title">
+              <i class="bi bi-question-circle mr-2"></i>Help
+            </h2>
+            <div class="mt-4">
+              <h6 class="font-bold mb-2">How to Export Content</h6>
+              <p class="text-base-content/70 mb-4">
+                To export a character from another Firefly game, visit the character's profile page and click
+                the <strong>Export Character</strong> button in the Quick Actions section. This will download
+                a ZIP file containing all character data and images.
+              </p>
+
+              <h6 class="font-bold mb-2">Supported Formats</h6>
+              <p class="text-base-content/70">
+                Character export packages use version 1.0.0 of the Firefly content format.
+                Future versions will maintain backwards compatibility.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

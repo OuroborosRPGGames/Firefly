@@ -1,0 +1,12 @@
+{
+  "api_base_url": "http://localhost:3000",
+  "api_token": "YOUR_ADMIN_TOKEN_HERE",
+  "claude_model": "claude-sonnet-4-6",
+  "state_file": "~/.firefly_triage_state.json",
+  "fixes_dir": "backend/fixes",
+  "log_dir": "backend/logs",
+  "repo": null,
+  "base_branch": "main",
+  "min_autohelp_cluster_size": 2,
+  "dry_run": false
+}

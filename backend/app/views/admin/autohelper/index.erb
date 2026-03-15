@@ -1,0 +1,154 @@
+<% @page_title = 'Autohelper Analytics - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Autohelper', path: '/admin/autohelper' }] %>
+
+<%= admin_content_start %>
+      <h2 class="text-2xl font-bold mb-4"><i class="bi bi-robot mr-2"></i>Autohelper Analytics</h2>
+
+      <!-- Stats -->
+      <div class="stats shadow mb-6 w-full">
+        <div class="stat">
+          <div class="stat-title">Total Requests</div>
+          <div class="stat-value"><%= @total_count %></div>
+        </div>
+        <div class="stat">
+          <div class="stat-title">Successful</div>
+          <div class="stat-value text-success"><%= @success_count %></div>
+          <div class="stat-desc"><%= @total_count > 0 ? "#{(@success_count * 100.0 / @total_count).round(1)}%" : '0%' %></div>
+        </div>
+        <div class="stat">
+          <div class="stat-title">Tickets Created</div>
+          <div class="stat-value text-accent"><%= @ticket_count %></div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div role="tablist" class="tabs tabs-boxed mb-4">
+        <a role="tab" class="tab <%= @tab == 'recent' ? 'tab-active' : '' %>" href="/admin/autohelper?tab=recent">Recent Requests</a>
+        <a role="tab" class="tab <%= @tab == 'top' ? 'tab-active' : '' %>" href="/admin/autohelper?tab=top">Top Queries</a>
+        <a role="tab" class="tab <%= @tab == 'unmatched' ? 'tab-active' : '' %>" href="/admin/autohelper?tab=unmatched">Unmatched Queries</a>
+      </div>
+
+      <% if @tab == 'recent' %>
+      <!-- Recent Requests -->
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <% if @requests.empty? %>
+            <p class="text-base-content/70 mb-0">No autohelper requests yet.</p>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra table-sm">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>User</th>
+                    <th>Query</th>
+                    <th>Sources</th>
+                    <th>Status</th>
+                    <th>Ticket</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @requests.each do |req| %>
+                  <tr>
+                    <td class="text-xs whitespace-nowrap"><%= req.created_at&.strftime('%m-%d %H:%M') %></td>
+                    <td class="text-xs"><%= h(req.user&.username || '-') %></td>
+                    <td class="max-w-xs truncate" title="<%= h(req.query) %>"><%= h(req.query.length > 60 ? req.query[0, 60] + '...' : req.query) %></td>
+                    <td class="text-xs">
+                      <% if req.sources && !req.sources.empty? %>
+                        <% req.sources.each do |s| %>
+                          <span class="badge badge-xs badge-outline"><%= h(s) %></span>
+                        <% end %>
+                      <% else %>
+                        <span class="text-warning text-xs">none</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if req.success %>
+                        <span class="badge badge-xs badge-success">OK</span>
+                      <% else %>
+                        <span class="badge badge-xs badge-error">Fail</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if req.ticket_created %>
+                        <a href="/admin/tickets/<%= req.ticket_id %>" class="badge badge-xs badge-accent">
+                          #<%= req.ticket_id %>
+                        </a>
+                      <% end %>
+                    </td>
+                  </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <% elsif @tab == 'top' %>
+      <!-- Top Queries -->
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <h3 class="font-semibold mb-3">Most frequently asked questions</h3>
+          <% if @top_queries.empty? %>
+            <p class="text-base-content/70 mb-0">No data yet.</p>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra table-sm">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Query</th>
+                    <th>Times Asked</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @top_queries.each_with_index do |q, i| %>
+                  <tr>
+                    <td><%= i + 1 %></td>
+                    <td><%= h(q[:query]) %></td>
+                    <td><span class="badge badge-neutral"><%= q[:count] %></span></td>
+                  </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <% elsif @tab == 'unmatched' %>
+      <!-- Unmatched Queries -->
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <h3 class="font-semibold mb-3">Queries with no matching helpfiles</h3>
+          <p class="text-base-content/70 text-sm mb-3">These are topics players asked about but no helpfile matched. Consider creating helpfiles for frequent ones.</p>
+          <% if @unmatched.empty? %>
+            <p class="text-base-content/70 mb-0">No unmatched queries yet.</p>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra table-sm">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Query</th>
+                    <th>Times Asked</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @unmatched.each_with_index do |q, i| %>
+                  <tr>
+                    <td><%= i + 1 %></td>
+                    <td><%= h(q[:query]) %></td>
+                    <td><span class="badge badge-warning"><%= q[:count] %></span></td>
+                  </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+      </div>
+      <% end %>
+
+<%= admin_content_end %>

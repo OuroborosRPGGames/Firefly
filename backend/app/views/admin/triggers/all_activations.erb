@@ -1,0 +1,94 @@
+<% @page_title = 'Trigger Activation Log - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Triggers', path: '/admin/triggers' }, { label: 'Activation Log' }] %>
+
+<%= admin_content_start %>
+      <h2 class="text-2xl font-bold mb-6">Trigger Activation Log</h2>
+
+      <div class="mb-4">
+        <a href="/admin/triggers" class="btn btn-outline btn-secondary">
+          <i class="bi bi-lightning mr-1"></i>Back to Triggers
+        </a>
+      </div>
+
+      <% if @activations.empty? %>
+        <%= partial 'shared/empty_state', locals: { message: 'No trigger activations recorded yet.' } %>
+      <% else %>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Trigger</th>
+                <th>Source</th>
+                <th>Content</th>
+                <th>Confidence</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @activations.each do |act| %>
+                <tr>
+                  <td><%= act.activated_at&.strftime('%m/%d %H:%M:%S') %></td>
+                  <td>
+                    <% if act.trigger %>
+                      <a href="/admin/triggers/<%= act.trigger.id %>/activations" class="link link-hover">
+                        <%= h act.trigger.name %>
+                      </a>
+                      <%
+                        color = case act.trigger.trigger_type
+                                when 'mission' then 'primary'
+                                when 'npc' then 'warning'
+                                when 'world_memory' then 'info'
+                                when 'clue_share' then 'success'
+                                else 'neutral'
+                                end
+                      %>
+                      <br><span class="badge badge-<%= color %> badge-sm">
+                        <%= act.trigger.trigger_type %>
+                      </span>
+                    <% else %>
+                      <span class="text-base-content/70">Deleted</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <span class="badge badge-neutral"><%= act.source_type %></span>
+                    <% if act.source_character %>
+                      <br><span class="text-sm"><%= h act.source_character.full_name %></span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if act.triggering_content %>
+                      <%
+                        content = act.triggering_content
+                        truncated = content.length > 60 ? content[0, 60] + '...' : content
+                      %>
+                      <span class="text-sm" title="<%= content %>">
+                        <%= truncated %>
+                      </span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if act.llm_confidence %>
+                      <%= (act.llm_confidence * 100).round(1) %>%
+                    <% else %>
+                      -
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if act.action_executed %>
+                      <% if act.action_success %>
+                        <i class="bi bi-check-circle text-success"></i>
+                      <% else %>
+                        <i class="bi bi-x-circle text-error" title="<%= act.action_error %>"></i>
+                      <% end %>
+                    <% else %>
+                      <i class="bi bi-hourglass text-base-content/50"></i>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+<%= admin_content_end %>

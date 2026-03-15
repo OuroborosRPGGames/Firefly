@@ -1,0 +1,235 @@
+<div id="chat-container" class="mx-auto px-4">
+    <div id="chat-header">
+        <h2>Chat Room</h2>
+        <p>Playing as: <span id="character-name"><%= h(@character&.name || @character_instance&.character&.full_name || 'Unknown') %></span></p>
+    </div>
+
+    <div id="messages-container" class="mx-auto px-4">
+        <div id="messages"></div>
+    </div>
+
+    <div id="chat-input-container" class="mx-auto px-4">
+        <form id="message-form">
+            <%= csrf_tag %>
+            <input type="text" id="message-input" placeholder="Type your message..." maxlength="1000" autofocus>
+            <button type="submit">Send</button>
+        </form>
+    </div>
+</div>
+
+<style>
+    #chat-container {
+        display: flex;
+        flex-direction: column;
+        height: 70vh;
+    }
+
+    #chat-header {
+        margin-bottom: 20px;
+        border-bottom: 1px solid #00ff00;
+        padding-bottom: 10px;
+    }
+
+    #chat-header h2 {
+        margin: 0 0 5px 0;
+        color: #00ff00;
+    }
+
+    #chat-header p {
+        margin: 0;
+        color: #00aa00;
+    }
+
+    #character-name {
+        color: #00ff00;
+        font-weight: bold;
+    }
+
+    #messages-container {
+        flex: 1;
+        background-color: #000;
+        border: 1px solid #00ff00;
+        padding: 10px;
+        overflow-y: auto;
+        margin-bottom: 15px;
+        min-height: 400px;
+    }
+
+    #messages {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .message {
+        padding: 5px 0;
+        border-bottom: 1px dotted #003300;
+    }
+
+    .message:last-child {
+        border-bottom: none;
+    }
+
+    .message-author {
+        color: #00aaaa;
+        font-weight: bold;
+        margin-right: 6px;
+    }
+
+    .message-content {
+        color: #00ff00;
+    }
+
+    .message-time {
+        color: #666;
+        font-size: 12px;
+        margin-left: 8px;
+    }
+
+    #chat-input-container {
+        display: flex;
+        gap: 10px;
+    }
+
+    #message-form {
+        display: flex;
+        gap: 10px;
+        width: 100%;
+    }
+
+    #message-input {
+        flex: 1;
+        padding: 10px;
+    }
+
+    #message-form button {
+        padding: 10px 20px;
+        white-space: nowrap;
+    }
+</style>
+
+<script>
+(() => {
+    const chatCharacterInstanceId = '<%= @character_instance&.id %>';
+    const messagesContainer = document.getElementById('messages-container');
+    const messagesElement = document.getElementById('messages');
+    const messageForm = document.getElementById('message-form');
+    const messageInput = document.getElementById('message-input');
+    let messages = [];
+
+    function withCharacterInstance(url) {
+        if (!chatCharacterInstanceId) return url;
+        const separator = url.includes('?') ? '&' : '?';
+        return `${url}${separator}character_instance_id=${chatCharacterInstanceId}`;
+    }
+
+    function normalizeMessage(raw) {
+        return {
+            character_name: raw.character_name || raw.sender_name || 'System',
+            content: raw.content || raw.message || '',
+            created_at: raw.created_at || new Date().toISOString(),
+            message_type: raw.message_type || 'chat'
+        };
+    }
+
+    function formatTime(timestamp) {
+        const parsed = new Date(timestamp);
+        return Number.isNaN(parsed.getTime()) ? '' : parsed.toLocaleTimeString();
+    }
+
+    function renderMessages() {
+        messagesElement.innerHTML = '';
+
+        messages.forEach((message) => {
+            const row = document.createElement('div');
+            row.className = 'message';
+
+            const author = document.createElement('span');
+            author.className = 'message-author';
+            author.textContent = `${message.character_name}:`;
+
+            const content = document.createElement('span');
+            content.className = 'message-content';
+            content.textContent = message.content;
+
+            const time = document.createElement('span');
+            time.className = 'message-time';
+            const formatted = formatTime(message.created_at);
+            time.textContent = formatted ? `[${formatted}]` : '';
+
+            row.appendChild(author);
+            row.appendChild(content);
+            row.appendChild(time);
+            messagesElement.appendChild(row);
+        });
+
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    async function loadMessages() {
+        try {
+            const response = await fetch(withCharacterInstance('/api/messages'), { credentials: 'same-origin' });
+            if (!response.ok) return;
+
+            const payload = await response.json();
+            if (Array.isArray(payload)) {
+                messages = payload.map(normalizeMessage);
+            } else if (Array.isArray(payload.messages)) {
+                messages = payload.messages.map(normalizeMessage);
+            } else {
+                messages = [];
+            }
+            renderMessages();
+        } catch (error) {
+            console.error('Error loading messages:', error);
+        }
+    }
+
+    async function sendMessage(content) {
+        try {
+            const body = { content };
+            if (chatCharacterInstanceId) {
+                body.character_instance_id = chatCharacterInstanceId;
+                body.type = 'command';
+            }
+
+            const response = await fetch(withCharacterInstance('/api/messages'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify(body)
+            });
+
+            const payload = await response.json();
+            if (!response.ok || payload.success === false) {
+                console.error('Error sending message:', payload.error || response.statusText);
+                return;
+            }
+
+            if (payload.message) {
+                messages.push(normalizeMessage(payload.message));
+                renderMessages();
+            } else if (payload.id || payload.content) {
+                messages.push(normalizeMessage(payload));
+                renderMessages();
+            } else {
+                await loadMessages();
+            }
+        } catch (error) {
+            console.error('Error sending message:', error);
+        }
+    }
+
+    messageForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const content = messageInput.value.trim();
+        if (!content) return;
+
+        await sendMessage(content);
+        messageInput.value = '';
+    });
+
+    loadMessages();
+    setInterval(loadMessages, 5000);
+})();
+</script>

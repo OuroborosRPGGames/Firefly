@@ -1,0 +1,287 @@
+<% unless @popout %>
+<section class="page-banner" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <div class="breadcrumbs text-sm mb-2">
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/dashboard">Dashboard</a></li>
+          <li>Media</li>
+        </ul>
+      </div>
+      <h1><i class="bi bi-music-note-beamed mr-2"></i>Media</h1>
+      <p class="text-base-content/70 text-lg"><%= h @character.full_name %></p>
+    </div>
+  </div>
+</section>
+<% end %>
+
+<link rel="stylesheet" href="/css/media-popout.css">
+
+<section class="<%= @popout ? 'py-2' : 'py-12' %>">
+  <div class="<%= @popout ? 'px-3' : 'container mx-auto px-4' %>"
+       id="mediaContainer"
+       data-character-id="<%= @character.id %>"
+       data-character-instance-id="<%= @character_instance.id %>"
+       data-playlists="<%= @playlists.map(&:to_hash).to_json.gsub('"', '&quot;') %>"
+       data-autoplay="<%= @media_prefs.fetch('autoplay', true) %>"
+       data-start-muted="<%= @media_prefs.fetch('start_muted', false) %>">
+
+    <!-- Tabs -->
+    <div role="tablist" class="tabs tabs-bordered tabs-lg mb-4" id="mediaTabs">
+      <a role="tab" class="tab tab-active" data-tab="youtube" id="tab-youtube">
+        <i class="bi bi-youtube mr-1"></i>YouTube
+      </a>
+      <a role="tab" class="tab" data-tab="share" id="tab-share">
+        <i class="bi bi-broadcast mr-1"></i>Share
+      </a>
+      <a role="tab" class="tab" data-tab="playlists" id="tab-playlists">
+        <i class="bi bi-collection-play mr-1"></i>Playlists
+      </a>
+      <a role="tab" class="tab" data-tab="room" id="tab-room">
+        <i class="bi bi-people mr-1"></i>Room
+      </a>
+      <a role="tab" class="tab" data-tab="settings" id="tab-settings">
+        <i class="bi bi-gear mr-1"></i>Settings
+      </a>
+    </div>
+
+    <!-- ============ YOUTUBE TAB ============ -->
+    <div class="tab-panel active" id="panel-youtube">
+      <!-- URL Input -->
+      <div class="media-input-group mb-4">
+        <div class="join w-full">
+          <input type="text" id="youtubeUrlInput" class="input input-bordered join-item flex-1"
+                 placeholder="Paste YouTube URL..." autocomplete="off" />
+          <button class="btn btn-primary join-item" id="addVideoBtn">
+            <i class="bi bi-plus-lg mr-1"></i>Add
+          </button>
+        </div>
+        <p class="text-xs text-base-content/40 mt-1">Supports youtube.com and youtu.be links</p>
+      </div>
+
+      <!-- Video Preview (hidden until URL entered) -->
+      <div id="videoPreview" class="hidden mb-4">
+        <div class="media-preview-card card card-side bg-base-200 shadow-md">
+          <figure class="media-preview-thumb">
+            <img id="previewThumb" src="" alt="Video thumbnail" />
+            <span id="previewDuration" class="media-duration-badge badge badge-neutral">--:--</span>
+          </figure>
+          <div class="card-body p-3">
+            <h3 class="card-title text-sm" id="previewTitle">Loading...</h3>
+            <div class="flex items-center gap-2 mt-1">
+              <span id="previewEmbed" class="badge badge-sm badge-success">
+                <i class="bi bi-check-lg mr-1"></i>Embeddable
+              </span>
+              <span id="previewVideoId" class="badge badge-sm badge-ghost font-mono"></span>
+            </div>
+            <div class="card-actions justify-end mt-2">
+              <button class="btn btn-xs btn-ghost" id="previewSaveLibrary" title="Save to Library">
+                <i class="bi bi-bookmark-plus"></i>
+              </button>
+              <button class="btn btn-xs btn-ghost text-error" id="previewDiscard" title="Discard">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Queue -->
+      <div class="media-section-header flex items-center justify-between mb-2">
+        <h3 class="text-sm font-semibold text-base-content/70 uppercase tracking-wider">
+          <i class="bi bi-list-ol mr-1"></i>Queue
+          <span id="queueCount" class="badge badge-sm badge-ghost ml-1">0</span>
+        </h3>
+        <div class="flex gap-1">
+          <button class="btn btn-xs btn-ghost" id="clearQueueBtn" title="Clear queue">
+            <i class="bi bi-trash3"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="queueList" class="media-queue space-y-1 mb-4">
+        <div class="media-queue-empty text-center py-8 text-base-content/30">
+          <i class="bi bi-collection-play text-3xl mb-2 block"></i>
+          <p class="text-sm">Queue is empty. Add videos above.</p>
+        </div>
+      </div>
+
+      <!-- Play Controls -->
+      <div class="flex gap-2 mt-4">
+        <button class="btn btn-primary flex-1" id="playQueueBtn" disabled>
+          <i class="bi bi-play-fill mr-1"></i>Play in Room
+        </button>
+      </div>
+    </div>
+
+    <!-- ============ SHARE TAB ============ -->
+    <div class="tab-panel" id="panel-share">
+      <div class="grid grid-cols-1 gap-4">
+        <button class="media-share-btn btn btn-lg btn-outline h-auto py-6 flex-col gap-2" id="shareScreenBtn">
+          <i class="bi bi-display text-3xl"></i>
+          <span class="text-base font-semibold">Share Screen</span>
+          <span class="text-xs text-base-content/50">Share your entire screen or a window</span>
+        </button>
+
+        <button class="media-share-btn btn btn-lg btn-outline h-auto py-6 flex-col gap-2" id="shareTabBtn">
+          <i class="bi bi-window-stack text-3xl"></i>
+          <span class="text-base font-semibold">Share Browser Tab</span>
+          <span class="text-xs text-base-content/50">
+            Share a tab with audio
+            <span class="badge badge-xs badge-warning ml-1">Chrome only</span>
+          </span>
+        </button>
+      </div>
+
+      <div class="alert alert-info mt-4">
+        <i class="bi bi-info-circle"></i>
+        <div class="text-sm">
+          <p>Your browser will show a permission prompt in the webclient window to select what to share.</p>
+          <p class="mt-1">Screen sharing uses peer-to-peer WebRTC. Only people in your room can view.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ PLAYLISTS TAB ============ -->
+    <div class="tab-panel" id="panel-playlists">
+      <!-- Playlist Management -->
+      <div class="flex items-center gap-2 mb-4">
+        <select id="playlistSelect" class="select select-bordered select-sm flex-1">
+          <option value="">-- Select Playlist --</option>
+          <% @playlists.each do |pl| %>
+            <option value="<%= pl.id %>"><%= pl.name %> (<%= pl.item_count %>)</option>
+          <% end %>
+        </select>
+        <button class="btn btn-sm btn-primary" id="newPlaylistBtn" title="New Playlist">
+          <i class="bi bi-plus-lg"></i>
+        </button>
+        <button class="btn btn-sm btn-ghost text-error" id="deletePlaylistBtn" title="Delete Playlist" disabled>
+          <i class="bi bi-trash3"></i>
+        </button>
+      </div>
+
+      <!-- Playlist Actions -->
+      <div class="flex gap-2 mb-4">
+        <button class="btn btn-sm btn-outline flex-1" id="loadPlaylistBtn" disabled>
+          <i class="bi bi-box-arrow-in-right mr-1"></i>Load into Queue
+        </button>
+        <button class="btn btn-sm btn-outline flex-1" id="saveToPlaylistBtn" disabled>
+          <i class="bi bi-floppy mr-1"></i>Save Queue as Playlist
+        </button>
+      </div>
+
+      <!-- Playlist Items Preview -->
+      <div id="playlistItemsPreview" class="space-y-1 mb-6">
+        <p class="text-center text-base-content/30 text-sm py-4">Select a playlist to preview</p>
+      </div>
+
+      <div class="divider text-xs text-base-content/40">SAVED VIDEOS</div>
+
+      <!-- Library / Saved Videos -->
+      <div id="libraryList" class="space-y-1">
+        <p class="text-center text-base-content/30 text-sm py-4">
+          <i class="bi bi-bookmark block text-2xl mb-1"></i>
+          No saved videos yet
+        </p>
+      </div>
+    </div>
+
+    <!-- ============ ROOM TAB ============ -->
+    <div class="tab-panel" id="panel-room">
+      <div id="roomSessionInfo">
+        <!-- Populated dynamically via refreshRoomSession() polling -->
+        <div class="text-center py-8 text-base-content/30">
+          <span class="media-loading"></span>
+          <p class="text-sm mt-2">Checking room session...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ SETTINGS TAB ============ -->
+    <div class="tab-panel" id="panel-settings">
+      <div class="space-y-4">
+        <div class="form-control">
+          <label class="label cursor-pointer justify-start gap-3">
+            <input type="checkbox" class="toggle toggle-primary" id="settingAutoplay"
+                   <%= @media_prefs.fetch('autoplay', true) ? 'checked' : '' %> />
+            <div>
+              <span class="label-text font-medium">Auto-join sessions</span>
+              <p class="text-xs text-base-content/50 mt-0.5">
+                Automatically join when someone starts playing in your room
+              </p>
+            </div>
+          </label>
+        </div>
+
+        <div class="form-control">
+          <label class="label cursor-pointer justify-start gap-3">
+            <input type="checkbox" class="toggle toggle-primary" id="settingStartMuted"
+                   <%= @media_prefs.fetch('start_muted', false) ? 'checked' : '' %> />
+            <div>
+              <span class="label-text font-medium">Start muted</span>
+              <p class="text-xs text-base-content/50 mt-0.5">
+                Join sessions with audio muted (click to unmute)
+              </p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="text-xs text-base-content/30">
+        <p>Media sessions are room-scoped. Only people in the same room can see your shared content.</p>
+        <p class="mt-1">YouTube playback syncs position across all viewers.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Toast container -->
+<div id="mediaToasts" class="toast toast-end toast-bottom z-50"></div>
+
+<!-- New Playlist Modal -->
+<dialog id="newPlaylistModal" class="modal">
+  <div class="modal-box bg-base-200 max-w-sm">
+    <h3 class="font-bold text-lg mb-4">New Playlist</h3>
+    <input type="text" id="newPlaylistName" class="input input-bordered w-full"
+           placeholder="Playlist name..." maxlength="100" />
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn btn-ghost btn-sm">Cancel</button>
+      </form>
+      <button class="btn btn-primary btn-sm" id="createPlaylistConfirm">Create</button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<!-- Save Queue as Playlist Modal -->
+<dialog id="savePlaylistModal" class="modal">
+  <div class="modal-box bg-base-200 max-w-sm">
+    <h3 class="font-bold text-lg mb-4">Save Queue as Playlist</h3>
+    <input type="text" id="savePlaylistName" class="input input-bordered w-full"
+           placeholder="Playlist name..." maxlength="100" />
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn btn-ghost btn-sm">Cancel</button>
+      </form>
+      <button class="btn btn-primary btn-sm" id="savePlaylistConfirm">Save</button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<!-- PeerJS for WebRTC screen sharing from popout -->
+<script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
+<script src="/js/media-popout.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const container = document.getElementById('mediaContainer');
+    window.mediaPopout = new MediaPopout(container, container.dataset.characterId, {
+      popout: <%= @popout ? 'true' : 'false' %>
+    });
+  });
+</script>

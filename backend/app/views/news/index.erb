@@ -1,0 +1,204 @@
+<!-- Page Banner -->
+<section class="page-banner" style="background-image: url('/images/library.jpg');">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <div class="breadcrumbs text-sm">
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li>News</li>
+        </ul>
+      </div>
+      <h1>The Chronicle</h1>
+    </div>
+  </div>
+</section>
+
+<section class="py-12">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <!-- Main Content -->
+      <div class="lg:col-span-8">
+        <!-- Chronicle Header -->
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body">
+            <div class="chronicle-header">
+              <h2 class="chronicle-title">The <%= game_name %> Chronicle</h2>
+              <p class="chronicle-subtitle">"All the news that's fit to roleplay"</p>
+              <div class="chronicle-date">
+                <i class="bi bi-calendar mr-2"></i><%= Time.now.strftime('%A, %B %d, %Y') %>
+              </div>
+            </div>
+
+            <!-- Issue Navigation -->
+            <div class="chronicle-nav flex justify-between items-center mt-4">
+              <a href="#" class="btn btn-outline btn-ghost btn-sm btn-disabled">
+                <i class="bi bi-chevron-left mr-1"></i>Previous Issue
+              </a>
+              <span class="text-base-content/70">Issue #1</span>
+              <a href="#" class="btn btn-outline btn-ghost btn-sm btn-disabled">
+                Next Issue<i class="bi bi-chevron-right ml-1"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- News Articles -->
+        <% if @news && @news.any? %>
+          <% @news.each do |news| %>
+            <article class="card bg-base-200 mb-4">
+              <div class="card-body">
+                <div class="flex gap-4">
+                  <div class="text-center" style="min-width: 80px;">
+                    <div class="text-4xl text-primary font-bold"><%= news[:date].day %></div>
+                    <div class="text-base-content/70 uppercase text-sm"><%= news[:date].strftime('%b %Y') %></div>
+                  </div>
+                  <div class="flex-1">
+                    <h3 class="text-lg font-semibold mb-2">
+                      <a href="/news/<%= news[:id] %>" class="no-underline hover:text-primary"><%= news[:title] %></a>
+                    </h3>
+                    <p class="text-base-content/70 mb-2"><%= news[:excerpt] %></p>
+                    <a href="/news/<%= news[:id] %>" class="text-primary text-sm">Read more <i class="bi bi-arrow-right"></i></a>
+                  </div>
+                </div>
+              </div>
+            </article>
+          <% end %>
+        <% else %>
+          <!-- Sample Chronicle Content -->
+          <article class="card bg-base-200 mb-4">
+            <div class="card-body">
+              <div class="flex gap-4">
+                <div class="text-center" style="min-width: 80px;">
+                  <div class="text-4xl text-primary font-bold"><%= Time.now.day %></div>
+                  <div class="text-base-content/70 uppercase text-sm"><%= Time.now.strftime('%b %Y') %></div>
+                </div>
+                <div class="flex-1">
+                  <h3 class="text-lg font-semibold mb-2">Welcome to <%= game_name %></h3>
+                  <p class="text-base-content/70 mb-3">
+                    Welcome to <%= game_name %>! We're excited to have you here. Our world is rich with stories waiting to be told,
+                    characters waiting to be created, and adventures waiting to unfold.
+                  </p>
+                  <div class="newspaper-columns">
+                    <p class="text-base-content/70 text-sm">
+                      Whether you're a seasoned roleplayer or new to collaborative storytelling, you'll find a welcoming
+                      community here. Start by creating an account and your first character. Then explore our world,
+                      meet other players, and begin writing your story.
+                    </p>
+                    <p class="text-base-content/70 text-sm">
+                      We can't wait to see what you create! The world of <%= game_name %> awaits your imagination.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="card bg-base-200 mb-4">
+            <div class="card-body">
+              <div class="flex gap-4">
+                <div class="text-center" style="min-width: 80px;">
+                  <div class="text-4xl text-primary font-bold"><%= (Time.now - 86400).day %></div>
+                  <div class="text-base-content/70 uppercase text-sm"><%= (Time.now - 86400).strftime('%b %Y') %></div>
+                </div>
+                <div class="flex-1">
+                  <h3 class="text-lg font-semibold mb-2">New Design System Launched</h3>
+                  <p class="text-base-content/70 mb-3">
+                    We've completely redesigned the <%= game_name %> interface with a clean, modern aesthetic.
+                  </p>
+                  <div class="newspaper-columns">
+                    <p class="text-base-content/70 text-sm">
+                      The new design features the Bootswatch Slate theme, elegant typography with serif headings,
+                      and a mobile-responsive layout. Dark mode is now the default, with clean visual hierarchy.
+                    </p>
+                    <p class="text-base-content/70 text-sm">
+                      Key features include a Haven-style navigation, hero sections, sidebar layouts, and
+                      comprehensive customization options for game operators.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="card bg-base-200">
+            <div class="card-body">
+              <div class="flex gap-4">
+                <div class="text-center" style="min-width: 80px;">
+                  <div class="text-4xl text-primary font-bold"><%= (Time.now - 172800).day %></div>
+                  <div class="text-base-content/70 uppercase text-sm"><%= (Time.now - 172800).strftime('%b %Y') %></div>
+                </div>
+                <div class="flex-1">
+                  <h3 class="text-lg font-semibold mb-2">Community Guidelines Published</h3>
+                  <p class="text-base-content/70 mb-3">
+                    Our community guidelines have been established to ensure a welcoming and creative environment for all players.
+                  </p>
+                  <div class="newspaper-columns">
+                    <p class="text-base-content/70 text-sm">
+                      Please review our rules and getting started guide to learn about character creation requirements,
+                      community expectations, and how to make the most of your experience here.
+                    </p>
+                    <p class="text-base-content/70 text-sm">
+                      Remember: be respectful, stay in character during scenes, and most importantly - have fun telling stories together!
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        <% end %>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="lg:col-span-4 sidebar">
+        <!-- Search -->
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body">
+            <h3 class="card-title text-base">
+              <i class="bi bi-search mr-2"></i>Search Archives
+            </h3>
+            <form action="/news/search" method="get">
+              <div class="join w-full">
+                <input type="text" class="input input-bordered join-item flex-1" name="q" placeholder="Search news...">
+                <button class="btn btn-primary join-item" type="submit">
+                  <i class="bi bi-search"></i>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Archive -->
+        <div class="card bg-base-200 mb-4">
+          <div class="card-body">
+            <h3 class="card-title text-base">
+              <i class="bi bi-archive mr-2"></i>Archive
+            </h3>
+            <ul class="menu bg-base-200 rounded-box p-0">
+              <li>
+                <a href="/news?month=<%= Time.now.strftime('%Y-%m') %>" class="border-b border-base-content/10">
+                  <i class="bi bi-calendar-event text-primary"></i><%= Time.now.strftime('%B %Y') %>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Categories -->
+        <div class="card bg-base-200">
+          <div class="card-body">
+            <h3 class="card-title text-base">
+              <i class="bi bi-tags mr-2"></i>Categories
+            </h3>
+            <div class="flex flex-wrap gap-1">
+              <span class="badge badge-neutral">Announcements</span>
+              <span class="badge badge-neutral">Events</span>
+              <span class="badge badge-neutral">Updates</span>
+              <span class="badge badge-neutral">Community</span>
+              <span class="badge badge-neutral">Lore</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

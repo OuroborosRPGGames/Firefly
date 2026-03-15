@@ -1,0 +1,187 @@
+<div class="card bg-base-200 mb-4">
+  <div class="p-4 border-b border-base-content/10 flex items-center gap-2">
+    <i class="bi bi-arrow-repeat"></i>Spawning Configuration
+  </div>
+  <div class="card-body">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">Name Pattern</span>
+        </label>
+        <input type="text" class="input input-bordered w-full" name="name_pattern"
+               value="<%= h(@archetype.name_pattern || '{archetype}') %>">
+        <label class="label">
+          <span class="label-text-alt text-base-content/70">
+            Patterns: <code class="bg-base-300 px-1 rounded">{archetype}</code> = archetype name,
+            <code class="bg-base-300 px-1 rounded">{n}</code> = counter,
+            <code class="bg-base-300 px-1 rounded">{N}</code> = zero-padded counter
+          </span>
+        </label>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">Health Range</span>
+        </label>
+        <input type="text" class="input input-bordered w-full" name="spawn_health_range"
+               value="<%= h(@archetype.spawn_health_range || '100-100') %>"
+               placeholder="min-max">
+        <label class="label">
+          <span class="label-text-alt text-base-content/70">e.g., 80-120 for 80 to 120 HP</span>
+        </label>
+      </div>
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">Level Range</span>
+        </label>
+        <input type="text" class="input input-bordered w-full" name="spawn_level_range"
+               value="<%= h(@archetype.spawn_level_range || '1-1') %>"
+               placeholder="min-max">
+        <label class="label">
+          <span class="label-text-alt text-base-content/70">e.g., 1-5 for levels 1 through 5</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Pattern Preview -->
+    <div class="alert alert-info mt-4">
+      <div>
+        <h6 class="font-bold flex items-center gap-2">
+          <i class="bi bi-eye"></i>Name Preview
+        </h6>
+        <p class="mt-1">
+          Next spawn would be named:
+          <strong>
+            <%=
+              pattern = @archetype.name_pattern || '{archetype}'
+              counter = (@archetype.name_counter || 0) + 1
+              pattern.gsub('{archetype}', @archetype.name || 'NPC')
+                     .gsub('{n}', counter.to_s)
+                     .gsub('{N}', counter.to_s.rjust(3, '0'))
+            %>
+          </strong>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card bg-base-200 mb-4">
+  <div class="p-4 border-b border-base-content/10 flex items-center gap-2">
+    <i class="bi bi-signpost-split"></i>Leadership & Summoning
+  </div>
+  <div class="card-body">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="form-control">
+        <input type="hidden" name="is_leadable" value="0">
+        <label class="label cursor-pointer justify-start gap-3">
+          <input type="checkbox" class="checkbox" name="is_leadable" value="1" <%= @archetype.is_leadable != false ? 'checked' : '' %>>
+          <span class="label-text">Can be led by players</span>
+        </label>
+      </div>
+      <div class="form-control">
+        <input type="hidden" name="is_summonable" value="0">
+        <label class="label cursor-pointer justify-start gap-3">
+          <input type="checkbox" class="checkbox" name="is_summonable" value="1" <%= @archetype.is_summonable != false ? 'checked' : '' %>>
+          <span class="label-text">Can be summoned by players</span>
+        </label>
+      </div>
+    </div>
+    <div class="form-control mt-3 max-w-sm">
+      <label class="label"><span class="label-text">Summon Range</span></label>
+      <% summon_range = @archetype.summon_range || 'area' %>
+      <select class="select select-bordered w-full" name="summon_range">
+        <option value="room" <%= summon_range == 'room' ? 'selected' : '' %>>Room</option>
+        <option value="area" <%= summon_range == 'area' ? 'selected' : '' %>>Area</option>
+        <option value="world" <%= summon_range == 'world' ? 'selected' : '' %>>World</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="card bg-base-200 mb-4">
+  <div class="p-4 border-b border-base-content/10 flex items-center gap-2">
+    <i class="bi bi-magic"></i>Animation Runtime
+  </div>
+  <div class="card-body">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="form-control">
+        <label class="label"><span class="label-text">Animation Level</span></label>
+        <select class="select select-bordered w-full" name="animation_level">
+          <% current_level = @archetype.effective_animation_level %>
+          <% NpcArchetype::ANIMATION_LEVELS.each do |level| %>
+            <option value="<%= level %>" <%= current_level == level ? 'selected' : '' %>><%= level.capitalize %></option>
+          <% end %>
+        </select>
+      </div>
+      <div class="form-control">
+        <label class="label"><span class="label-text">Cooldown (seconds)</span></label>
+        <input type="number" class="input input-bordered w-full" name="animation_cooldown_seconds"
+               value="<%= @archetype.effective_cooldown_seconds %>" min="0" max="7200">
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+      <div class="form-control">
+        <label class="label"><span class="label-text">Primary Model</span></label>
+        <% selected_primary = @archetype.effective_primary_model %>
+        <select class="select select-bordered w-full" name="animation_primary_model">
+          <% NpcArchetype::ANIMATION_MODELS.keys.each do |model_name| %>
+            <option value="<%= model_name %>" <%= selected_primary == model_name ? 'selected' : '' %>><%= model_name %></option>
+          <% end %>
+        </select>
+      </div>
+      <div class="form-control">
+        <label class="label"><span class="label-text">First Emote Model</span></label>
+        <% selected_first = @archetype.effective_first_emote_model %>
+        <select class="select select-bordered w-full" name="animation_first_emote_model">
+          <% NpcArchetype::ANIMATION_MODELS.keys.each do |model_name| %>
+            <option value="<%= model_name %>" <%= selected_first == model_name ? 'selected' : '' %>><%= model_name %></option>
+          <% end %>
+        </select>
+      </div>
+      <div class="form-control">
+        <label class="label"><span class="label-text">Memory Model</span></label>
+        <% selected_memory = @archetype.effective_memory_model %>
+        <select class="select select-bordered w-full" name="animation_memory_model">
+          <% NpcArchetype::ANIMATION_MODELS.keys.each do |model_name| %>
+            <option value="<%= model_name %>" <%= selected_memory == model_name ? 'selected' : '' %>><%= model_name %></option>
+          <% end %>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-control mt-4">
+      <label class="label"><span class="label-text">Fallback Models (comma-separated)</span></label>
+      <input type="text" class="input input-bordered w-full" name="animation_fallback_models"
+             value="<%= h((@archetype.fallback_models rescue []).join(', ')) %>"
+             placeholder="claude-haiku-4-5, gemini-3.1-flash-lite-preview">
+    </div>
+
+    <div class="form-control mt-4">
+      <label class="label"><span class="label-text">Personality Prompt Override</span></label>
+      <textarea class="textarea textarea-bordered w-full h-24" name="animation_personality_prompt"
+                placeholder="Optional: override the default animation personality prompt"><%= h(@archetype.animation_personality_prompt || '') %></textarea>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+      <div class="form-control">
+        <input type="hidden" name="generate_outfit_on_spawn" value="0">
+        <label class="label cursor-pointer justify-start gap-3">
+          <input type="checkbox" class="checkbox" name="generate_outfit_on_spawn" value="1" <%= @archetype.generate_outfit_on_spawn ? 'checked' : '' %>>
+          <span class="label-text">Generate outfit on spawn</span>
+        </label>
+      </div>
+      <div class="form-control">
+        <input type="hidden" name="generate_status_on_spawn" value="0">
+        <label class="label cursor-pointer justify-start gap-3">
+          <input type="checkbox" class="checkbox" name="generate_status_on_spawn" value="1" <%= @archetype.generate_status_on_spawn ? 'checked' : '' %>>
+          <span class="label-text">Generate status/roomtitle on spawn</span>
+        </label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%= partial 'admin/npcs/animation_fields' %>

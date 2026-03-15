@@ -1,0 +1,27 @@
+<%#
+  Stat/metric cards in a grid grid-cols-12 gap-4
+
+  Usage:
+    <%= partial 'shared/stat_cards', locals: {
+      cards: [
+        { count: 10, label: 'Total Users', icon: 'people', color: 'primary' },
+        { count: 5, label: 'Online Now', icon: 'broadcast', color: 'success' },
+        { count: 25, label: 'Rooms', icon: 'door-open', color: 'info' }
+      ]
+    } %>
+%>
+<div class="grid grid-cols-12 gap-4 mb-4">
+  <% cards.each do |card| %>
+    <div class="col-md-<%= 12 / cards.length %>">
+      <div class="card bg-base-200">
+        <div class="card-body text-center">
+          <% if card[:icon] %>
+            <i class="bi bi-<%= card[:icon] %> text-<%= card[:color] || 'primary' %> mb-2" style="font-size: 1.5rem;"></i>
+          <% end %>
+          <h3 class="mb-0"><%= card[:count] %></h3>
+          <small class="text-base-content/60"><%= card[:label] %></small>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>

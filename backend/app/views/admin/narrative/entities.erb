@@ -1,0 +1,111 @@
+<% @page_title = 'Entity Browser - Narrative - Admin' %>
+<% @breadcrumbs = [{ label: 'Admin', path: '/admin' }, { label: 'Narrative', path: '/admin/narrative' }, { label: 'Entities' }] %>
+
+<%= admin_content_start %>
+      <div class="flex items-center gap-2 mb-4">
+        <a href="/admin/narrative" class="btn btn-ghost btn-sm">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <h2 class="text-2xl font-bold flex-1">
+          <i class="bi bi-search mr-2"></i>Entity Browser
+        </h2>
+      </div>
+
+      <!-- Search + Filter -->
+      <div class="flex flex-wrap gap-4 mb-6">
+        <form method="get" action="/admin/narrative/entities" class="flex gap-2 flex-1">
+          <input type="text" name="q" value="<%= @query %>" placeholder="Search entities..." class="input input-bordered flex-1" />
+          <select name="type" class="select select-bordered">
+            <option value="">All Types</option>
+            <% NarrativeEntity::ENTITY_TYPES.each do |t| %>
+              <option value="<%= t %>" <%= 'selected' if @type_filter == t %>><%= t.capitalize %></option>
+            <% end %>
+          </select>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-search"></i>
+          </button>
+        </form>
+      </div>
+
+      <!-- Entity Table -->
+      <% if @entities.empty? %>
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle mr-2"></i>
+          <% if @query && !@query.empty? %>
+            No entities found matching "<%= @query %>".
+          <% else %>
+            No entities extracted yet. Entities are automatically extracted from world memories.
+          <% end %>
+        </div>
+      <% else %>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Mentions</th>
+                <th>Importance</th>
+                <th>Threads</th>
+                <th>Canonical Link</th>
+                <th>Last Seen</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @entities.each do |entity| %>
+                <tr>
+                  <td>
+                    <div class="font-medium"><%= h entity.name %></div>
+                    <% if entity.description %>
+                      <div class="text-xs text-base-content/60 line-clamp-1"><%= entity.description %></div>
+                    <% end %>
+                    <% aliases = entity.aliases || [] %>
+                    <% if aliases.any? %>
+                      <div class="flex gap-1 mt-1">
+                        <% aliases.first(3).each do |a| %>
+                          <span class="badge badge-xs badge-ghost"><%= a %></span>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </td>
+                  <td>
+                    <span class="badge badge-sm badge-outline"><%= entity.entity_type %></span>
+                  </td>
+                  <td><%= entity.mention_count %></td>
+                  <td>
+                    <div class="flex items-center gap-1">
+                      <span><%= entity.importance.round(1) %></span>
+                      <progress class="progress progress-primary w-12" value="<%= entity.importance %>" max="10"></progress>
+                    </div>
+                  </td>
+                  <td>
+                    <%
+                      thread_count = NarrativeThreadEntity.where(narrative_entity_id: entity.id).count rescue 0
+                    %>
+                    <%= thread_count %>
+                  </td>
+                  <td>
+                    <% if entity.canonical_type %>
+                      <span class="badge badge-sm badge-accent"><%= entity.canonical_type %>#<%= entity.canonical_id %></span>
+                    <% else %>
+                      <span class="text-base-content/40">—</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if entity.last_seen_at %>
+                      <span class="text-sm"><%= entity.last_seen_at.strftime('%Y-%m-%d') %></span>
+                    <% else %>
+                      <span class="text-base-content/40">—</span>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mt-4 text-sm text-base-content/60">
+          Showing <%= @entities.size %> entities
+        </div>
+      <% end %>
+<%= admin_content_end %>

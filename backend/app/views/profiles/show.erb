@@ -1,0 +1,283 @@
+<%# Character Profile Page - Haven-inspired design %>
+<% background_url = @profile[:background_url] %>
+<% has_background = background_url && !background_url.to_s.empty? %>
+<% is_owner = @profile[:is_owner] %>
+
+<div class="profile-page<%= has_background ? ' has-background' : '' %>"
+     data-character-id="<%= @profile[:id] %>"
+     <% if has_background %>style="--profile-bg: url('<%= background_url %>');"<% end %>>
+
+  <% if has_background %>
+    <div class="profile-background-overlay"></div>
+  <% end %>
+
+  <div class="container mx-auto px-4 py-12 profile-content">
+    <!-- Header: Name and Handle -->
+    <header class="profile-header text-center mb-8">
+      <h1 class="profile-name"><%= h @profile[:name] %></h1>
+      <% if @profile[:nickname] && !@profile[:nickname].to_s.empty? && @profile[:nickname] != @character.forename %>
+        <p class="profile-nickname font-accent">"<%= h @profile[:nickname] %>"</p>
+      <% end %>
+      <% if @profile[:account_handle] %>
+        <p class="profile-handle text-base-content/70">@<%= h @profile[:account_handle] %></p>
+      <% end %>
+
+      <% if is_owner %>
+        <div class="profile-header-actions mt-3">
+          <button class="btn btn-outline btn-primary btn-sm" id="changeBackgroundBtn">
+            <i class="bi bi-image mr-1"></i><%= has_background ? 'Change Background' : 'Add Background' %>
+          </button>
+          <% if has_background %>
+            <button class="btn btn-outline btn-error btn-sm" id="removeBackgroundBtn">
+              <i class="bi bi-x-circle mr-1"></i>Remove Background
+            </button>
+          <% end %>
+          <input type="file" id="backgroundUpload" accept="image/*" class="hidden">
+        </div>
+      <% end %>
+    </header>
+
+    <!-- Main Content: Two Columns -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <!-- Left Column: Picture Carousel -->
+      <div class="lg:col-span-4 mb-4">
+        <div class="card profile-card bg-base-200">
+          <div class="card-body">
+            <div class="profile-pictures-carousel">
+              <% pictures = @profile[:pictures] || [] %>
+              <% if pictures.any? %>
+                <div class="carousel-container">
+                  <div class="carousel-slides">
+                    <% pictures.each_with_index do |pic, idx| %>
+                      <div class="carousel-slide<%= idx == 0 ? ' active' : '' %>" data-picture-id="<%= pic[:id] %>">
+                        <img src="<%= pic[:url] %>" alt="<%= h @profile[:name] %>" class="w-full rounded">
+                        <% if is_owner %>
+                          <button class="carousel-delete-btn btn btn-sm btn-error" data-picture-id="<%= pic[:id] %>">
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                  <% if pictures.length > 1 %>
+                    <button class="carousel-nav carousel-prev" aria-label="Previous">
+                      <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button class="carousel-nav carousel-next" aria-label="Next">
+                      <i class="bi bi-chevron-right"></i>
+                    </button>
+                    <div class="carousel-indicators">
+                      <% pictures.each_with_index do |_, idx| %>
+                        <button class="carousel-indicator<%= idx == 0 ? ' active' : '' %>" data-slide="<%= idx %>"></button>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+              <% else %>
+                <div class="carousel-empty text-center py-12">
+                  <div class="placeholder-image rounded mb-3">
+                    <span class="text-6xl text-base-content/70"><%= h @character.forename[0] %><%= @character.surname ? h(@character.surname[0]) : '' %></span>
+                  </div>
+                  <% if is_owner %>
+                    <p class="text-base-content/70">No pictures yet</p>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+
+            <% if is_owner %>
+              <div class="mt-3 text-center">
+                <button class="btn btn-outline btn-primary btn-sm" id="addPictureBtn">
+                  <i class="bi bi-plus-circle mr-1"></i>Add Picture
+                </button>
+                <input type="file" id="pictureUpload" accept="image/*" class="hidden">
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Sections -->
+      <div class="lg:col-span-8">
+        <div class="profile-sections" id="profileSections">
+          <% sections = @profile[:sections] || [] %>
+          <% if sections.any? %>
+            <% sections.each do |section| %>
+              <div class="card profile-card bg-base-200 profile-section mb-4" data-section-id="<%= section[:id] %>">
+                <div class="card-body">
+                  <div class="flex justify-between items-center mb-2">
+                    <h5 class="card-title section-title"><%= h(section[:title] || 'About') %></h5>
+                    <% if is_owner %>
+                      <div class="section-actions flex gap-1">
+                        <button class="btn btn-sm btn-outline btn-primary edit-section-btn" data-section-id="<%= section[:id] %>">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline btn-error delete-section-btn" data-section-id="<%= section[:id] %>">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    <% end %>
+                  </div>
+                  <div class="section-content"><%= section[:content] %></div>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <% if !is_owner %>
+              <div class="card profile-card bg-base-200">
+                <div class="card-body text-center py-12">
+                  <p class="text-base-content/70 mb-0">This profile is empty.</p>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+
+          <% if is_owner %>
+            <div class="text-center mt-4">
+              <button class="btn btn-outline btn-primary" id="addSectionBtn">
+                <i class="bi bi-plus-circle mr-1"></i>Add Section
+              </button>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Video Carousel -->
+    <% videos = @profile[:videos] || [] %>
+    <% if videos.any? || is_owner %>
+      <div class="profile-videos mt-8">
+        <h4 class="text-center mb-4">
+          <i class="bi bi-youtube mr-2"></i>Videos
+        </h4>
+
+        <% if videos.any? %>
+          <div class="video-carousel">
+            <div class="video-carousel-container">
+              <% videos.each_with_index do |video, idx| %>
+                <div class="video-slide<%= idx == 0 ? ' active' : '' %>" data-video-id="<%= video[:id] %>">
+                  <div class="aspect-video">
+                    <iframe
+                      src="https://www.youtube-nocookie.com/embed/<%= video[:youtube_id] %>"
+                      title="<%= h(video[:title] || 'YouTube video') %>"
+                      frameborder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowfullscreen
+                      loading="lazy"
+                      class="w-full h-full">
+                    </iframe>
+                  </div>
+                  <% if video[:title] && !video[:title].to_s.empty? %>
+                    <p class="video-title text-center mt-2"><%= h video[:title] %></p>
+                  <% end %>
+                  <% if is_owner %>
+                    <button class="video-delete-btn btn btn-sm btn-error" data-video-id="<%= video[:id] %>">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+            <% if videos.length > 1 %>
+              <button class="carousel-nav video-prev" aria-label="Previous video">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+              <button class="carousel-nav video-next" aria-label="Next video">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+              <div class="carousel-indicators video-indicators">
+                <% videos.each_with_index do |_, idx| %>
+                  <button class="carousel-indicator<%= idx == 0 ? ' active' : '' %>" data-slide="<%= idx %>"></button>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <% if is_owner %>
+            <p class="text-base-content/70 text-center">No videos yet</p>
+          <% end %>
+        <% end %>
+
+        <% if is_owner %>
+          <div class="text-center mt-3">
+            <button class="btn btn-outline btn-primary btn-sm" id="addVideoBtn">
+              <i class="bi bi-plus-circle mr-1"></i>Add Video
+            </button>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <!-- Back to Directory -->
+    <div class="text-center mt-8">
+      <a href="/profiles" class="btn btn-outline btn-ghost">
+        <i class="bi bi-arrow-left mr-2"></i>Back to Directory
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Section Editor Modal -->
+<% if is_owner %>
+<dialog class="modal" id="sectionEditorModal">
+  <div class="modal-box max-w-3xl bg-base-200">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-bold text-lg" id="sectionEditorModalLabel">Edit Section</h3>
+      <form method="dialog">
+        <button class="btn btn-sm btn-circle btn-ghost">✕</button>
+      </form>
+    </div>
+    <input type="hidden" id="editSectionId">
+    <div class="form-control mb-4">
+      <label class="label"><span class="label-text">Title</span></label>
+      <input type="text" class="input input-bordered w-full" id="sectionTitle" placeholder="Section title (optional)">
+    </div>
+    <div class="form-control mb-4">
+      <label class="label"><span class="label-text">Content</span></label>
+      <div id="sectionContentEditor" class="description-editor"></div>
+    </div>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn btn-ghost">Cancel</button>
+      </form>
+      <button type="button" class="btn btn-primary" id="saveSectionBtn">Save</button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<!-- Add Video Modal -->
+<dialog class="modal" id="addVideoModal">
+  <div class="modal-box bg-base-200">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-bold text-lg" id="addVideoModalLabel">Add YouTube Video</h3>
+      <form method="dialog">
+        <button class="btn btn-sm btn-circle btn-ghost">✕</button>
+      </form>
+    </div>
+    <div class="form-control mb-4">
+      <label class="label"><span class="label-text">YouTube URL or Video ID</span></label>
+      <input type="text" class="input input-bordered w-full" id="videoUrl" placeholder="https://www.youtube.com/watch?v=...">
+      <label class="label"><span class="label-text-alt">Paste a YouTube link or just the video ID (11 characters).</span></label>
+    </div>
+    <div class="form-control mb-4">
+      <label class="label"><span class="label-text">Title (optional)</span></label>
+      <input type="text" class="input input-bordered w-full" id="videoTitle" placeholder="Video title for accessibility">
+    </div>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn btn-ghost">Cancel</button>
+      </form>
+      <button type="button" class="btn btn-primary" id="saveVideoBtn">Add Video</button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+<% end %>
+
+<link rel="stylesheet" href="/css/profile.css">
+<script src="/js/profile.js"></script>

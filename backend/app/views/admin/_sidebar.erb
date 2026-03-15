@@ -1,0 +1,192 @@
+<%
+  # Define sections with their items
+  sections = {
+    users: {
+      icon: 'people',
+      label: 'Users & Players',
+      paths: ['/admin/users', '/admin/reputations'],
+      items: [
+        { path: '/admin/users', label: 'User Management', icon: 'people' },
+        { path: '/admin/reputations', label: 'PC Reputations', icon: 'star' }
+      ]
+    },
+    world: {
+      icon: 'globe-americas',
+      label: 'World Building',
+      paths: ['/admin/world_builder', '/admin/world_generator', '/admin/city_builder', '/admin/room_builder', '/admin/patterns', '/admin/spawn_settings'],
+      items: [
+        { path: '/admin/world_builder', label: 'World Builder', icon: 'globe-americas' },
+        { path: '/admin/world_generator', label: 'Content Generation', icon: 'magic' },
+        { path: '/admin/city_builder', label: 'City Builder', icon: 'buildings' },
+        { path: '/admin/room_builder', label: 'Room Builder', icon: 'house-gear' },
+        { path: '/admin/patterns', label: 'Pattern Designer', icon: 'palette' },
+        { path: '/admin/spawn_settings', label: 'Spawn Settings', icon: 'geo-alt' }
+      ]
+    },
+    content: {
+      icon: 'journal-richtext',
+      label: 'Content & Story',
+      paths: ['/admin/news', '/admin/broadcasts', '/admin/npcs', '/admin/mission_generator', '/admin/activity_builder', '/admin/triggers', '/admin/clues', '/admin/arranged_scenes', '/admin/trigger-activations', '/admin/narrative'],
+      items: [
+        { path: '/admin/news', label: 'News', icon: 'newspaper' },
+        { path: '/admin/broadcasts', label: 'Broadcasts', icon: 'megaphone' },
+        { path: '/admin/npcs', label: 'NPC Archetypes', icon: 'robot' },
+        { path: '/admin/mission_generator', label: 'Mission Generator', icon: 'bullseye' },
+        { path: '/admin/activity_builder', label: 'Activity Builder', icon: 'list-task' },
+        { path: '/admin/triggers', label: 'Triggers', icon: 'lightning' },
+        { path: '/admin/clues', label: 'Clues', icon: 'key' },
+        { path: '/admin/arranged_scenes', label: 'Arranged Scenes', icon: 'calendar-event' },
+        { path: '/admin/trigger-activations', label: 'Activation Log', icon: 'clock-history' },
+        { path: '/admin/narrative', label: 'Narrative Intelligence', icon: 'diagram-3' }
+      ]
+    },
+    combat: {
+      icon: 'crosshair',
+      label: 'Combat & Mechanics',
+      paths: ['/admin/stat_blocks', '/admin/abilities', '/admin/ability_simulator', '/admin/battle_maps', '/admin/battle_map_templates', '/admin/monsters', '/admin/vehicle_types', '/admin/combat_logs'],
+      items: [
+        { path: '/admin/stat_blocks', label: 'Stat Blocks', icon: 'bar-chart' },
+        { path: '/admin/abilities', label: 'Abilities', icon: 'magic' },
+        { path: '/admin/ability_simulator', label: 'Ability Simulator', icon: 'graph-up-arrow' },
+        { path: '/admin/battle_maps', label: 'Battle Maps', icon: 'hexagon' },
+        { path: '/admin/battle_map_templates', label: 'Map Templates', icon: 'grid-3x3' },
+        { path: '/admin/monsters', label: 'Monster Templates', icon: 'bug' },
+        { path: '/admin/vehicle_types', label: 'Vehicle Types', icon: 'truck' },
+        { path: '/admin/combat_logs', label: 'Combat Logs', icon: 'journal-text' }
+      ]
+    },
+    moderation: {
+      icon: 'shield-exclamation',
+      label: 'Moderation',
+      paths: ['/admin/moderation', '/admin/tickets'],
+      items: [
+        { path: '/admin/moderation', label: 'Moderation Hub', icon: 'shield-exclamation', exact: true },
+        { path: '/admin/moderation/abuse-monitoring', label: 'AI Abuse Monitor', icon: 'robot' },
+        { path: '/admin/moderation/ip-bans', label: 'IP Bans', icon: 'ban' },
+        { path: '/admin/moderation/moderation-actions', label: 'Actions Log', icon: 'journal-text' },
+        { path: '/admin/tickets', label: 'Tickets', icon: 'ticket-perforated', badge: true }
+      ],
+      requires: :can_moderate?
+    },
+    system: {
+      icon: 'gear',
+      label: 'System',
+      paths: ['/admin/settings', '/admin/help', '/admin/autohelper', '/admin/content_restrictions'],
+      items: [
+        { path: '/admin/settings', label: 'Game Settings', icon: 'gear' },
+        { path: '/admin/settings#ai', label: 'AI Providers', icon: 'robot' },
+        { path: '/admin/help', label: 'Help System', icon: 'question-circle' },
+        { path: '/admin/autohelper', label: 'Autohelper Analytics', icon: 'graph-up' },
+        { path: '/admin/content_restrictions', label: 'Content Controls', icon: 'shield-check' }
+      ]
+    }
+  }
+
+  # Get open ticket count for badge
+  open_ticket_count = defined?(Ticket) ? Ticket.open.count : 0 rescue 0
+%>
+
+<!-- Server Restart Button -->
+<div class="p-2 border-b border-base-300" id="restart-button-container">
+  <button class="btn btn-outline btn-error btn-sm w-full gap-1" onclick="document.getElementById('restart_server_modal').showModal()" id="restart-btn">
+    <i class="bi bi-arrow-repeat"></i>
+    <span>Restart Server</span>
+  </button>
+</div>
+
+<script>
+function cancelRestart() {
+  fetch('/admin/server/restart/cancel', { method: 'POST' })
+    .then(() => location.reload())
+    .catch(() => location.reload());
+}
+
+(function() {
+  let pollTimer = null;
+
+  function pollRestartStatus() {
+    fetch('/admin/server/restart/status')
+      .then(r => r.json())
+      .then(data => {
+        const container = document.getElementById('restart-button-container');
+        if (!container) return;
+
+        if (data.pending) {
+          const mins = Math.floor(data.remaining_seconds / 60);
+          const secs = data.remaining_seconds % 60;
+          const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+          container.innerHTML = `
+            <div class="flex items-center gap-2 p-2">
+              <span class="text-error text-sm font-medium flex-1">
+                <i class="bi bi-arrow-repeat animate-spin"></i>
+                Restart in ${timeStr}
+              </span>
+              <button type="button" class="btn btn-ghost btn-xs" onclick="cancelRestart()">Cancel</button>
+            </div>
+          `;
+
+          if (!pollTimer) {
+            pollTimer = setInterval(pollRestartStatus, 2000);
+          }
+        } else {
+          if (!document.getElementById('restart-btn')) {
+            container.innerHTML = `
+              <button class="btn btn-outline btn-error btn-sm w-full gap-1" onclick="document.getElementById('restart_server_modal').showModal()" id="restart-btn">
+                <i class="bi bi-arrow-repeat"></i>
+                <span>Restart Server</span>
+              </button>
+            `;
+          }
+          if (pollTimer) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+          }
+        }
+      })
+      .catch(() => {});
+  }
+
+  pollRestartStatus();
+})();
+</script>
+
+<%= partial 'admin/restart_modal' %>
+
+<div class="flex flex-col">
+  <% sections.each do |key, section| %>
+    <%
+      # Check permission requirements
+      next if section[:requires] && !current_user&.send(section[:requires])
+
+      # Determine if section should be open (check if current path matches any section path)
+      is_active = section[:paths] && section[:paths].any? { |p| request.path.start_with?(p) }
+    %>
+
+    <!-- Collapsible section -->
+      <div class="collapse collapse-arrow bg-base-200/50 rounded-none border-b border-base-300">
+        <input type="checkbox" class="peer" <%= 'checked' if is_active %> />
+        <div class="collapse-title flex items-center gap-2 text-sm font-medium py-2 min-h-0 <%= is_active ? 'text-primary' : 'text-base-content' %>">
+          <i class="bi bi-<%= section[:icon] %>"></i>
+          <span><%= section[:label] %></span>
+        </div>
+        <div class="collapse-content px-0 pb-0">
+          <% section[:items].each do |item| %>
+            <%
+              # Strip hash from path for comparison
+              item_path = item[:path].split('#').first
+              item_active = item[:exact] ? request.path == item_path : request.path.start_with?(item_path)
+            %>
+            <a href="<%= item[:path] %>"
+               class="flex items-center gap-2 pl-8 pr-4 py-2 text-sm hover:bg-base-300 transition-colors <%= item_active ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-base-content/80' %>">
+              <i class="bi bi-<%= item[:icon] %> text-xs"></i>
+              <span><%= item[:label] %></span>
+              <% if item[:badge] && open_ticket_count > 0 %>
+                <span class="badge badge-error badge-sm ml-auto"><%= open_ticket_count %></span>
+              <% end %>
+            </a>
+          <% end %>
+        </div>
+      </div>
+  <% end %>
+</div>

@@ -1,0 +1,89 @@
+<!-- Page Banner -->
+<section class="page-banner" style="background-image: url('/images/library.jpg');">
+  <div class="container mx-auto px-4">
+    <div class="page-banner-content">
+      <div class="breadcrumbs text-sm">
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li>Verify Email</li>
+        </ul>
+      </div>
+      <h1>Verify Your Email</h1>
+    </div>
+  </div>
+</section>
+
+<section class="py-12">
+  <div class="container mx-auto px-4">
+    <div class="flex justify-center">
+      <div class="w-full max-w-lg">
+        <div class="card bg-base-200 shadow-xl">
+          <div class="card-body p-8 text-center">
+            <div class="mb-6">
+              <i class="bi bi-envelope-check text-6xl text-primary"></i>
+            </div>
+
+            <h2 class="text-xl font-semibold mb-3">Check Your Email</h2>
+
+            <p class="text-base-content/70 mb-4">
+              We've sent a verification link to:<br>
+              <strong class="text-base-content"><%= h @user.email %></strong>
+            </p>
+
+            <p class="text-base-content/70 mb-4">
+              Click the link in the email to verify your account and unlock character creation.
+              The link will expire in <strong>24 hours</strong>.
+            </p>
+
+            <div class="alert alert-info mb-4">
+              <i class="bi bi-info-circle"></i>
+              <div>
+                <strong>Didn't receive the email?</strong>
+                <br>
+                Check your spam folder, or click below to send a new verification link.
+              </div>
+            </div>
+
+            <form action="/resend-verification" method="post" class="mb-4">
+              <%= csrf_tag %>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-envelope-arrow-up mr-2"></i>Resend Verification Email
+              </button>
+            </form>
+
+            <div class="divider"></div>
+
+            <p class="text-base-content/70 text-sm mb-3">
+              Wrong email address? You can update it below.
+            </p>
+
+            <a href="/settings" class="btn btn-outline btn-sm">
+              <i class="bi bi-gear mr-2"></i>Account Settings
+            </a>
+
+            <div class="mt-4">
+              <a href="/dashboard" class="text-base-content/70 hover:text-base-content">
+                <i class="bi bi-arrow-left mr-1"></i>Back to Dashboard
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- What happens next -->
+        <div class="card bg-base-200 shadow-xl mt-4">
+          <div class="card-body">
+            <h3 class="card-title text-base">
+              <i class="bi bi-question-circle mr-2"></i>What happens next?
+            </h3>
+            <ul class="text-sm text-base-content/70 space-y-2">
+              <li><i class="bi bi-1-circle text-primary mr-2"></i>Check your email inbox for the verification link</li>
+              <li><i class="bi bi-2-circle text-primary mr-2"></i>Click the link to verify your email address</li>
+              <li><i class="bi bi-3-circle text-primary mr-2"></i>You'll be redirected back here automatically</li>
+              <li><i class="bi bi-4-circle text-primary mr-2"></i>Create your first character and start playing!</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
