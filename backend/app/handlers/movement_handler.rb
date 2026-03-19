@@ -70,10 +70,27 @@ class MovementHandler
         store_success(timed_action, result_data)
       else
         store_error(timed_action, result.message)
+        # Reset movement state on failed transition to prevent stuck characters
+        character_instance.update(movement_state: 'idle', final_destination_id: nil, movement_direction: nil)
       end
 
       # Continue any pending semote actions after movement completes
       SemoteContinuationHandler.call(timed_action)
+    rescue StandardError => e
+      # Ensure movement state is always reset if the handler crashes.
+      # Without this, a character stays in 'moving' state forever with
+      # no active timed action — permanently stuck.
+      warn "[MovementHandler] Error during movement: #{e.message}"
+      begin
+        character_instance&.update(
+          movement_state: 'idle',
+          final_destination_id: nil,
+          movement_direction: nil
+        )
+      rescue StandardError
+        # Last-resort: ignore if even the reset fails
+      end
+      raise # Re-raise so finish! can mark the action as completed with error
     end
   end
 end

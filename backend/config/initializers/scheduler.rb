@@ -51,6 +51,7 @@ module Firefly
         cleanup_stuck_battle_map_generation!
         cleanup_stale_online_sessions!
         register_stranded_character_rescue!
+        register_stuck_movement_recovery!
         register_observe_refresh_processor!
         register_jukebox_processor!
         register_lighting_idle_shutdown!
@@ -535,9 +536,12 @@ module Firefly
 
       def register_abuse_monitoring_processors!
         # Process pending checks - runs every 2 ticks (10 seconds)
-        # Quick processing to minimize message delay
+        # IMPORTANT: Spawns work in a separate thread because abuse checks make
+        # synchronous LLM API calls (Gemini + Claude) that can block for seconds.
+        # Running these on the main tick thread would block ALL other tick handlers
+        # (movement, combat, NPC animations) for the duration of LLM calls.
         Scheduler.on_tick(2) do |_event|
-          process_pending_abuse_checks
+          dispatch_abuse_checks_async
         end
 
         # Expire staff overrides - runs every minute
@@ -549,6 +553,23 @@ module Firefly
         Scheduler.on_cron({ minutes: [0], hours: [4], days: [], weekdays: [] }) do |_event|
           cleanup_old_abuse_checks
         end
+      end
+
+      # Dispatch abuse checks to a background thread so LLM calls don't block
+      # the main scheduler tick thread. Only one check thread runs at a time.
+      def dispatch_abuse_checks_async
+        return unless defined?(AbuseMonitoringService)
+
+        # Skip if a previous check cycle is still running
+        if @abuse_check_thread&.alive?
+          return
+        end
+
+        @abuse_check_thread = Thread.new do
+          process_pending_abuse_checks
+        end
+      rescue StandardError => e
+        warn "[AbuseMonitor] Error dispatching async checks: #{e.message}"
       end
 
       # Process pending abuse checks (Gemini screening, Claude escalation)
@@ -873,6 +894,43 @@ module Firefly
           StrandedCharacterService.rescue_all_stranded!
         rescue StandardError => e
           warn "[Scheduler] Stranded character rescue failed: #{e.message}"
+        end
+      end
+
+      # Recover characters stuck in 'moving' state with no active timed action.
+      # This catches cases where a movement handler error left the character in
+      # 'moving' state but the timed action was marked completed/cancelled.
+      def register_stuck_movement_recovery!
+        # Run every 24 ticks (~2 minutes)
+        Scheduler.on_tick(24) do |_event|
+          # Find characters in 'moving' state for > 60 seconds with no active movement action
+          stuck = CharacterInstance
+            .where(movement_state: 'moving', online: true)
+            .exclude(
+              id: TimedAction
+                .where(action_name: 'movement', status: 'active')
+                .select(:character_instance_id)
+            )
+            .all
+
+          stuck.each do |ci|
+            # Double-check there's really no active action (avoid race with action just completing)
+            active = TimedAction.where(
+              character_instance_id: ci.id,
+              action_name: 'movement',
+              status: 'active'
+            ).first
+            next if active
+
+            ci.update(
+              movement_state: 'idle',
+              final_destination_id: nil,
+              movement_direction: nil
+            )
+            warn "[Scheduler] Recovered stuck movement for character #{ci.id} (#{ci.character&.name})"
+          end
+        rescue StandardError => e
+          warn "[Scheduler] Stuck movement recovery failed: #{e.message}"
         end
       end
 

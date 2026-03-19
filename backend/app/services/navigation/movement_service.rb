@@ -159,18 +159,29 @@ class MovementService
       move_prisoners(character_instance, new_room, adverb)
 
       # Check if we need to continue to final destination
-      if character_instance.final_destination_id && new_room.id != character_instance.final_destination_id
-        continue_to_destination(character_instance)
-      elsif character_instance.movement_direction
-        continue_in_direction(character_instance)
-      elsif character_instance.person_target_id
-        continue_following_person(character_instance)
-      else
-        # Clear any remaining destination tracking when we stop
+      begin
+        if character_instance.final_destination_id && new_room.id != character_instance.final_destination_id
+          continue_to_destination(character_instance)
+        elsif character_instance.movement_direction
+          continue_in_direction(character_instance)
+        elsif character_instance.person_target_id
+          continue_following_person(character_instance)
+        else
+          # Clear any remaining destination tracking when we stop
+          character_instance.update(
+            movement_state: 'idle',
+            final_destination_id: nil,
+            movement_direction: nil
+          )
+        end
+      rescue StandardError => e
+        # If continuation fails, stop movement rather than leaving character stuck
+        warn "[MovementService] Movement continuation failed: #{e.message}"
         character_instance.update(
           movement_state: 'idle',
           final_destination_id: nil,
-          movement_direction: nil
+          movement_direction: nil,
+          person_target_id: nil
         )
       end
 

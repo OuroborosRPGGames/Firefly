@@ -17,12 +17,20 @@ module Firefly
       def process_tick(tick_event)
         count = 0
 
-        # Complete ready actions
+        # Complete ready actions (each action isolated so one failure can't block others)
         TimedAction.ready_to_complete.each do |action|
-          next unless action.finish!
+          begin
+            next unless action.finish!
 
-          count += 1
-          notify_completion(action)
+            count += 1
+            notify_completion(action)
+          rescue StandardError => e
+            # If finish! itself raises (e.g. error-handling update also fails),
+            # force-complete the action to prevent it from blocking all subsequent
+            # actions on every future tick.
+            log("Action #{action.id} (#{action.action_name}) failed: #{e.message}")
+            force_complete_stuck_action(action)
+          end
         end
 
         # Clean up expired cooldowns every 60 ticks (~5 minutes)
@@ -58,6 +66,32 @@ module Firefly
         # This is where we'd notify the character via WebSocket
         # For now, just log it
         log("Action completed: #{action.action_name} for character #{action.character_instance_id}")
+      end
+
+      # Force-complete a stuck action that keeps raising errors.
+      # Uses a raw SQL update to bypass any model-level issues.
+      def force_complete_stuck_action(action)
+        DB[:timed_actions]
+          .where(id: action.id, status: 'active')
+          .update(status: 'completed', completed_at: Time.now)
+        reset_character_movement_state(action)
+      rescue StandardError => e
+        log("Force-complete also failed for action #{action.id}: #{e.message}")
+      end
+
+      # Reset movement state for a character whose movement action errored out.
+      def reset_character_movement_state(action)
+        return unless action.action_name == 'movement'
+
+        DB[:character_instances]
+          .where(id: action.character_instance_id, movement_state: 'moving')
+          .update(
+            movement_state: 'idle',
+            final_destination_id: nil,
+            movement_direction: nil
+          )
+      rescue StandardError => e
+        log("Movement state reset failed for character #{action.character_instance_id}: #{e.message}")
       end
 
       def cleanup_cooldowns
