@@ -6,32 +6,32 @@
 
       <!-- Settings Tabs -->
       <div role="tablist" class="tabs tabs-boxed mb-4" id="settingsTabs">
-        <button type="button" role="tab" class="tab tab-active" data-target="general">
+        <button type="button" role="tab" class="tab tab-active" data-tab="general">
           <i class="bi bi-gear mr-1"></i>General
         </button>
-        <button type="button" role="tab" class="tab" data-target="time">
+        <button type="button" role="tab" class="tab" data-tab="time">
           <i class="bi bi-clock mr-1"></i>Time
         </button>
-        <button type="button" role="tab" class="tab" data-target="weather">
+        <button type="button" role="tab" class="tab" data-tab="weather">
           <i class="bi bi-cloud-sun mr-1"></i>Weather
         </button>
-        <button type="button" role="tab" class="tab" data-target="ai">
+        <button type="button" role="tab" class="tab" data-tab="ai">
           <i class="bi bi-robot mr-1"></i>AI
         </button>
-        <button type="button" role="tab" class="tab" data-target="delve">
+        <button type="button" role="tab" class="tab" data-tab="delve">
           <i class="bi bi-map mr-1"></i>Delve
         </button>
-        <button type="button" role="tab" class="tab" data-target="email">
+        <button type="button" role="tab" class="tab" data-tab="email">
           <i class="bi bi-envelope mr-1"></i>Email
         </button>
-        <button type="button" role="tab" class="tab" data-target="storage">
+        <button type="button" role="tab" class="tab" data-tab="storage">
           <i class="bi bi-cloud-upload mr-1"></i>Storage
         </button>
       </div>
 
       <div id="settingsTabContent">
         <!-- General Settings -->
-        <div class="tab-panel" id="general">
+        <div class="tab-panel" id="general-panel">
           <div class="card bg-base-200">
             <div class="card-body">
               <h5 class="card-title">General Settings</h5>
@@ -112,7 +112,7 @@
         </div>
 
         <!-- Time Settings -->
-        <div class="tab-panel hidden" id="time">
+        <div class="tab-panel hidden" id="time-panel">
           <div class="card bg-base-200">
             <div class="card-body">
               <h5 class="card-title">Time Settings</h5>
@@ -175,7 +175,7 @@
         </div>
 
         <!-- Weather Settings -->
-        <div class="tab-panel hidden" id="weather">
+        <div class="tab-panel hidden" id="weather-panel">
           <div class="card bg-base-200">
             <div class="card-body">
               <h5 class="card-title">Weather Settings</h5>
@@ -232,7 +232,7 @@
         </div>
 
         <!-- AI Settings -->
-        <div class="tab-panel hidden" id="ai">
+        <div class="tab-panel hidden" id="ai-panel">
           <div class="card bg-base-200">
             <div class="card-body">
               <h5 class="card-title">AI Provider Settings</h5>
@@ -558,7 +558,7 @@
         </div>
 
         <!-- Delve Settings -->
-        <div class="tab-panel hidden" id="delve">
+        <div class="tab-panel hidden" id="delve-panel">
           <div class="card bg-base-200">
             <div class="card-body">
               <h5 class="card-title">Delve Dungeon Settings</h5>
@@ -816,7 +816,7 @@
         </div>
 
         <!-- Email Settings -->
-        <div class="tab-panel hidden" id="email">
+        <div class="tab-panel hidden" id="email-panel">
           <div class="card bg-base-200 mb-4">
             <div class="card-body">
               <h5 class="card-title">Email Verification Settings</h5>
@@ -926,7 +926,7 @@
         </div>
 
         <!-- Storage Settings -->
-        <div class="tab-panel hidden" id="storage">
+        <div class="tab-panel hidden" id="storage-panel">
           <div class="card bg-base-200">
             <div class="card-body">
               <h5 class="card-title">Cloud Storage Settings</h5>
@@ -1059,5 +1059,34 @@
           </div>
         </div>
       </div>
-    
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const tabs = document.querySelectorAll('#settingsTabs .tab');
+    const panels = document.querySelectorAll('#settingsTabContent .tab-panel');
+
+    function activateTab(tabName) {
+      tabs.forEach(t => t.classList.remove('tab-active'));
+      panels.forEach(p => p.classList.add('hidden'));
+
+      const tab = document.querySelector('#settingsTabs .tab[data-tab="' + tabName + '"]');
+      const panel = document.getElementById(tabName + '-panel');
+      if (tab) tab.classList.add('tab-active');
+      if (panel) panel.classList.remove('hidden');
+    }
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', function() {
+        activateTab(this.dataset.tab);
+      });
+    });
+
+    // Activate tab from URL hash (e.g. /admin/settings#ai)
+    const hash = window.location.hash.replace('#', '');
+    if (hash && document.getElementById(hash + '-panel')) {
+      activateTab(hash);
+    }
+  });
+</script>
+
 <%= admin_content_end %>
