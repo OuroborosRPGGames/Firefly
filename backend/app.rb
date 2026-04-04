@@ -7208,57 +7208,174 @@ class FireflyApp < Roda
                 r.is do
                   # GET - Get region data for 2D editor
                   r.get do
+                    # Raise statement timeout for large-world queries (default 5s too low)
+                    DB.run("SET statement_timeout = '30s'")
                     face = (request.params['face'] || 0).to_i
-                    x = (request.params['x'] || 0).to_i
-                    y = (request.params['y'] || 0).to_i
-                    size = (request.params['size'] || 6).to_i
+                    size = [(request.params['size'] || 6).to_i, 200].min  # Cap at 200x200
 
-                    # Globe worlds use lat/lng for positioning
-                    # Map x,y params to lat/lng bounds
-                    # x ranges from 0 to 360 (longitude mapped to positive range)
-                    # y ranges from 0 to 180 (latitude mapped to positive range)
-                    # Each grid unit = 1 degree
-                    min_lng = x - 180  # Convert to -180..180 range
-                    max_lng = min_lng + size
-                    min_lat = 90 - y - size  # Convert to -90..90 range (y=0 is north pole)
-                    max_lat = 90 - y
+                    # cell_size controls resolution: 1.0 = 1° per cell (default),
+                    # 'native' = show every actual hex (true hex resolution)
+                    cell_size_param = request.params['cell_size'] || '1.0'
+                    native_mode = cell_size_param == 'native'
+                    cell_size = native_mode ? 0.045 : cell_size_param.to_f.clamp(0.05, 2.0)
 
-                    # Use DISTINCT ON to push nearest-neighbor into SQL.
-                    # For each 1-degree grid cell, Postgres picks the closest hex
-                    # by Euclidean distance — returns ~400 rows instead of ~112K.
-                    # FLOOR aligns cells with the grid: cell_x=0 covers [min_lng, min_lng+1).
+                    # x,y are in cell_size units from the coordinate origin
+                    x = (request.params['x'] || 0).to_f
+                    y = (request.params['y'] || 0).to_f
+
+                    # Convert grid coords to lat/lng bounds
+                    min_lng = (x * cell_size) - 180.0
+                    max_lng = min_lng + (size * cell_size)
+                    max_lat = 90.0 - (y * cell_size)
+                    min_lat = max_lat - (size * cell_size)
+
                     min_lng_f = min_lng.to_f
                     max_lat_f = max_lat.to_f
-                    hexes_raw = DB.fetch(
-                      "SELECT DISTINCT ON (cell_x, cell_y) " \
-                      "id, globe_hex_id, latitude, longitude, terrain_type, traversable, altitude, " \
-                      "feature_n, feature_ne, feature_se, feature_s, feature_sw, feature_nw, " \
-                      "FLOOR(longitude - ?::float8)::int AS cell_x, " \
-                      "FLOOR(?::float8 - latitude)::int AS cell_y " \
-                      "FROM world_hexes " \
-                      "WHERE world_id = ? AND longitude >= ? AND longitude < ? AND latitude >= ? AND latitude < ? " \
-                      "ORDER BY cell_x, cell_y, " \
-                      "((longitude - ?) - FLOOR(longitude - ?) - 0.5)^2 + " \
-                      "((? - latitude) - FLOOR(? - latitude) - 0.5)^2",
-                      min_lng_f, max_lat_f,
-                      @world.id, min_lng_f - 0.5, max_lng.to_f + 0.5, min_lat.to_f - 0.5, max_lat_f + 0.5,
-                      min_lng_f, min_lng_f, max_lat_f, max_lat_f
-                    ).all
+                    cs = cell_size.to_f
 
-                    # Index results by grid cell coordinates (cell_x, cell_y map directly to grid offsets)
-                    hex_by_cell = {}
-                    hexes_raw.each do |row|
-                      hex_by_cell[[row[:cell_x], row[:cell_y]]] = row
+                    if native_mode
+                      if request.params['min_lng']
+                        # Direct lat/lng bounds from native mode client
+                        min_lng_f = request.params['min_lng'].to_f
+                        max_lng_f = request.params['max_lng'].to_f
+                        min_lat_f = request.params['min_lat'].to_f
+                        max_lat_f = request.params['max_lat'].to_f
+                      else
+                        # Fallback: compute from x/y/size (backward compat with initial load)
+                        min_lng_f = (x * cell_size) - 180.0
+                        max_lng_f = min_lng_f + (size * cell_size)
+                        max_lat_f = 90.0 - (y * cell_size)
+                        min_lat_f = max_lat_f - (size * cell_size)
+                      end
+
+                      native_q = DB[:world_hexes]
+                        .where(world_id: @world.id)
+                        .where { latitude >= min_lat_f }
+                        .where { latitude < max_lat_f }
+                        .where { longitude >= min_lng_f }
+                        .where { longitude < max_lng_f }
+                        .select(:id, :globe_hex_id, :latitude, :longitude, :terrain_type,
+                                :traversable, :altitude,
+                                :feature_n, :feature_ne, :feature_se, :feature_s, :feature_sw, :feature_nw)
+                        .limit(5000)
+                      native_q = native_q.where(traversable: true) if @world.grid_locked
+                      hexes_raw = native_q.all
+
+                      hexes = hexes_raw.map do |row|
+                        features = {}
+                        %w[n ne se s sw nw].each do |dir|
+                          val = row[:"feature_#{dir}"]
+                          features[dir] = val if val
+                        end
+
+                        {
+                          id: row[:id],
+                          globe_hex_id: row[:globe_hex_id],
+                          lat: row[:latitude],
+                          lng: row[:longitude],
+                          terrain: row[:terrain_type],
+                          traversable: row[:traversable],
+                          altitude: row[:altitude],
+                          features: features
+                        }
+                      end
+
+                      response['Content-Type'] = 'application/json'
+                      next {
+                        success: true,
+                        native: true,
+                        is_globe_world: true,
+                        hexes: hexes
+                      }.to_json
+                    else
+                      # LOD views for coarse zoom levels (much faster than lateral-join)
+                      # H3 res 4 = ~0.85° spacing → good for cell_size 1.0°
+                      # H3 res 5 = ~0.3° spacing → good for cell_size 0.5°
+                      lod_view = case cell_size
+                                 when 0.8..2.0 then :world_hexes_lod4
+                                 when 0.05..0.7 then :world_hexes_lod5
+                                 end
+
+                      if lod_view
+                        # Query pre-aggregated LOD materialized view
+                        warn "[globe_region] Using LOD view #{lod_view} for cell_size=#{cell_size}"
+                        min_lat_f = max_lat_f - (size * cs)
+                        max_lng_f = min_lng_f + (size * cs)
+                        lod_rows = DB[lod_view]
+                          .where(world_id: @world.id)
+                          .where { latitude >= min_lat_f }
+                          .where { latitude < max_lat_f }
+                          .where { longitude >= min_lng_f }
+                          .where { longitude < max_lng_f }
+                          .all
+
+                        # Snap LOD hex centers to grid cells using both floor and round
+                        # to ensure every cell gets at least one LOD row
+                        hex_by_cell = {}
+                        cell_data_template = lambda do |row, gx, gy|
+                          {
+                            cell_x: gx, cell_y: gy,
+                            id: nil, globe_hex_id: row[:parent_h3],
+                            latitude: row[:latitude], longitude: row[:longitude],
+                            terrain_type: row[:terrain_type], traversable: true,
+                            altitude: row[:avg_altitude],
+                            feature_n: nil, feature_ne: nil, feature_se: nil,
+                            feature_s: nil, feature_sw: nil, feature_nw: nil
+                          }
+                        end
+                        lod_rows.each do |row|
+                          # Try both floor and round to maximize coverage
+                          [[((row[:longitude] - min_lng) / cs).floor, ((max_lat - row[:latitude]) / cs).floor],
+                           [((row[:longitude] - min_lng) / cs).round, ((max_lat - row[:latitude]) / cs).round]].each do |gx, gy|
+                            next if gx < 0 || gx >= size || gy < 0 || gy >= size
+                            next if hex_by_cell.key?([gx, gy])
+
+                            hex_by_cell[[gx, gy]] = cell_data_template.call(row, gx, gy)
+                          end
+                        end
+                      else
+                        # Grid mode fallback (cell_size 0.1 or unusual values):
+                        # lateral join picks one hex per cell via index lookup.
+                        half_cs = cs * 0.6
+                        hexes_raw = DB.fetch(
+                          "SELECT c.cell_x, c.cell_y, h.id, h.globe_hex_id, h.latitude, h.longitude, " \
+                          "  h.terrain_type, h.traversable, h.altitude, " \
+                          "  h.feature_n, h.feature_ne, h.feature_se, h.feature_s, h.feature_sw, h.feature_nw " \
+                          "FROM ( " \
+                          "  SELECT x AS cell_x, y AS cell_y, " \
+                          "    ?::float8 + (x + 0.5) * ?::float8 AS center_lng, " \
+                          "    ?::float8 - (y + 0.5) * ?::float8 AS center_lat " \
+                          "  FROM generate_series(0, ?::int - 1) x, generate_series(0, ?::int - 1) y " \
+                          ") c " \
+                          "CROSS JOIN LATERAL ( " \
+                          "  SELECT id, globe_hex_id, latitude, longitude, terrain_type, traversable, altitude, " \
+                          "    feature_n, feature_ne, feature_se, feature_s, feature_sw, feature_nw " \
+                          "  FROM world_hexes " \
+                          "  WHERE world_id = ? " \
+                          "    AND latitude BETWEEN c.center_lat - ?::float8 AND c.center_lat + ?::float8 " \
+                          "    AND longitude BETWEEN c.center_lng - ?::float8 AND c.center_lng + ?::float8 " \
+                          "  ORDER BY (longitude - c.center_lng)^2 + (latitude - c.center_lat)^2 " \
+                          "  LIMIT 1 " \
+                          ") h",
+                          min_lng_f, cs, max_lat_f, cs, size, size,
+                          @world.id,
+                          half_cs, half_cs, half_cs, half_cs
+                        ).all
+
+                        hex_by_cell = {}
+                        hexes_raw.each do |row|
+                          hex_by_cell[[row[:cell_x], row[:cell_y]]] = row
+                        end
+                      end
                     end
 
-                    # Fill in ALL grid cells with nearest hex data (interpolation)
+                    # Fill grid cells
                     hexes = []
                     size.times do |grid_y_offset|
                       size.times do |grid_x_offset|
-                        cell_lng = min_lng + grid_x_offset + 0.5
-                        cell_lat = max_lat - grid_y_offset - 0.5
+                        cell_lng = min_lng + (grid_x_offset + 0.5) * cell_size
+                        cell_lat = max_lat - (grid_y_offset + 0.5) * cell_size
 
-                        # Look up directly by grid offset (matches FLOOR-based cell_x, cell_y)
                         nearest = hex_by_cell[[grid_x_offset, grid_y_offset]]
 
                         if nearest
@@ -7287,7 +7404,7 @@ class FireflyApp < Roda
                             y: grid_y_offset,
                             lat: cell_lat,
                             lng: cell_lng,
-                            terrain: 'ocean',
+                            terrain: 'unknown',
                             interpolated: true
                           }
                         end
@@ -7299,6 +7416,7 @@ class FireflyApp < Roda
                       success: true,
                       origin: { face: face, x: x, y: y },
                       size: size,
+                      cell_size: cell_size,
                       hexes: hexes,
                       is_globe_world: true
                     }.to_json
@@ -7324,17 +7442,20 @@ class FireflyApp < Roda
                     end
 
                     # Validate face is an integer 0-19 (icosahedral faces)
+                    # Face is optional when updating by globe_hex_id
                     face = data['face']
-                    unless face.is_a?(Integer) || (face.is_a?(String) && face.match?(/^\d+$/))
-                      response['Content-Type'] = 'application/json'
-                      response.status = 400
-                      next { success: false, error: 'face must be an integer' }.to_json
-                    end
-                    face = face.to_i
-                    unless face >= 0 && face <= 19
-                      response['Content-Type'] = 'application/json'
-                      response.status = 400
-                      next { success: false, error: 'face must be between 0 and 19' }.to_json
+                    if face
+                      unless face.is_a?(Integer) || (face.is_a?(String) && face.match?(/^\d+$/))
+                        response['Content-Type'] = 'application/json'
+                        response.status = 400
+                        next { success: false, error: 'face must be an integer' }.to_json
+                      end
+                      face = face.to_i
+                      unless face >= 0 && face <= 19
+                        response['Content-Type'] = 'application/json'
+                        response.status = 400
+                        next { success: false, error: 'face must be between 0 and 19' }.to_json
+                      end
                     end
 
                     # Validate hexes is an array
@@ -7393,6 +7514,63 @@ class FireflyApp < Roda
                       saved: saved_count,
                       errors: errors
                     }.to_json
+                  end
+                end
+              end
+
+              # GET /admin/world_builder/:id/api/hex_region - Hex data for a viewport bounds
+              r.on 'hexregion' do
+                r.is do
+                  r.get do
+                    DB.run("SET statement_timeout = '30s'")
+                    min_lat = r.params['min_lat'].to_f
+                    max_lat = r.params['max_lat'].to_f
+                    min_lon = r.params['min_lon'].to_f
+                    max_lon = r.params['max_lon'].to_f
+                    limit = [(r.params['limit'] || 5000).to_i, 10_000].min
+                    after_lat = r.params['after_lat']&.to_f
+                    after_lon = r.params['after_lon']&.to_f
+
+                    query = WorldHex.where(world_id: id)
+                      .where(latitude: min_lat..max_lat)
+                      .where(longitude: min_lon..max_lon)
+                      .order(:latitude, :longitude)
+                      .limit(limit)
+                    # When grid is locked, only query traversable hexes (uses smaller partial index)
+                    query = query.where(traversable: true) if @world.grid_locked
+                    if after_lat && after_lon
+                      query = query.where {
+                        (latitude > after_lat) | ((latitude =~ after_lat) & (longitude > after_lon))
+                      }
+                    end
+
+                    raw_hexes = query.select(:globe_hex_id, :terrain_type, :traversable,
+                                              :latitude, :longitude, :boundary_vertices,
+                                              :neighbor_globe_hex_ids,
+                                              :feature_n, :feature_ne, :feature_se,
+                                              :feature_s, :feature_sw, :feature_nw).all
+
+                    hexes = raw_hexes.map do |h|
+                      entry = {
+                        id: h.globe_hex_id,
+                        t: WorldHex::TERRAIN_TYPES.index(h.terrain_type) || 0,
+                        tr: h.traversable ? 1 : 0,
+                        la: h.latitude.to_f.round(6),
+                        lo: h.longitude.to_f.round(6)
+                      }
+                      entry[:bv] = h.boundary_vertices if h.boundary_vertices
+                      entry[:nb] = h.neighbor_globe_hex_ids if h.neighbor_globe_hex_ids
+                      features = {}
+                      %w[n ne se s sw nw].each do |dir|
+                        val = h.send(:"feature_#{dir}")
+                        features[dir] = val if val
+                      end
+                      entry[:ft] = features unless features.empty?
+                      entry
+                    end
+
+                    response['Content-Type'] = 'application/json'
+                    { hexes: hexes }.to_json
                   end
                 end
               end

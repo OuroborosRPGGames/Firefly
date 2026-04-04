@@ -144,15 +144,24 @@ class TerrainTextureService
   # Generate texture by sampling nearest hex for each pixel.
   # Used when hex count exceeds pixel count for accurate representation.
   #
+  # For large worlds (>1M hexes), uses SQL-based pixel binning to avoid
+  # loading all hexes into Ruby memory. The DB bins hexes into pixel
+  # coordinates and returns one terrain type per pixel.
+  #
   # @param png [ChunkyPNG::Image] Image to draw on
   # @return [String] PNG binary data
   def generate_pixel_by_pixel(png)
+    count = hex_count
+
+    # For large worlds, use SQL-based binning instead of loading all hexes into memory
+    if count > 500_000
+      return generate_pixel_by_pixel_sql(png)
+    end
+
     hexes = load_hexes
     return png.to_blob if hexes.empty?
 
     # Build fine-grained spatial index for fast nearest-neighbor lookup
-    # Use 0.5-degree buckets for ~20 hexes per bucket (vs ~2000 with 5-degree)
-    # This makes the 3x3 bucket search check ~180 hexes instead of ~18,000
     bucket_size = 0.5
     hex_buckets = Hash.new { |h, k| h[k] = [] }
 
@@ -174,23 +183,17 @@ class TerrainTextureService
     # Process each pixel
     @height.times do |y|
       @width.times do |x|
-        # Convert pixel to lat/lon
         lat, lng = pixel_to_latlon(x, y)
-
-        # Find bucket for this location
         bucket_lat = (lat / bucket_size).floor
         bucket_lng = (lng / bucket_size).floor
 
-        # Search nearby buckets for nearest hex
         best_hex = nil
         best_dist_sq = Float::INFINITY
 
-        # Check 3x3 grid of buckets
         (-1..1).each do |dlat|
           (-1..1).each do |dlng|
             candidates = hex_buckets[[bucket_lat + dlat, bucket_lng + dlng]]
             candidates.each do |hex|
-              # Simple distance calculation (good enough for small differences)
               dlat_deg = hex.latitude - lat
               dlng_deg = hex.longitude - lng
               dist_sq = dlat_deg * dlat_deg + dlng_deg * dlng_deg
@@ -203,13 +206,9 @@ class TerrainTextureService
           end
         end
 
-        # Set pixel color
-        if best_hex
-          png[x, y] = terrain_to_chunky(best_hex.terrain_type)
-        end
+        png[x, y] = terrain_to_chunky(best_hex.terrain_type) if best_hex
       end
 
-      # Progress logging every 64 rows (more frequent for large textures)
       if ((y + 1) % 64).zero?
         elapsed = Time.now - start_time
         pct = ((y + 1).to_f / @height * 100).round(1)
@@ -221,6 +220,126 @@ class TerrainTextureService
     elapsed = Time.now - start_time
     warn "[TerrainTexture] Pixel rendering complete in #{elapsed.round(1)}s"
     png.to_blob
+  end
+
+  # SQL-based pixel generation for large worlds (>500K hexes).
+  # Instead of loading all hexes into Ruby, bins hexes into pixel coordinates
+  # in the database and streams results to set pixels directly.
+  #
+  # @param png [ChunkyPNG::Image] Image to draw on
+  # @return [String] PNG binary data
+  def generate_pixel_by_pixel_sql(png)
+    warn "[TerrainTexture] Using SQL-based pixel binning for #{hex_count} hexes -> #{@width}x#{@height} texture"
+    start_time = Time.now
+
+    # Pre-compute color lookup
+    color_cache = {}
+
+    pixel_count = 0
+
+    # Use a DB transaction with no timeout for the large query
+    DB.transaction do
+      DB.run('SET LOCAL statement_timeout = 0')
+
+      # Bin hexes into pixel coordinates in SQL, pick one terrain per pixel
+      # DISTINCT ON is faster than MODE() and good enough for texture quality
+      dataset = DB[<<~SQL, @width, @height, world.id]
+        SELECT DISTINCT ON (px, py)
+          FLOOR((longitude + 180.0) / 360.0 * ?)::int AS px,
+          FLOOR((90.0 - latitude) / 180.0 * ?)::int AS py,
+          terrain_type
+        FROM world_hexes
+        WHERE world_id = ?
+          AND latitude IS NOT NULL
+          AND longitude IS NOT NULL
+        ORDER BY px, py
+      SQL
+
+      dataset.each do |row|
+        px = row[:px]
+        py = row[:py]
+        terrain = row[:terrain_type]
+
+        next if px.nil? || py.nil? || px < 0 || px >= @width || py < 0 || py >= @height
+
+        color = color_cache[terrain] ||= terrain_to_chunky(terrain)
+        png[px, py] = color
+        pixel_count += 1
+      end
+    end
+
+    elapsed = Time.now - start_time
+    warn "[TerrainTexture] SQL pixel binning complete: #{pixel_count} pixels set in #{elapsed.round(1)}s"
+
+    # Fill gaps between pixels using neighbor sampling
+    # The SQL approach may leave small gaps where no hex maps to a pixel
+    fill_texture_gaps(png) if pixel_count < (@width * @height * 0.9)
+
+    png.to_blob
+  end
+
+  # Fill gaps in a texture by sampling nearest non-background neighbors.
+  # Used after SQL-based generation which may leave small gaps between pixels.
+  #
+  # @param png [ChunkyPNG::Image] Image to draw on
+  def fill_texture_gaps(png)
+    bg_color = color_to_chunky(BACKGROUND_COLOR)
+    filled = 0
+    start_time = Time.now
+
+    # Simple gap fill: for each black pixel, check immediate neighbors
+    @height.times do |y|
+      @width.times do |x|
+        next unless png[x, y] == bg_color
+
+        # Check 8 neighbors, pick first non-background color found
+        color = nil
+        [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]].each do |dx, dy|
+          nx = (x + dx) % @width  # wrap horizontally
+          ny = (y + dy).clamp(0, @height - 1)
+          c = png[nx, ny]
+          if c != bg_color
+            color = c
+            break
+          end
+        end
+
+        if color
+          png[x, y] = color
+          filled += 1
+        end
+      end
+    end
+
+    # Second pass for any remaining gaps (pixels surrounded by other gaps)
+    if filled > 0
+      @height.times do |y|
+        @width.times do |x|
+          next unless png[x, y] == bg_color
+
+          # Wider search: check 5x5 neighborhood
+          color = nil
+          (-2..2).each do |dy|
+            break if color
+            (-2..2).each do |dx|
+              next if dx == 0 && dy == 0
+              nx = (x + dx) % @width
+              ny = (y + dy).clamp(0, @height - 1)
+              c = png[nx, ny]
+              if c != bg_color
+                color = c
+                break
+              end
+            end
+          end
+
+          png[x, y] = color if color
+        end
+      end
+    end
+
+    elapsed = Time.now - start_time
+    warn "[TerrainTexture] Gap fill complete: #{filled} pixels filled in #{elapsed.round(1)}s"
   end
 
   # Generate texture from hexes using ChunkyPNG (medium path)

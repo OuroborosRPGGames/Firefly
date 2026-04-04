@@ -97,10 +97,9 @@ class Embedding < Sequel::Model
       vector_string = format_vector(vector)
 
       if existing
-        # Use raw SQL to properly cast the vector - Sequel.lit doesn't work with text columns
         DB.run(<<-SQL)
           UPDATE embeddings SET
-            embedding = '#{vector_string}'::vector,
+            embedding = '#{vector_string}',
             source_text = #{DB.literal(text)},
             content_hash = #{DB.literal(content_hash)},
             model = #{DB.literal(model)},
@@ -114,7 +113,6 @@ class Embedding < Sequel::Model
         SQL
         first(id: existing.id)
       else
-        # Use raw SQL for insert to properly cast vector
         result = DB.run(<<-SQL)
           INSERT INTO embeddings (
             content_type, content_id, embedding, source_text, content_hash,
@@ -123,7 +121,7 @@ class Embedding < Sequel::Model
           ) VALUES (
             #{DB.literal(content_type)},
             #{content_id},
-            '#{vector_string}'::vector,
+            '#{vector_string}',
             #{DB.literal(text)},
             #{DB.literal(content_hash)},
             #{DB.literal(model)},

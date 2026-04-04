@@ -19,6 +19,8 @@ class GlobeView {
     this.cities = [];
     this.zones = [];
     this.onHexClick = options.onHexClick || (() => {});
+    this.initialLat = options.initialLat ?? 20;
+    this.initialLng = options.initialLng ?? 0;
     this.highlightedHexId = null;
     this.isLoading = false;
     this.useTextureRendering = true; // Enable texture-based rendering
@@ -49,6 +51,10 @@ class GlobeView {
     }
 
     // Create globe instance with texture-based terrain
+    if (typeof Globe === 'undefined') {
+      console.error('GlobeView: Globe.gl not loaded — CDN may be unreachable');
+      return;
+    }
     this.globe = Globe()
       .backgroundColor('#000011')
       .atmosphereColor('#3a7ecf')
@@ -88,7 +94,11 @@ class GlobeView {
     window.addEventListener('resize', this.resizeHandler);
 
     // Set initial camera position
-    this.globe.pointOfView({ lat: 20, lng: 0, altitude: 2.5 });
+    this.globe.pointOfView({
+      lat: this.initialLat,
+      lng: this.initialLng,
+      altitude: 2.5
+    });
 
     // Change cursor on globe hover
     this.container.style.cursor = 'grab';

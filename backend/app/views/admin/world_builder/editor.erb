@@ -75,6 +75,19 @@
             </div>
           </div>
 
+          <!-- Named Features List (shown when Draw Features selected) -->
+          <div id="named-features-container" class="collapse collapse-arrow join-item border-b border-base-content/10 bg-base-200" style="display: none;">
+            <input type="checkbox" name="sidebar-accordion" />
+            <div class="collapse-title py-2 px-3 min-h-0">
+              <i class="bi bi-list-ul mr-2"></i><small class="font-bold">NAMED FEATURES</small>
+            </div>
+            <div class="collapse-content py-2 px-3">
+              <div id="named-features-list" class="flex flex-col gap-1 max-h-48 overflow-y-auto text-xs">
+                <span class="opacity-50">No named features yet</span>
+              </div>
+            </div>
+          </div>
+
           <!-- Navigation Section -->
           <div class="collapse collapse-arrow join-item border-b border-base-content/10 bg-base-200">
             <input type="checkbox" name="sidebar-accordion" />
@@ -105,6 +118,25 @@
                 <span id="granularity-display" class="badge badge-info badge-sm">~320</span>
               </div>
               <input type="range" id="granularity-slider" class="range range-sm" min="1" max="4" value="2" step="1">
+
+              <!-- Hex data resolution (only visible when hex editor is open for globe worlds) -->
+              <div id="hex-detail-controls" class="mt-3 pt-3 border-t border-base-content/10" style="display:none;">
+                <div class="flex justify-between items-center mb-2">
+                  <small>Hex Detail</small>
+                  <span id="hex-detail-label" class="badge badge-secondary badge-sm">111 km</span>
+                </div>
+                <div class="join w-full">
+                  <button id="btn-hex-zoom-out" class="btn btn-ghost btn-sm join-item flex-1">
+                    <i class="bi bi-zoom-out"></i> Less
+                  </button>
+                  <button id="btn-hex-zoom-in" class="btn btn-ghost btn-sm join-item flex-1">
+                    <i class="bi bi-zoom-in"></i> More
+                  </button>
+                </div>
+                <button id="btn-native-recenter" class="btn btn-outline btn-sm w-full mt-2">
+                  <i class="bi bi-geo-alt mr-1"></i>Center on Island
+                </button>
+              </div>
             </div>
           </div>
 
@@ -117,7 +149,7 @@
             <div class="collapse-content py-2 px-3">
               <div class="mb-2">
                 <small>Planet Type</small>
-                <select id="gen-preset" class="select select-sm select-bordered w-full">
+                <select id="gen-preset" class="select select-sm w-full">
                   <option value="earth_like" selected>Earth-like</option>
                   <option value="pangaea">Pangaea</option>
                   <option value="archipelago">Archipelago</option>
@@ -129,7 +161,7 @@
               <div class="mb-2">
                 <small>Seed</small>
                 <div class="join w-full">
-                  <input type="number" id="gen-seed" class="input input-sm input-bordered join-item flex-1" placeholder="Random">
+                  <input type="number" id="gen-seed" class="input input-sm join-item flex-1" placeholder="Random">
                   <button id="btn-random-seed" class="btn btn-sm btn-ghost join-item" type="button" title="Random seed">
                     <i class="bi bi-shuffle"></i>
                   </button>
@@ -137,7 +169,7 @@
               </div>
               <div class="mb-2">
                 <small>World Size</small>
-                <select id="gen-world-size" class="select select-sm select-bordered w-full">
+                <select id="gen-world-size" class="select select-sm w-full">
                   <option value="0.1">Tiny (~328K hexes)</option>
                   <option value="0.25">Small (~1.3M hexes)</option>
                   <option value="0.5" selected>Medium (~5.2M hexes)</option>
@@ -192,7 +224,7 @@
                   <input type="checkbox" class="toggle toggle-sm toggle-primary"
                          <%= @world.use_grid_weather ? 'checked' : '' %>
                          onchange="this.form.submit()">
-                  <span class="label-text text-xs">Enable Grid Weather</span>
+                  <span class="fieldset-legend text-xs">Enable Grid Weather</span>
                 </label>
               </form>
 
@@ -302,12 +334,12 @@
       <div id="editor-loading" class="hidden absolute inset-0 z-50 flex items-center justify-center" style="background: rgba(0,0,0,0.85);">
         <div class="text-center">
           <span class="loading loading-spinner loading-lg text-primary"></span>
-          <p class="mt-3 text-base-content/70 text-sm">Loading hex region...</p>
+          <p id="editor-loading-text" class="mt-3 text-base-content/70 text-sm">Loading hex region...</p>
         </div>
       </div>
 
       <!-- Mini world map (shown during hex editing) -->
-      <div id="globe-mini" class="absolute hidden" style="bottom: 10px; right: 10px; width: 200px; height: 200px; cursor: pointer;">
+      <div id="globe-mini" class="fixed hidden" style="bottom: 20px; right: 20px; width: 150px; height: 150px; cursor: pointer; z-index: 1000;">
         <!-- Mini Globe.gl instance will be rendered here -->
       </div>
     </div>
@@ -460,9 +492,9 @@
       <div class="mb-3 text-base-content/70 text-sm" id="city-coords-display">Hex: (0, 0)</div>
 
       <!-- City Name + Generate Toggle -->
-      <div class="form-control mb-3">
-        <label class="label"><span class="label-text">City Name</span></label>
-        <input type="text" id="city-name" class="input input-bordered w-full" placeholder="Enter city name or leave blank to generate">
+      <div class="fieldset mb-3">
+        <label class="label"><span class="fieldset-legend">City Name</span></label>
+        <input type="text" id="city-name" class="input w-full" placeholder="Enter city name or leave blank to generate">
         <label class="label cursor-pointer justify-start gap-3 mt-1">
           <input type="checkbox" id="city-generate-name" class="toggle toggle-sm toggle-primary" checked>
           <span class="text-sm text-base-content/70">AI-generate city name</span>
@@ -470,17 +502,17 @@
       </div>
 
       <!-- Description -->
-      <div class="form-control mb-3">
-        <label class="label"><span class="label-text">Description</span></label>
-        <textarea id="city-description" class="textarea textarea-bordered w-full h-24"
+      <div class="fieldset mb-3">
+        <label class="label"><span class="fieldset-legend">Description</span></label>
+        <textarea id="city-description" class="textarea w-full h-24"
           placeholder="Describe this city... A bustling port town on a sheltered bay, known for its fish market and ancient lighthouse. The cobblestone streets wind uphill from the docks to a crumbling stone keep."></textarea>
-        <label class="label py-0.5"><span class="label-text-alt text-base-content/50">Used as seed for AI generation of names, buildings, and NPCs</span></label>
+        <label class="label py-0.5"><span class="fieldset-label text-base-content/50">Used as seed for AI generation of names, buildings, and NPCs</span></label>
       </div>
 
       <!-- Setting -->
-      <div class="form-control mb-3">
-        <label class="label"><span class="label-text">Setting</span></label>
-        <select id="city-setting" class="select select-bordered w-full">
+      <div class="fieldset mb-3">
+        <label class="label"><span class="fieldset-legend">Setting</span></label>
+        <select id="city-setting" class="select w-full">
           <option value="fantasy" selected>Fantasy</option>
           <option value="medieval">Medieval</option>
           <option value="modern">Modern</option>
@@ -492,8 +524,8 @@
       </div>
 
       <!-- Size Presets -->
-      <div class="form-control mb-3">
-        <label class="label"><span class="label-text">City Size</span></label>
+      <div class="fieldset mb-3">
+        <label class="label"><span class="fieldset-legend">City Size</span></label>
         <div class="flex flex-wrap gap-2 mb-2">
           <button type="button" class="btn btn-sm btn-outline city-size-preset" data-streets="3" data-avenues="3" data-height="40">Village</button>
           <button type="button" class="btn btn-sm btn-outline city-size-preset" data-streets="5" data-avenues="5" data-height="60">Town</button>
@@ -503,24 +535,24 @@
           <button type="button" class="btn btn-sm btn-outline city-size-preset" data-streets="20" data-avenues="20" data-height="300">Metropolis</button>
         </div>
         <div class="grid grid-cols-3 gap-3">
-          <div class="form-control">
-            <label class="label py-1"><span class="label-text text-xs">Streets (E-W)</span></label>
-            <input type="number" id="city-horizontal-streets" class="input input-sm input-bordered w-full" value="10" min="2" max="50">
+          <div class="fieldset">
+            <label class="label py-1"><span class="fieldset-legend text-xs">Streets (E-W)</span></label>
+            <input type="number" id="city-horizontal-streets" class="input input-sm w-full" value="10" min="2" max="50">
           </div>
-          <div class="form-control">
-            <label class="label py-1"><span class="label-text text-xs">Avenues (N-S)</span></label>
-            <input type="number" id="city-vertical-streets" class="input input-sm input-bordered w-full" value="10" min="2" max="50">
+          <div class="fieldset">
+            <label class="label py-1"><span class="fieldset-legend text-xs">Avenues (N-S)</span></label>
+            <input type="number" id="city-vertical-streets" class="input input-sm w-full" value="10" min="2" max="50">
           </div>
-          <div class="form-control">
-            <label class="label py-1"><span class="label-text text-xs">Max Height (ft)</span></label>
-            <input type="number" id="city-max-height" class="input input-sm input-bordered w-full" value="150" min="20" max="1000">
+          <div class="fieldset">
+            <label class="label py-1"><span class="fieldset-legend text-xs">Max Height (ft)</span></label>
+            <input type="number" id="city-max-height" class="input input-sm w-full" value="150" min="20" max="1000">
           </div>
         </div>
       </div>
 
       <!-- Generation Options -->
-      <div class="form-control mb-3">
-        <label class="label"><span class="label-text">Generation Options</span></label>
+      <div class="fieldset mb-3">
+        <label class="label"><span class="fieldset-legend">Generation Options</span></label>
         <div class="bg-base-300 p-3 rounded space-y-2">
           <!-- Generate Buildings toggle -->
           <label class="label cursor-pointer justify-start gap-3 py-1">
@@ -553,10 +585,10 @@
           </div>
           <!-- Green Space slider (shown when buildings on) -->
           <div id="city-green-space-row" class="ml-8">
-            <div class="form-control">
+            <div class="fieldset">
               <label class="label py-1">
-                <span class="label-text text-sm">Green Space</span>
-                <span class="label-text-alt" id="city-green-space-label">50%</span>
+                <span class="fieldset-legend text-sm">Green Space</span>
+                <span class="fieldset-label" id="city-green-space-label">50%</span>
               </label>
               <input type="range" id="city-green-space" min="0" max="100" value="50" step="10" class="range range-xs range-success">
             </div>
@@ -574,8 +606,8 @@
       </div>
 
       <!-- NPC Configuration (shown when NPC toggle is on) -->
-      <div id="city-npc-config" class="form-control mb-3" style="display:none;">
-        <label class="label"><span class="label-text">NPC Options</span></label>
+      <div id="city-npc-config" class="fieldset mb-3" style="display:none;">
+        <label class="label"><span class="fieldset-legend">NPC Options</span></label>
         <div class="bg-base-300 p-3 rounded space-y-2">
           <label class="label cursor-pointer justify-start gap-3 py-0.5">
             <input type="checkbox" id="city-gen-portraits" class="toggle toggle-xs toggle-accent">
@@ -585,10 +617,10 @@
             <input type="checkbox" id="city-gen-schedules" class="toggle toggle-xs toggle-accent">
             <span class="text-sm">Generate NPC daily schedules</span>
           </label>
-          <div class="form-control mt-2">
+          <div class="fieldset mt-2">
             <label class="label py-1">
-              <span class="label-text text-xs">NPC Density</span>
-              <span class="label-text-alt" id="city-npc-density-label">Normal</span>
+              <span class="fieldset-legend text-xs">NPC Density</span>
+              <span class="fieldset-label" id="city-npc-density-label">Normal</span>
             </label>
             <input type="range" id="city-npc-density" min="1" max="3" value="2" class="range range-xs range-primary">
           </div>
@@ -596,8 +628,8 @@
       </div>
 
       <!-- Image Generation (shown when buildings on) -->
-      <div id="city-image-config" class="form-control mb-3" style="display:none;">
-        <label class="label"><span class="label-text">Image Generation</span></label>
+      <div id="city-image-config" class="fieldset mb-3" style="display:none;">
+        <label class="label"><span class="fieldset-legend">Image Generation</span></label>
         <div class="bg-base-300 p-3 rounded space-y-1">
           <label class="label cursor-pointer justify-start gap-3 py-0.5">
             <input type="checkbox" id="city-gen-overview" class="toggle toggle-xs toggle-info" checked>
@@ -615,24 +647,24 @@
       </div>
 
       <!-- Earth Mode -->
-      <div class="form-control mb-3">
+      <div class="fieldset mb-3">
         <label class="label cursor-pointer justify-start gap-3">
           <input type="checkbox" id="city-earth-mode" class="checkbox checkbox-sm checkbox-info">
           <div>
-            <span class="label-text">Earth Mode</span>
+            <span class="fieldset-legend">Earth Mode</span>
             <p class="text-xs text-base-content/60">Use realistic street names from real-world location</p>
           </div>
         </label>
       </div>
       <div id="earth-mode-fields" class="bg-base-300 p-3 rounded mb-3" style="display:none;">
         <div class="grid grid-cols-2 gap-2 mb-2">
-          <div class="form-control">
-            <label class="label py-1"><span class="label-text text-xs">Latitude</span></label>
-            <input type="number" step="0.0001" id="city-latitude" class="input input-sm input-bordered" placeholder="40.7128">
+          <div class="fieldset">
+            <label class="label py-1"><span class="fieldset-legend text-xs">Latitude</span></label>
+            <input type="number" step="0.0001" id="city-latitude" class="input input-sm" placeholder="40.7128">
           </div>
-          <div class="form-control">
-            <label class="label py-1"><span class="label-text text-xs">Longitude</span></label>
-            <input type="number" step="0.0001" id="city-longitude" class="input input-sm input-bordered" placeholder="-74.0060">
+          <div class="fieldset">
+            <label class="label py-1"><span class="fieldset-legend text-xs">Longitude</span></label>
+            <input type="number" step="0.0001" id="city-longitude" class="input input-sm" placeholder="-74.0060">
           </div>
         </div>
         <div id="city-country-preview" class="text-sm text-info"></div>
@@ -664,21 +696,21 @@
     <form id="zone-form">
       <input type="hidden" id="zone-polygon-points">
       <div class="mb-2 text-base-content/70 text-sm" id="zone-points-display">Polygon: 0 points</div>
-      <div class="form-control mb-3">
-        <label class="label"><span class="label-text">Zone Name</span></label>
-        <input type="text" id="zone-name" class="input input-bordered w-full" placeholder="Enter zone name" required>
+      <div class="fieldset mb-3">
+        <label class="label"><span class="fieldset-legend">Zone Name</span></label>
+        <input type="text" id="zone-name" class="input w-full" placeholder="Enter zone name" required>
       </div>
-      <div class="form-control mb-3">
-        <label class="label"><span class="label-text">Zone Type</span></label>
-        <select id="zone-type" class="select select-bordered w-full">
+      <div class="fieldset mb-3">
+        <label class="label"><span class="fieldset-legend">Zone Type</span></label>
+        <select id="zone-type" class="select w-full">
           <option value="political">Political</option>
           <option value="area">Area</option>
           <option value="location">Location</option>
           <option value="city">City</option>
         </select>
       </div>
-      <div class="form-control mb-3">
-        <label class="label"><span class="label-text">Danger Level: <span id="zone-danger-value">1</span></span></label>
+      <div class="fieldset mb-3">
+        <label class="label"><span class="fieldset-legend">Danger Level: <span id="zone-danger-value">1</span></span></label>
         <input type="range" id="zone-danger" class="range" min="1" max="10" value="1"
                oninput="document.getElementById('zone-danger-value').textContent = this.value">
       </div>
@@ -705,21 +737,21 @@
       </form>
     </div>
     <form id="link-cities-form">
-      <div class="form-control mb-3">
-        <label class="label"><span class="label-text">From City</span></label>
-        <select id="link-from-city" class="select select-bordered w-full" required>
+      <div class="fieldset mb-3">
+        <label class="label"><span class="fieldset-legend">From City</span></label>
+        <select id="link-from-city" class="select w-full" required>
           <option value="">Select a city...</option>
         </select>
       </div>
-      <div class="form-control mb-3">
-        <label class="label"><span class="label-text">To City</span></label>
-        <select id="link-to-city" class="select select-bordered w-full" required>
+      <div class="fieldset mb-3">
+        <label class="label"><span class="fieldset-legend">To City</span></label>
+        <select id="link-to-city" class="select w-full" required>
           <option value="">Select a city...</option>
         </select>
       </div>
-      <div class="form-control mb-3">
-        <label class="label"><span class="label-text">Connection Type</span></label>
-        <select id="link-type" class="select select-bordered w-full">
+      <div class="fieldset mb-3">
+        <label class="label"><span class="fieldset-legend">Connection Type</span></label>
+        <select id="link-type" class="select w-full">
           <option value="trail">Dirt Trail</option>
           <option value="road" selected>Paved Road</option>
           <option value="highway">Highway</option>
@@ -749,13 +781,13 @@
       </form>
     </div>
     <form id="plain-zone-modal-form">
-      <div class="form-control mb-3">
-        <label class="label"><span class="label-text">Zone Name</span></label>
-        <input type="text" id="plain-zone-modal-name" class="input input-bordered w-full" placeholder="Enter zone name" required>
+      <div class="fieldset mb-3">
+        <label class="label"><span class="fieldset-legend">Zone Name</span></label>
+        <input type="text" id="plain-zone-modal-name" class="input w-full" placeholder="Enter zone name" required>
       </div>
-      <div class="form-control mb-3">
-        <label class="label"><span class="label-text">Zone Type</span></label>
-        <select id="plain-zone-modal-type" class="select select-bordered w-full">
+      <div class="fieldset mb-3">
+        <label class="label"><span class="fieldset-legend">Zone Type</span></label>
+        <select id="plain-zone-modal-type" class="select w-full">
           <option value="area" selected>Area</option>
           <option value="political">Political</option>
         </select>
@@ -783,13 +815,13 @@
       </form>
     </div>
     <form id="location-modal-form">
-      <div class="form-control mb-3">
-        <label class="label"><span class="label-text">Location Name</span></label>
-        <input type="text" id="loc-modal-name" class="input input-bordered w-full" placeholder="Enter location name" required>
+      <div class="fieldset mb-3">
+        <label class="label"><span class="fieldset-legend">Location Name</span></label>
+        <input type="text" id="loc-modal-name" class="input w-full" placeholder="Enter location name" required>
       </div>
-      <div class="form-control mb-3">
-        <label class="label"><span class="label-text">Location Type</span></label>
-        <select id="loc-modal-type" class="select select-bordered w-full">
+      <div class="fieldset mb-3">
+        <label class="label"><span class="fieldset-legend">Location Type</span></label>
+        <select id="loc-modal-type" class="select w-full">
           <option value="outdoor" selected>Outdoor</option>
           <option value="building">Building</option>
           <option value="underground">Underground</option>
@@ -814,6 +846,20 @@
   const WORLD_ID = <%= @world.id %>;
   const API_BASE = '/admin/world_builder/<%= @world.id %>/api';
   const CSRF_TOKEN = '<%= Rack::Utils.escape_html(csrf_token) %>';
+
+  // Initial globe camera position: center of non-ocean traversable hexes
+  <%
+    # Use a fast approximate query: sample a single non-ocean traversable hex
+    focus = WorldHex.where(world_id: @world.id, traversable: true)
+                    .exclude(terrain_type: 'ocean')
+                    .select(:latitude, :longitude)
+                    .first
+    focus_lat = focus ? focus.latitude.to_f.round(2) : 20
+    focus_lon = focus ? focus.longitude.to_f.round(2) : 0
+  %>
+  const INITIAL_LAT = <%= focus_lat %>;
+  const INITIAL_LNG = <%= focus_lon %>;
+  const GRID_LOCKED = <%= @world.grid_locked ? 'true' : 'false' %>;
 
   // Test mode: skip globe loading (add ?test_mode=1 to URL)
   const TEST_MODE = new URLSearchParams(window.location.search).get('test_mode') === '1';
@@ -958,9 +1004,55 @@
     }
   }
 
+  function updateHexDetailLabel() {
+    if (!hexEditor) return;
+    const el = document.getElementById('hex-detail-label');
+    const recenterBtn = document.getElementById('btn-native-recenter');
+    if (!el) return;
+    const nativePatchReady = !!hexEditor.hasLoadedProjectedNativePatch;
+    const nativeLoading = hexEditor.isUnwrappedNativeMode && (!nativePatchReady || hexEditor.isLoading);
+    if (hexEditor.cellSize === 'native') {
+      el.textContent = nativeLoading ? 'Loading 5 km...' : '5 km hexes';
+    } else {
+      const km = hexEditor.cellSize * 111;
+      el.textContent = `${km.toFixed(0)} km`;
+    }
+    if (recenterBtn) {
+      // Show button only in native mode with the Voronoi renderer
+      recenterBtn.style.display = hexEditor.cellSize === 'native' ? '' : 'none';
+    }
+  }
+
+  function setEditorViewportControls(enabled) {
+    const zoomInBtn = document.getElementById('btn-zoom-in');
+    const zoomOutBtn = document.getElementById('btn-zoom-out');
+    const zoomLabel = document.getElementById('zoom-level-display');
+    const editorLocked = enabled && !!hexEditor && (
+      hexEditor.isLoading ||
+      (hexEditor.isUnwrappedNativeMode && !hexEditor.hasLoadedProjectedNativePatch)
+    );
+
+    if (zoomInBtn) zoomInBtn.disabled = !enabled || editorLocked;
+    if (zoomOutBtn) zoomOutBtn.disabled = !enabled || editorLocked;
+    if (zoomLabel) {
+      zoomLabel.textContent = !enabled
+        ? 'World'
+        : (editorLocked ? 'Loading...' : 'Hex View');
+    }
+  }
+
+  function setEditorLoading(isLoading, message = 'Loading hex region...') {
+    const overlay = document.getElementById('editor-loading');
+    const text = document.getElementById('editor-loading-text');
+    if (!overlay) return;
+    if (text && message) text.textContent = message;
+    overlay.classList.toggle('hidden', !isLoading);
+  }
+
   async function fetchRegion(face, x, y, size = 6) {
     try {
-      const params = new URLSearchParams({ face, x, y, size });
+      const cs = window.hexEditor?.cellSize ?? 1.0;
+      const params = new URLSearchParams({ face, x, y, size, cell_size: cs });
       const response = await fetch(`${API_BASE}/globe_region?${params}`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
@@ -1014,6 +1106,8 @@
     // Show/hide palettes
     document.getElementById('terrain-palette-container').style.display = (tool === 'terrain') ? 'block' : 'none';
     document.getElementById('feature-palette-container').style.display = (tool === 'feature') ? 'block' : 'none';
+    document.getElementById('named-features-container').style.display = (tool === 'feature') ? 'block' : 'none';
+    if (tool === 'feature') refreshNamedFeaturesList();
 
     if (hexEditor && currentMode === 'editor') {
       hexEditor.setTool(tool);
@@ -1036,12 +1130,92 @@
     if (hexEditor) hexEditor.setFeature(feature);
   }
 
+  // ===== NAMED FEATURES MANAGEMENT =====
+  async function refreshNamedFeaturesList() {
+    const list = document.getElementById('named-features-list');
+    if (!hexEditor || !hexEditor.namedFeatures || hexEditor.namedFeatures.length === 0) {
+      list.innerHTML = '<span class="opacity-50">No named features yet</span>';
+      return;
+    }
+
+    list.innerHTML = '';
+    hexEditor.namedFeatures.forEach(f => {
+      const row = document.createElement('div');
+      row.className = 'flex items-center justify-between gap-1 py-0.5';
+
+      const colorDot = hexEditor.featureColors[f.feature_type] || '#888';
+      row.innerHTML = `
+        <span class="flex items-center gap-1 truncate">
+          <span style="color:${colorDot}">●</span>
+          <span class="named-feature-name" data-id="${f.id}" title="Click to rename">${f.name}</span>
+          <span class="opacity-40">(${f.feature_type})</span>
+        </span>
+        <button class="btn btn-ghost btn-xs text-error named-feature-delete" data-id="${f.id}" title="Delete">
+          <i class="bi bi-trash"></i>
+        </button>
+      `;
+      list.appendChild(row);
+    });
+
+    // Rename on click
+    list.querySelectorAll('.named-feature-name').forEach(el => {
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', async () => {
+        const newName = prompt('Rename feature:', el.textContent);
+        if (newName && newName.trim() && newName.trim() !== el.textContent) {
+          await renameNamedFeature(el.dataset.id, newName.trim());
+        }
+      });
+    });
+
+    // Delete on click
+    list.querySelectorAll('.named-feature-delete').forEach(el => {
+      el.addEventListener('click', async () => {
+        if (confirm('Delete this named feature? The drawn lines will remain.')) {
+          await deleteNamedFeature(el.dataset.id);
+        }
+      });
+    });
+  }
+
+  async function renameNamedFeature(featureId, newName) {
+    try {
+      const apiBase = window.API_BASE || `/admin/world_builder/${hexEditor.worldId}/api`;
+      const csrfToken = window.CSRF_TOKEN || document.querySelector('meta[name="csrf-token"]')?.content;
+      const resp = await fetch(`${apiBase}/named_features/${featureId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+        body: JSON.stringify({ name: newName })
+      });
+      if (resp.ok) {
+        await hexEditor.loadFeatures();
+        refreshNamedFeaturesList();
+      }
+    } catch (e) { console.error('Rename failed:', e); }
+  }
+
+  async function deleteNamedFeature(featureId) {
+    try {
+      const apiBase = window.API_BASE || `/admin/world_builder/${hexEditor.worldId}/api`;
+      const csrfToken = window.CSRF_TOKEN || document.querySelector('meta[name="csrf-token"]')?.content;
+      const resp = await fetch(`${apiBase}/named_features/${featureId}`, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-Token': csrfToken }
+      });
+      if (resp.ok) {
+        await hexEditor.loadFeatures();
+        refreshNamedFeaturesList();
+      }
+    } catch (e) { console.error('Delete failed:', e); }
+  }
+
   // ===== MODE SWITCHING =====
   async function openEditor(hex) {
     if (currentMode === 'editor') return;
 
     currentMode = 'editor';
     currentEditHex = hex;
+    setEditorViewportControls(true);
 
     // Hide globe/fallback, show editor
     const fallback = document.getElementById('globe-fallback');
@@ -1053,8 +1227,7 @@
     document.getElementById('editor-container').style.display = 'block';
 
     // Show loading overlay while fetching region data
-    const loadingOverlay = document.getElementById('editor-loading');
-    loadingOverlay.classList.remove('hidden');
+    setEditorLoading(true, 'Loading hex region...');
 
     // Show mini globe
     document.getElementById('globe-mini').classList.remove('hidden');
@@ -1063,9 +1236,9 @@
     if (!minimap) {
       const miniContainer = document.getElementById('globe-mini');
       const miniGlobe = Globe()
-        .backgroundColor('rgba(0,0,0,0)')
-        .width(200)
-        .height(200)
+        .backgroundColor('#000011')
+        .width(150)
+        .height(150)
         .showAtmosphere(false)
         .atmosphereAltitude(0.1);
 
@@ -1106,16 +1279,61 @@
         worldId: WORLD_ID,
         onSave: handleEditorSave,
         onClose: closeEditor,
+        onLoadingStateChange: ({ isLoading, message }) => {
+          if (currentMode !== 'editor') return;
+          setEditorLoading(isLoading, message || 'Loading hex region...');
+          setEditorViewportControls(true);
+          updateHexDetailLabel();
+        },
         onViewportChange: (viewport) => {
           document.getElementById('coords-display').textContent =
             `Position: (${Math.round(viewport.x)}, ${Math.round(viewport.y)})`;
         }
       });
       window.hexEditor = hexEditor;
+      // Wire hex selection in native mode to update coords display
+      hexEditor.onHexSelect = function(hexData) {
+        var coords = document.getElementById('coords-display');
+        if (coords) {
+          coords.textContent = hexData.terrain_type + ' (' +
+            hexData.latitude.toFixed(2) + '°, ' + hexData.longitude.toFixed(2) + '°)';
+        }
+      };
       // Connect minimap to editor
       if (minimap) {
         hexEditor.minimap = minimap;
       }
+
+      // Hex detail zoom buttons
+      document.getElementById('btn-hex-zoom-in')?.addEventListener('click', () => {
+        if (!hexEditor) return;
+        hexEditor.zoomCellSizeIn();
+        setEditorViewportControls(true);
+        updateHexDetailLabel();
+      });
+      document.getElementById('btn-hex-zoom-out')?.addEventListener('click', () => {
+        if (!hexEditor) return;
+        hexEditor.zoomCellSizeOut();
+        setEditorViewportControls(true);
+        updateHexDetailLabel();
+      });
+      document.getElementById('btn-native-recenter')?.addEventListener('click', () => {
+        if (!hexEditor || !hexEditor.nativeHexRenderer) return;
+        var r = hexEditor.nativeHexRenderer;
+        r.hexCache = {};
+        r._lastViewport = null;
+        r._pendingFetch = false;
+        r._centerLat = INITIAL_LAT;
+        r._centerLon = INITIAL_LNG;
+        r._viewSize = 2.0;
+        r._updateCamera();
+      });
+    }
+
+    if (hex.lat !== undefined && hex.lng !== undefined) {
+      hexEditor.nativeCenterLat = hex.lat;
+      hexEditor.nativeCenterLng = hex.lng;
+      hexEditor.pendingPatchCenterHexId = hex.globe_hex_id ?? hexEditor.pendingPatchCenterHexId;
     }
 
     // Determine coordinates - use lat/lng for globe worlds, ico coords for others
@@ -1124,13 +1342,16 @@
     const regionSize = 20;
 
     if (hex.lat !== undefined && hex.lng !== undefined) {
-      // Globe world: convert lat/lng to pseudo-grid coords
-      // x = 0..360 maps to lng -180..180, y = 0..180 maps to lat 90..-90
-      // Center the region on the clicked hex (offset by half region size)
+      // Globe world: convert lat/lng to pseudo-grid coords using current cell size
+      const cs = hexEditor ? hexEditor.effectiveCellSize : 1.0;
       face = 0;
-      x = Math.floor(hex.lng + 180) - Math.floor(regionSize / 2);
-      y = Math.floor(90 - hex.lat) - Math.floor(regionSize / 2);
+      x = Math.floor((hex.lng + 180) / cs) - Math.floor(regionSize / 2);
+      y = Math.floor((90 - hex.lat) / cs) - Math.floor(regionSize / 2);
       displayCoords = `(${hex.lat.toFixed(1)}°, ${hex.lng.toFixed(1)}°)`;
+
+      // Show hex detail controls for globe worlds
+      document.getElementById('hex-detail-controls').style.display = 'block';
+      updateHexDetailLabel();
     } else {
       // Icosahedral world: use face/ico coords
       face = hex.faceIndex ?? hex.ico_face ?? 0;
@@ -1141,13 +1362,38 @@
 
     document.getElementById('coords-display').textContent = `Loading ${displayCoords}...`;
 
-    const regionData = await fetchRegion(face, x, y, regionSize);
-    loadingOverlay.classList.add('hidden');
-    hexEditor.loadRegion({ face, x, y }, regionData.hexes || [], { isGlobeWorld: regionData.is_globe_world });
-    hexEditor.show();
+    if (hexEditor.isUnwrappedNativeMode && hex.lat !== undefined && hex.lng !== undefined) {
+      hexEditor.nativeCenterLat = hex.lat;
+      hexEditor.nativeCenterLng = hex.lng;
+      hexEditor.pendingPatchCenterHexId = hex.globe_hex_id ?? null;
+      hexEditor.clearLocalPatchCache();
+      await hexEditor.show();
+      setEditorLoading(false);
+    } else {
+      const regionData = await fetchRegion(face, x, y, regionSize);
+      setEditorLoading(false);
+      hexEditor.loadRegion({ face, x, y }, regionData.hexes || [], { isGlobeWorld: regionData.is_globe_world });
+      await hexEditor.show();
+
+      if (hex.lat !== undefined && hex.lng !== undefined) {
+        const focusHex = (hex.globe_hex_id != null
+          ? hexEditor.hexCache.get(`ghid:${hex.globe_hex_id}`)
+          : null) || hexEditor.findLocalPatchHexByLatLng(hex.lat, hex.lng);
+
+        if (focusHex && focusHex.worldX != null && focusHex.worldY != null) {
+          hexEditor.nativeCenterLat = focusHex.lat ?? hexEditor.nativeCenterLat;
+          hexEditor.nativeCenterLng = focusHex.lng ?? hexEditor.nativeCenterLng;
+          hexEditor.pendingPatchCenterHexId = focusHex.globe_hex_id ?? hexEditor.pendingPatchCenterHexId;
+          hexEditor.navigateTo(focusHex.worldX, focusHex.worldY);
+        }
+      }
+    }
+
     hexEditor.setTool(currentTool);
     hexEditor.setTerrain(selectedTerrain);
     hexEditor.setFeature(selectedFeature);
+    setEditorViewportControls(true);
+    updateHexDetailLabel();
 
     document.getElementById('coords-display').textContent = `Editing ${displayCoords}`;
   }
@@ -1156,11 +1402,13 @@
     if (currentMode === 'globe') return;
 
     currentMode = 'globe';
+    setEditorViewportControls(false);
 
     // Hide editor and loading overlay, show globe/fallback
     document.getElementById('editor-container').style.display = 'none';
-    document.getElementById('editor-loading').classList.add('hidden');
+    setEditorLoading(false);
     document.getElementById('globe-mini').classList.add('hidden');
+    document.getElementById('hex-detail-controls').style.display = 'none';
 
     if (hexEditor) hexEditor.hide();
 
@@ -1243,12 +1491,47 @@
     });
   }
 
+  function bindEditorNavigationButtons() {
+    const zoomInBtn = document.getElementById('btn-zoom-in');
+    const zoomOutBtn = document.getElementById('btn-zoom-out');
+
+    if (zoomInBtn && !zoomInBtn.dataset.editorZoomBound) {
+      zoomInBtn.dataset.editorZoomBound = 'true';
+      zoomInBtn.addEventListener('click', (e) => {
+        if (currentMode !== 'editor' || !hexEditor) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (hexEditor.nativeHexRenderer && hexEditor.nativeHexRenderer.isActive()) {
+          hexEditor.nativeHexRenderer.zoomIn();
+        } else {
+          hexEditor.zoomViewportIn();
+        }
+      }, true);
+    }
+
+    if (zoomOutBtn && !zoomOutBtn.dataset.editorZoomBound) {
+      zoomOutBtn.dataset.editorZoomBound = 'true';
+      zoomOutBtn.addEventListener('click', (e) => {
+        if (currentMode !== 'editor' || !hexEditor) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (hexEditor.nativeHexRenderer && hexEditor.nativeHexRenderer.isActive()) {
+          hexEditor.nativeHexRenderer.zoomOut();
+        } else {
+          hexEditor.zoomViewportOut();
+        }
+      }, true);
+    }
+  }
+
   // ===== INITIALIZATION =====
   document.addEventListener('DOMContentLoaded', async () => {
     initTerrainPalette();
     initFeaturePalette();
     bindToolButtons();
     bindGranularitySlider();
+    bindEditorNavigationButtons();
+    setEditorViewportControls(false);
 
     // Mini globe click to close editor
     document.getElementById('globe-mini').addEventListener('click', closeEditor);
@@ -1262,6 +1545,8 @@
     } else {
       try {
         globeView = new GlobeView('globe-container', {
+          initialLat: INITIAL_LAT,
+          initialLng: INITIAL_LNG,
           onHexClick: (hex) => {
             if (currentMode === 'globe') {
               if (currentTool === 'city') {
@@ -2003,5 +2288,14 @@
 <script src="https://unpkg.com/globe.gl@2.27.0/dist/globe.gl.min.js"></script>
 <script src="/js/world-builder/icosahedral-grid.js"></script>
 <script src="/js/world-builder/globe-view.js"></script>
+<!-- Three.js and OrbitControls for native hex renderer (Globe.gl bundles Three.js but not OrbitControls) -->
+<script>
+  // Globe.gl exposes THREE globally — only load our vendor copy if it didn't
+  if (typeof THREE === 'undefined') {
+    document.write('<script src="/js/vendor/three.min.js"><\/script>');
+  }
+</script>
+<script src="/js/vendor/OrbitControls.js"></script>
+<script src="/js/world-builder/voronoi-hex-renderer.js?v=<%= Time.now.to_i %>"></script>
 <script src="/js/world-builder/hex-editor.js?v=<%= Time.now.to_i %>"></script>
 <script src="/js/world-builder/sub-hex-editor.js?v=<%= Time.now.to_i %>"></script>

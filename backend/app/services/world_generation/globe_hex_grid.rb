@@ -60,7 +60,8 @@ module WorldGeneration
   # 1. Start with an icosahedron (12 vertices, 20 triangular faces)
   # 2. Subdivide each face N times (each subdivision creates 4 sub-triangles)
   # 3. Project all vertices to unit sphere
-  # 4. Use face centroids as hex centers
+  # 4. Use unique subdivision VERTICES as hex centers (not triangle centroids)
+  #    This produces 10 * 4^N + 2 hexes with natural 6-way adjacency (5 at 12 pentagons)
   #
   # @example
   #   grid = WorldGeneration::GlobeHexGrid.new(world, subdivisions: 5)
@@ -70,19 +71,19 @@ module WorldGeneration
     # Golden ratio for icosahedron geometry
     PHI = (1.0 + Math.sqrt(5.0)) / 2.0
 
-    attr_reader :world, :subdivisions, :hexes
+    attr_reader :world, :subdivisions, :hexes, :triangle_data, :neighbors_cache
 
     # Initialize a new globe hex grid.
     #
     # @param world [World] The world object this grid belongs to
     # @param subdivisions [Integer] Number of recursive subdivisions (default: 5)
-    #   - 0 subdivisions = 20 hexes (icosahedron faces)
-    #   - 1 subdivision = 80 hexes
-    #   - 2 subdivisions = 320 hexes
-    #   - 3 subdivisions = 1,280 hexes
-    #   - 4 subdivisions = 5,120 hexes
-    #   - 5 subdivisions = 20,480 hexes (default)
-    #   - Each subdivision multiplies hex count by 4: 20 * 4^n
+    #   Hex count = 10 * 4^n + 2 (unique vertices of subdivided icosahedron)
+    #   - 0 subdivisions = 12 hexes (icosahedron vertices)
+    #   - 1 subdivision = 42 hexes
+    #   - 2 subdivisions = 162 hexes
+    #   - 3 subdivisions = 642 hexes
+    #   - 5 subdivisions = 10,242 hexes (default)
+    #   - 10 subdivisions = 10,485,762 hexes
     # @param skip_neighbors [Boolean] Skip building neighbor cache (faster for Earth import)
     # @param face_range [Range, nil] Only generate hexes for specific faces (0-19)
     #   Use this for batched processing to reduce memory usage.
@@ -176,6 +177,49 @@ module WorldGeneration
       hex.lon
     end
 
+    # Export triangle mesh data for a specific icosahedral face.
+    # Each triangle maps to 3 vertex hex IDs (since hexes are at vertices).
+    #
+    # @param face_index [Integer] Icosahedral face index (0-19)
+    # @param include_border [Boolean] Include triangles from neighboring faces
+    # @return [Hash] { vertices: [[x,y,z],...], triangle_indices: [[i0,i1,i2],...], triangle_vertex_ids: [[id0,id1,id2],...] }
+    def triangle_mesh_for_face(face_index, include_border: false)
+      face_triangles = @triangle_data.select { |t| t[:face_index] == face_index }
+
+      if include_border
+        face_vertex_ids = Set.new(face_triangles.flat_map { |t| t[:vertex_ids] })
+        border_triangles = @triangle_data.select do |t|
+          t[:face_index] != face_index && t[:vertex_ids].any? { |vid| face_vertex_ids.include?(vid) }
+        end
+        face_triangles = face_triangles + border_triangles
+      end
+
+      # Build shared vertex buffer
+      vertex_index_map = {}
+      vertices = []
+      triangle_indices = []
+      triangle_vertex_ids = []
+
+      face_triangles.each do |tri|
+        indices = tri[:vertex_ids].map do |vid|
+          unless vertex_index_map.key?(vid)
+            hex = @hex_by_id[vid]
+            vertex_index_map[vid] = vertices.length
+            vertices << [hex.x, hex.y, hex.z] if hex
+          end
+          vertex_index_map[vid]
+        end
+        triangle_indices << indices
+        triangle_vertex_ids << tri[:vertex_ids]
+      end
+
+      {
+        vertices: vertices,
+        triangle_indices: triangle_indices,
+        triangle_vertex_ids: triangle_vertex_ids
+      }
+    end
+
     # Convert grid to WorldHex database records for bulk insert.
     #
     # Globe hexes use globe_hex_id as their unique identifier.
@@ -231,41 +275,126 @@ module WorldGeneration
 
     private
 
-    # Generate the icosahedral grid
+    # Generate the icosahedral grid using vertex-based hex placement.
+    # For large grids (subdivisions >= 8), shells out to a Python/NumPy script
+    # for memory efficiency. For small grids, uses inline Ruby.
     def generate_grid
-      hexes_per_face = 4**@subdivisions
+      @triangle_data = []
 
-      # Determine which faces to process
+      if @subdivisions >= 8 && !@face_range
+        generate_grid_via_python
+      else
+        generate_grid_inline
+      end
+    end
+
+    # Generate grid by calling Python script (memory-efficient for large grids).
+    # Python generates vertices + edges as a binary file, Ruby reads it.
+    def generate_grid_via_python
+      require 'tempfile'
+
+      script_path = File.expand_path('../../../scripts/generate_icosahedral_grid.py', __dir__)
+      tmpfile = Tempfile.new(['grid', '.bin'])
+      tmpfile.close
+
+      @on_progress&.call(:subdivide, 0.0)
+
+      # Run Python grid generator
+      result = system('python3', script_path, @subdivisions.to_s, tmpfile.path)
+      unless result
+        warn "[GlobeHexGrid] Python grid generator failed, falling back to inline Ruby"
+        return generate_grid_inline
+      end
+
+      @on_progress&.call(:subdivide, 0.7)
+
+      # Read binary output
+      File.open(tmpfile.path, 'rb') do |f|
+        vertex_count, edge_count = f.read(8).unpack('V2')
+
+        @hexes = Array.new(vertex_count)
+        vertex_count.times do |i|
+          face_index, lat, lon = f.read(20).unpack('Vd2') # uint32 + 2x float64
+
+          x = Math.cos(lat) * Math.cos(lon)
+          y = Math.cos(lat) * Math.sin(lon)
+          z = Math.sin(lat)
+
+          hex = HexData.new(
+            id: @start_hex_id + i, x: x, y: y, z: z,
+            lat: lat, lon: lon, face_index: face_index,
+            plate_id: nil, elevation: nil, temperature: nil,
+            moisture: nil, terrain_type: nil, river_directions: Set.new
+          )
+          @hexes[i] = hex
+          @hex_by_id[hex.id] = hex
+        end
+
+        @on_progress&.call(:neighbors, 0.0)
+
+        unless @skip_neighbors
+          edge_count.times do
+            id_a, id_b = f.read(8).unpack('V2')
+            a = @start_hex_id + id_a
+            b = @start_hex_id + id_b
+            (@neighbors_cache[a] ||= []) << b
+            (@neighbors_cache[b] ||= []) << a
+          end
+        end
+
+        @hexes.each { |hex| @neighbors_cache[hex.id] ||= [] }
+        @on_progress&.call(:neighbors, 1.0)
+      end
+    ensure
+      tmpfile&.unlink
+    end
+
+    # Generate grid inline in Ruby (for small grids or face_range batches).
+    def generate_grid_inline
       faces_to_process = @face_range || (0..19)
-      face_count = faces_to_process.size
 
-      # Pre-calculate expected hex count for array pre-allocation
-      expected_count = face_count * hexes_per_face
-      @hexes = Array.new(expected_count)
-      @hex_index = 0
+      @vertex_map = {}
+      @edge_set = Set.new
       @global_hex_id = @start_hex_id
 
-      # Create icosahedron vertices (normalized to unit sphere)
-      vertices = icosahedron_vertices
-
-      # Create 20 triangular faces and process selected ones recursively
       all_faces = icosahedron_faces
       total_faces = faces_to_process.size
       faces_to_process.each_with_index do |face_index, i|
         face_vertices, _ = all_faces[face_index]
-        subdivide_and_create_hex(face_vertices[0], face_vertices[1], face_vertices[2], @subdivisions, face_index)
-        # Report subdivision progress (0-70% of grid building)
+        subdivide_and_collect_vertices(face_vertices[0], face_vertices[1], face_vertices[2], @subdivisions, face_index)
         @on_progress&.call(:subdivide, (i + 1).to_f / total_faces)
       end
 
-      # Trim array if needed and build lookup hash
-      @hexes = @hexes[0...@hex_index] if @hex_index < expected_count
-      @hexes.each { |hex| @hex_by_id[hex.id] = hex }
+      @hexes = Array.new(@vertex_map.size)
+      idx = 0
+      @vertex_map.each_value do |entry|
+        x, y, z = entry[:coords]
+        lat = Math.asin(z.clamp(-1.0, 1.0))
+        lon = Math.atan2(y, x)
 
-      # Build neighbor relationships (skip for Earth import which doesn't need them)
+        hex = HexData.new(
+          id: entry[:id], x: x, y: y, z: z,
+          lat: lat, lon: lon, face_index: entry[:face_index],
+          plate_id: nil, elevation: nil, temperature: nil,
+          moisture: nil, terrain_type: nil, river_directions: Set.new
+        )
+        @hexes[idx] = hex
+        @hex_by_id[hex.id] = hex
+        idx += 1
+      end
+
       @on_progress&.call(:neighbors, 0.0)
-      build_neighbor_cache unless @skip_neighbors
+      unless @skip_neighbors
+        @edge_set.each do |id_a, id_b|
+          (@neighbors_cache[id_a] ||= []) << id_b
+          (@neighbors_cache[id_b] ||= []) << id_a
+        end
+      end
+      @hexes.each { |hex| @neighbors_cache[hex.id] ||= [] }
       @on_progress&.call(:neighbors, 1.0)
+
+      @vertex_map = nil
+      @edge_set = nil
     end
 
     # Generate the 12 vertices of an icosahedron on a unit sphere.
@@ -319,188 +448,64 @@ module WorldGeneration
       end
     end
 
-    # Recursive subdivision that creates hexes directly at leaf nodes.
-    # Avoids storing intermediate triangles by processing immediately at depth 0.
-    #
-    # @param v0, v1, v2 [Array<Float>] Three vertices [x,y,z]
-    # @param depth [Integer] Remaining subdivision levels
-    # @param face_index [Integer] Original face index (0-19)
-    def subdivide_and_create_hex(v0, v1, v2, depth, face_index)
+    # Recursive subdivision that collects unique vertices and mesh edges.
+    # At leaf level (depth=0), registers 3 triangle vertices and 3 edges.
+    # Vertex deduplication uses rounded coordinates as hash keys.
+    def subdivide_and_collect_vertices(v0, v1, v2, depth, face_index)
       if depth == 0
-        # Leaf node - create hex from triangle centroid
-        cx = (v0[0] + v1[0] + v2[0]) / 3.0
-        cy = (v0[1] + v1[1] + v2[1]) / 3.0
-        cz = (v0[2] + v1[2] + v2[2]) / 3.0
+        # Register each vertex (deduplicated across faces)
+        id0 = register_vertex(v0, face_index)
+        id1 = register_vertex(v1, face_index)
+        id2 = register_vertex(v2, face_index)
 
-        # Normalize to unit sphere
-        len = Math.sqrt(cx * cx + cy * cy + cz * cz)
-        if len < 1e-10
-          x, y, z = 0.0, 0.0, 1.0
-        else
-          inv_len = 1.0 / len
-          x, y, z = cx * inv_len, cy * inv_len, cz * inv_len
-        end
+        # Record mesh edges (for neighbor adjacency)
+        register_edge(id0, id1)
+        register_edge(id1, id2)
+        register_edge(id0, id2)
 
-        # Convert to lat/lon (in radians)
-        lat = Math.asin(z.clamp(-1.0, 1.0))
-        lon = Math.atan2(y, x)
-
-        # Create hex directly into pre-allocated array
-        # Use Set for river_directions for O(1) lookup and automatic uniqueness
-        # Use @global_hex_id for consistent IDs across batched processing
-        @hexes[@hex_index] = HexData.new(
-          id: @global_hex_id,
-          x: x,
-          y: y,
-          z: z,
-          lat: lat,
-          lon: lon,
-          face_index: face_index,
-          plate_id: nil,
-          elevation: nil,
-          temperature: nil,
-          moisture: nil,
-          terrain_type: nil,
-          river_directions: Set.new
-        )
-        @hex_index += 1
-        @global_hex_id += 1
+        # Store triangle for mesh export
+        @triangle_data << { face_index: face_index, vertex_ids: [id0, id1, id2] }
         return
       end
 
       # Calculate midpoints and normalize to sphere
-      m01x = (v0[0] + v1[0]) * 0.5
-      m01y = (v0[1] + v1[1]) * 0.5
-      m01z = (v0[2] + v1[2]) * 0.5
-      len = Math.sqrt(m01x * m01x + m01y * m01y + m01z * m01z)
-      inv_len = 1.0 / len
-      m01 = [m01x * inv_len, m01y * inv_len, m01z * inv_len]
-
-      m12x = (v1[0] + v2[0]) * 0.5
-      m12y = (v1[1] + v2[1]) * 0.5
-      m12z = (v1[2] + v2[2]) * 0.5
-      len = Math.sqrt(m12x * m12x + m12y * m12y + m12z * m12z)
-      inv_len = 1.0 / len
-      m12 = [m12x * inv_len, m12y * inv_len, m12z * inv_len]
-
-      m20x = (v2[0] + v0[0]) * 0.5
-      m20y = (v2[1] + v0[1]) * 0.5
-      m20z = (v2[2] + v0[2]) * 0.5
-      len = Math.sqrt(m20x * m20x + m20y * m20y + m20z * m20z)
-      inv_len = 1.0 / len
-      m20 = [m20x * inv_len, m20y * inv_len, m20z * inv_len]
+      m01 = normalize_midpoint(v0, v1)
+      m12 = normalize_midpoint(v1, v2)
+      m20 = normalize_midpoint(v2, v0)
 
       # Recurse into 4 sub-triangles
       next_depth = depth - 1
-      subdivide_and_create_hex(v0, m01, m20, next_depth, face_index)
-      subdivide_and_create_hex(m01, v1, m12, next_depth, face_index)
-      subdivide_and_create_hex(m20, m12, v2, next_depth, face_index)
-      subdivide_and_create_hex(m01, m12, m20, next_depth, face_index)
+      subdivide_and_collect_vertices(v0, m01, m20, next_depth, face_index)
+      subdivide_and_collect_vertices(m01, v1, m12, next_depth, face_index)
+      subdivide_and_collect_vertices(m20, m12, v2, next_depth, face_index)
+      subdivide_and_collect_vertices(m01, m12, m20, next_depth, face_index)
     end
 
-    # Build neighbor cache using 2D lat/lon grid with 9-cell lookup.
-    # Cell size is based on neighbor distance, ensuring each cell lookup
-    # returns only immediate neighbor candidates.
-    def build_neighbor_cache
-      return if @hexes.empty?
-      return build_neighbor_cache_simple if @hexes.size <= 500
-
-      # Calculate neighbor distance threshold
-      hex_count_theoretical = 20 * (4**@subdivisions)
-      approx_hex_area = 4.0 * Math::PI / hex_count_theoretical
-      approx_hex_radius = Math.sqrt(approx_hex_area / Math::PI)
-      neighbor_angle = approx_hex_radius * 3.0
-      threshold_dot = Math.cos(neighbor_angle)
-
-      # Cell size = neighbor_angle so that 3x3 cells cover the neighbor radius
-      # This ensures each hex only checks hexes that could possibly be neighbors
-      lat_cell_size = neighbor_angle
-      lon_cell_size = neighbor_angle
-
-      num_lat_cells = (Math::PI / lat_cell_size).ceil
-      num_lon_cells = (2.0 * Math::PI / lon_cell_size).ceil
-
-      # Build 2D grid: cells[lat_idx][lon_idx] = [hex1, hex2, ...]
-      cells = Array.new(num_lat_cells) { Array.new(num_lon_cells) { [] } }
-
-      @hexes.each do |hex|
-        lat_idx = ((hex.lat + Math::PI / 2) / lat_cell_size).floor
-        lat_idx = lat_idx.clamp(0, num_lat_cells - 1)
-        lon_idx = ((hex.lon + Math::PI) / lon_cell_size).floor
-        lon_idx = lon_idx.clamp(0, num_lon_cells - 1)
-        cells[lat_idx][lon_idx] << hex
+    # Register a vertex in the deduplication map. Returns the vertex's hex ID.
+    def register_vertex(v, face_index)
+      key = [v[0].round(10), v[1].round(10), v[2].round(10)]
+      unless @vertex_map.key?(key)
+        id = @global_hex_id
+        @global_hex_id += 1
+        @vertex_map[key] = { id: id, coords: v, face_index: face_index }
       end
-
-      # For each hex, check cells around it
-      # Near poles, expand longitude search to compensate for convergence
-      @hexes.each do |hex|
-        hx, hy, hz = hex.x, hex.y, hex.z
-        hex_id = hex.id
-
-        lat_idx = ((hex.lat + Math::PI / 2) / lat_cell_size).floor.clamp(0, num_lat_cells - 1)
-        lon_idx = ((hex.lon + Math::PI) / lon_cell_size).floor.clamp(0, num_lon_cells - 1)
-
-        # Calculate longitude expansion factor based on latitude
-        # At poles, 1 degree of longitude covers much less distance
-        # cos(lat) gives the scaling factor (0 at poles, 1 at equator)
-        cos_lat = Math.cos(hex.lat).abs
-        lon_expand = cos_lat < 0.1 ? 5 : (cos_lat < 0.3 ? 3 : 1)
-
-        neighbors = []
-
-        # Check neighborhood of cells (expanded at poles)
-        (-1..1).each do |dlat|
-          next_lat = lat_idx + dlat
-          next if next_lat < 0 || next_lat >= num_lat_cells
-
-          (-lon_expand..lon_expand).each do |dlon|
-            next_lon = (lon_idx + dlon) % num_lon_cells
-
-            cells[next_lat][next_lon].each do |other|
-              next if other.id == hex_id
-              dot = hx * other.x + hy * other.y + hz * other.z
-              neighbors << [other.id, dot] if dot > threshold_dot
-            end
-          end
-        end
-
-        # Sort and take top 7
-        if neighbors.size > 7
-          neighbors.sort_by! { |_, d| -d }
-          @neighbors_cache[hex_id] = neighbors[0, 7].map!(&:first)
-        else
-          @neighbors_cache[hex_id] = neighbors.map(&:first)
-        end
-      end
+      @vertex_map[key][:id]
     end
 
-    # Simple O(n^2) neighbor cache for small grids (<= 500 hexes).
-    def build_neighbor_cache_simple
-      return if @hexes.empty?
+    # Register a mesh edge between two vertex IDs (canonical order).
+    def register_edge(id_a, id_b)
+      edge = id_a < id_b ? [id_a, id_b] : [id_b, id_a]
+      @edge_set.add(edge)
+    end
 
-      hex_count_theoretical = 20 * (4**@subdivisions)
-      approx_hex_area = 4.0 * Math::PI / hex_count_theoretical
-      approx_hex_radius = Math.sqrt(approx_hex_area / Math::PI)
-      threshold_dot = Math.cos(approx_hex_radius * 3.0)
-
-      @hexes.each do |hex|
-        hx, hy, hz = hex.x, hex.y, hex.z
-        hex_id = hex.id
-        neighbors = []
-
-        @hexes.each do |other|
-          next if other.id == hex_id
-          dot = hx * other.x + hy * other.y + hz * other.z
-          neighbors << [other.id, dot] if dot > threshold_dot
-        end
-
-        if neighbors.size > 7
-          neighbors.sort_by! { |_, d| -d }
-          @neighbors_cache[hex_id] = neighbors[0, 7].map!(&:first)
-        else
-          @neighbors_cache[hex_id] = neighbors.map(&:first)
-        end
-      end
+    # Compute midpoint of two vertices, normalized to unit sphere.
+    def normalize_midpoint(v0, v1)
+      mx = (v0[0] + v1[0]) * 0.5
+      my = (v0[1] + v1[1]) * 0.5
+      mz = (v0[2] + v1[2]) * 0.5
+      len = Math.sqrt(mx * mx + my * my + mz * mz)
+      inv_len = 1.0 / len
+      [mx * inv_len, my * inv_len, mz * inv_len]
     end
   end
 end

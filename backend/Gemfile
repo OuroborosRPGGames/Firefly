@@ -106,3 +106,6 @@ gem 'bcrypt', '~> 3.1'
 
 gem 'csv'
 
+# H3 geospatial indexing for LOD views
+gem 'h3', '~> 3.7'
+

@@ -80,18 +80,18 @@ class SubHexEditor {
   createUI() {
     // Create wrapper with toolbar and canvas
     const wrapper = document.createElement('div');
-    wrapper.className = 'sub-hex-editor-wrapper';
-    wrapper.style.cssText = 'width: 100%; height: 100%; display: flex; flex-direction: column; background: #111;';
+    wrapper.className = 'sub-hex-editor-wrapper bg-neutral text-neutral-content';
+    wrapper.style.cssText = 'width: 100%; height: 100%; display: flex; flex-direction: column;';
 
     // Toolbar
     const toolbar = document.createElement('div');
     toolbar.className = 'sub-hex-toolbar';
-    toolbar.style.cssText = 'padding: 8px; background: #222; border-bottom: 1px solid #333; display: flex; gap: 8px; align-items: center;';
+    toolbar.style.cssText = 'padding: 8px; border-bottom: 1px solid oklch(50% 0 0 / 0.3); display: flex; gap: 8px; align-items: center;';
     toolbar.innerHTML = `
       <button class="btn btn-sm btn-ghost" id="sub-hex-back" title="Back to Globe">
         <i class="bi bi-arrow-left"></i> Back
       </button>
-      <span class="text-sm text-base-content/70">
+      <span class="text-sm text-neutral-content/70">
         ${this.worldHexCoords.globe_hex_id != null
           ? `Hex #${this.worldHexCoords.globe_hex_id} (${(this.worldHexCoords.lat ?? 0).toFixed(2)}, ${(this.worldHexCoords.lng ?? 0).toFixed(2)})`
           : `Hex (${this.worldHexCoords.x}, ${this.worldHexCoords.y})`}
@@ -118,10 +118,10 @@ class SubHexEditor {
     const zoneToolbar = document.createElement('div');
     zoneToolbar.id = 'sub-hex-zone-toolbar';
     zoneToolbar.className = 'sub-hex-zone-toolbar';
-    zoneToolbar.style.cssText = 'display: none; padding: 6px 8px; background: #2a2a3a; border-bottom: 1px solid #444; gap: 6px; align-items: center;';
+    zoneToolbar.style.cssText = 'display: none; padding: 6px 8px; border-bottom: 1px solid oklch(50% 0 0 / 0.3); gap: 6px; align-items: center;';
     zoneToolbar.innerHTML = `
       <span class="text-sm text-warning mr-2"><i class="bi bi-hexagon"></i> Drawing Zone</span>
-      <span class="text-xs text-base-content/50 mr-2" id="sub-hex-zone-point-count">0 points</span>
+      <span class="text-xs text-neutral-content/50 mr-2" id="sub-hex-zone-point-count">0 points</span>
       <div class="flex-1"></div>
       <button class="btn btn-sm btn-ghost" id="sub-hex-zone-undo" title="Undo last point" disabled>
         <i class="bi bi-arrow-counterclockwise"></i> Undo

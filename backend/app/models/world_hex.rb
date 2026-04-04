@@ -5,7 +5,12 @@ class WorldHex < Sequel::Model(:world_hexes)
   plugin :timestamps
   
   many_to_one :world
-  
+
+  # Named feature associations (one per directional edge)
+  %w[n ne se s sw nw].each do |dir|
+    many_to_one :"feature_ref_#{dir}", class: :WorldFeature, key: :"feature_id_#{dir}"
+  end
+
   # Valid terrain types (consolidated list)
   TERRAIN_TYPES = [
     # Water
@@ -63,8 +68,9 @@ class WorldHex < Sequel::Model(:world_hexes)
   DEFAULT_TRAVERSABLE = true
 
   # Neighbor threshold for globe hexes (in degrees)
-  # With ~20k hexes on a sphere, hexes are roughly 1 degree apart
-  NEIGHBOR_THRESHOLD_DEGREES = 1.0
+  # At subdivision 10 (~10.5M hexes), neighbor spacing is ~0.079°.
+  # This threshold is only used as a fallback when neighbor_globe_hex_ids is NULL.
+  NEIGHBOR_THRESHOLD_DEGREES = 0.12
 
   def validate
     super
@@ -174,13 +180,30 @@ class WorldHex < Sequel::Model(:world_hexes)
     send("feature_#{dir}")
   end
 
+  # Get directional features with names and IDs
+  def directional_feature_details
+    DIRECTIONS.each_with_object({}) do |dir, features|
+      value = send("feature_#{dir}")
+      next unless value
+
+      fid = respond_to?(:"feature_id_#{dir}") ? send("feature_id_#{dir}") : nil
+      features[dir] = {
+        type: value,
+        feature_id: fid,
+        name: fid ? send("feature_ref_#{dir}")&.name : nil
+      }
+    end
+  end
+
   # Set a directional feature
-  def set_directional_feature(direction, feature_type)
+  def set_directional_feature(direction, feature_type, feature_id: nil)
     dir = direction.to_s.downcase
     return false unless DIRECTIONS.include?(dir)
     return false if feature_type && !FEATURE_TYPES.include?(feature_type)
 
-    update("feature_#{dir}" => feature_type)
+    attrs = { "feature_#{dir}" => feature_type }
+    attrs["feature_id_#{dir}"] = feature_id if self.class.columns.include?(:"feature_id_#{dir}")
+    update(attrs)
     true
   end
 
@@ -308,6 +331,7 @@ class WorldHex < Sequel::Model(:world_hexes)
       altitude: altitude,
       traversable: traversable,
       directional_features: directional_features,
+      feature_details: directional_feature_details,
       linear_features: linear_features,
       movement_cost: movement_cost,
       blocks_sight: blocks_sight?,
@@ -528,62 +552,49 @@ class WorldHex < Sequel::Model(:world_hexes)
     nil
   end
 
-  # Find all neighboring hexes within angular threshold
+  # Find all neighboring hexes.
+  # Fast path: uses precomputed neighbor_globe_hex_ids (populated by boundary service).
+  # Fallback: spatial search within NEIGHBOR_THRESHOLD_DEGREES.
   # @param hex [WorldHex] the center hex
   # @return [Array<WorldHex>] neighboring hexes (not including the center hex)
   def self.neighbors_of(hex)
     return [] if hex.latitude.nil? || hex.longitude.nil?
 
-    threshold_rad = NEIGHBOR_THRESHOLD_DEGREES * Math::PI / 180.0
-
-    # Use a bounding box filter first for efficiency
-    # At the poles, longitude differences are meaningless, so we use a larger range
-    lat = hex.latitude
-    lon = hex.longitude
-
-    # Near poles (|lat| > 85), expand the longitude search to full range
-    if lat.abs > 85
-      candidates = where(world_id: hex.world_id)
-        .where { (latitude >= lat - NEIGHBOR_THRESHOLD_DEGREES) & (latitude <= lat + NEIGHBOR_THRESHOLD_DEGREES) }
-        .exclude(id: hex.id)
-        .all
-    else
-      # Normal case: use bounding box
-      # Adjust longitude threshold based on latitude (distances shrink at higher latitudes)
-      lon_threshold = NEIGHBOR_THRESHOLD_DEGREES / Math.cos(lat * Math::PI / 180.0)
-      lon_threshold = [lon_threshold, 180.0].min  # Cap at 180 degrees
-
-      # Handle antimeridian wrapping
-      lon_min = lon - lon_threshold
-      lon_max = lon + lon_threshold
-
-      if lon_min < -180
-        # Wraps around antimeridian
-        candidates = where(world_id: hex.world_id)
-          .where { (latitude >= lat - NEIGHBOR_THRESHOLD_DEGREES) & (latitude <= lat + NEIGHBOR_THRESHOLD_DEGREES) }
-          .where { (longitude >= lon_min + 360) | (longitude <= lon_max) }
-          .exclude(id: hex.id)
-          .all
-      elsif lon_max > 180
-        # Wraps around antimeridian
-        candidates = where(world_id: hex.world_id)
-          .where { (latitude >= lat - NEIGHBOR_THRESHOLD_DEGREES) & (latitude <= lat + NEIGHBOR_THRESHOLD_DEGREES) }
-          .where { (longitude >= lon_min) | (longitude <= lon_max - 360) }
-          .exclude(id: hex.id)
-          .all
-      else
-        candidates = where(world_id: hex.world_id)
-          .where { (latitude >= lat - NEIGHBOR_THRESHOLD_DEGREES) & (latitude <= lat + NEIGHBOR_THRESHOLD_DEGREES) }
-          .where { (longitude >= lon_min) & (longitude <= lon_max) }
-          .exclude(id: hex.id)
-          .all
-      end
+    # Fast path: use precomputed neighbor IDs from boundary computation
+    if hex.neighbor_globe_hex_ids && !hex.neighbor_globe_hex_ids.empty?
+      return where(world_id: hex.world_id, globe_hex_id: hex.neighbor_globe_hex_ids.to_a).all
     end
 
-    # Filter to actual neighbors using great circle distance
-    candidates.select do |candidate|
-      distance = great_circle_distance_rad(lat, lon, candidate.latitude, candidate.longitude)
-      distance <= threshold_rad
+    # Slow fallback: spatial search (for hexes without precomputed neighbors)
+    lat = hex.latitude
+    lon = hex.longitude
+    threshold_rad = NEIGHBOR_THRESHOLD_DEGREES * Math::PI / 180.0
+
+    # Bounding box filter
+    lon_threshold = if lat.abs > 85
+                      180.0
+                    else
+                      [NEIGHBOR_THRESHOLD_DEGREES / Math.cos(lat * Math::PI / 180.0), 180.0].min
+                    end
+
+    lon_min = lon - lon_threshold
+    lon_max = lon + lon_threshold
+
+    candidates = where(world_id: hex.world_id)
+      .where { (latitude >= lat - NEIGHBOR_THRESHOLD_DEGREES) & (latitude <= lat + NEIGHBOR_THRESHOLD_DEGREES) }
+      .exclude(id: hex.id)
+
+    # Handle antimeridian wrapping
+    if lon_min < -180
+      candidates = candidates.where { (longitude >= lon_min + 360) | (longitude <= lon_max) }
+    elsif lon_max > 180
+      candidates = candidates.where { (longitude >= lon_min) | (longitude <= lon_max - 360) }
+    else
+      candidates = candidates.where { (longitude >= lon_min) & (longitude <= lon_max) }
+    end
+
+    candidates.all.select do |candidate|
+      great_circle_distance_rad(lat, lon, candidate.latitude, candidate.longitude) <= threshold_rad
     end
   end
 
@@ -698,5 +709,40 @@ class WorldHex < Sequel::Model(:world_hexes)
   # @return [Integer] number of hexes updated
   def self.set_all_traversable(world, traversable:)
     where(world_id: world.id).update(traversable: traversable)
+  end
+
+  # ============================================
+  # H3 Geospatial Index
+  # Uses h3-pg SQL functions when available, falls back to h3 Ruby gem.
+  # ============================================
+
+  # Compute and assign h3_index from lat/lon at resolution 7 (~5 km hexes).
+  # Does NOT persist — caller is responsible for saving.
+  def compute_h3_index
+    if latitude.nil? || longitude.nil?
+      self.h3_index = nil
+      return
+    end
+
+    # Prefer h3-pg SQL (faster, no Ruby overhead)
+    result = DB["SELECT h3_latlng_to_cell(point(?, ?), 7)::bigint AS h3",
+                 longitude.to_f, latitude.to_f].first
+    self.h3_index = result[:h3]
+  rescue Sequel::DatabaseError
+    # h3-pg not available, fall back to Ruby gem
+    self.h3_index = H3.from_geo_coordinates([latitude.to_f, longitude.to_f], 7).to_i
+  rescue StandardError => e
+    warn "[WorldHex] H3 computation failed: #{e.message}"
+    self.h3_index = nil
+  end
+
+  # After a successful save, backfill h3_index when coordinates are present but
+  # the index is missing. Uses self.this.update to avoid re-triggering hooks.
+  def after_save
+    super
+    return unless h3_index.nil? && !latitude.nil? && !longitude.nil?
+
+    compute_h3_index
+    self.this.update(h3_index: h3_index) if h3_index
   end
 end

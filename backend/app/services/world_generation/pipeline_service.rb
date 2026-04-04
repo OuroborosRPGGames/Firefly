@@ -4,16 +4,16 @@ module WorldGeneration
   # Orchestrates the world generation pipeline
   class PipelineService
     PHASES = %w[tectonics elevation climate rivers biomes].freeze
-    DEFAULT_SUBDIVISIONS = 5 # Controls hex count (~20,000 hexes at 5) for globe grid
+    DEFAULT_SUBDIVISIONS = 5 # Controls hex count (~10,242 hexes at 5) for globe grid
 
-    # Maps world_size to subdivisions for globe hex grid
-    # Formula: hex_count = 20 * 4^subdivisions
+    # Maps world_size to subdivisions for vertex-based icosahedral globe hex grid
+    # Formula: hex_count = 10 * 4^subdivisions + 2
     WORLD_SIZE_TO_SUBDIVISIONS = {
-      0.1 => 7,   # ~328K hexes (Tiny)
-      0.25 => 8,  # ~1.3M hexes (Small)
-      0.5 => 9,   # ~5.2M hexes (Medium)
-      0.75 => 10, # ~21M hexes (Large)
-      1.0 => 10   # ~21M hexes (Earth-size, capped for performance)
+      0.1 => 7,   # ~163K hexes (Tiny)
+      0.25 => 8,  # ~655K hexes (Small)
+      0.5 => 9,   # ~2.6M hexes (Medium)
+      0.75 => 10, # ~10.5M hexes (Large)
+      1.0 => 10   # ~10.5M hexes (Earth-size)
     }.freeze
 
     # Batch size for database inserts
@@ -76,8 +76,8 @@ module WorldGeneration
     private
 
     def estimate_hex_count
-      # Globe grid: 20 * 4^subdivisions hexes
-      20 * (4**@subdivisions)
+      # Vertex-based icosahedral grid: 10 * 4^subdivisions + 2 hexes
+      10 * (4**@subdivisions) + 2
     end
 
     def init_config

@@ -1,16 +1,240 @@
-/* Tailwind CSS v4 - CSS-first configuration */
+/* Tailwind CSS v4 + DaisyUI 5 - Sumi-e (Ink Wash) Theme */
 @import "tailwindcss";
+
+/* Local brush font */
+@font-face {
+  font-family: 'Brushtype';
+  src: url('/fonts/Brushtype.woff2') format('woff2'),
+       url('/fonts/Brushtype.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
 
 /* Source detection for class scanning */
 @source "../../views/**/*.erb";
 @source "../../../public/js/**/*.js";
 
-/* Custom theme extensions */
-@theme {
-  --color-base-100: #272b30;
-  --color-base-200: #1c1e22;
-  --color-base-300: #151719;
+/* Exclude plugin files from source scanning */
+@source not "../../../bin/daisyui.mjs";
+@source not "../../../bin/daisyui-theme.mjs";
+
+/* DaisyUI 5 plugin */
+@plugin "../../../bin/daisyui.mjs";
+@plugin "../../../bin/daisyui-theme.mjs" {
+  name: "sumie";
+  default: true;
+  color-scheme: light;
+
+  --color-base-100: oklch(96% 0.008 80);     /* warm rice paper    */
+  --color-base-200: oklch(92% 0.012 80);     /* darker paper fold  */
+  --color-base-300: oklch(87% 0.015 80);     /* border/divider     */
+  --color-base-content: oklch(22% 0.015 60); /* sumi ink text      */
+
+  --color-primary: oklch(25% 0.015 60);         /* deep sumi ink */
+  --color-primary-content: oklch(96% 0.008 80);
+  --color-secondary: oklch(48% 0.14 25);        /* cinnabar red */
+  --color-secondary-content: oklch(96% 0.008 80);
+  --color-accent: oklch(52% 0.06 160);          /* muted jade green */
+  --color-accent-content: oklch(96% 0.008 80);
+  --color-neutral: oklch(40% 0.015 60);         /* dark ink wash */
+  --color-neutral-content: oklch(92% 0.008 80);
+
+  --color-info: oklch(58% 0.08 240);
+  --color-info-content: oklch(96% 0.008 80);
+  --color-success: oklch(55% 0.10 155);
+  --color-success-content: oklch(96% 0.008 80);
+  --color-warning: oklch(75% 0.12 80);
+  --color-warning-content: oklch(22% 0.015 60);
+  --color-error: oklch(50% 0.18 25);
+  --color-error-content: oklch(96% 0.008 80);
+
+  --radius-box: 0.125rem;
+  --radius-field: 0.125rem;
+  --radius-selector: 0.125rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
 }
 
-/* Dark mode via class strategy */
-@custom-variant dark (&:where(.dark, .dark *));
+/* ──── Tailwind v4 custom design tokens ──── */
+@theme {
+  --color-cream: #F5F0E8;
+  --color-ink: #27221F;
+  --color-cinnabar: #C23B22;
+  --color-jade: #6B8F71;
+  --color-ink-light: #5C5450;
+  --color-paper-shadow: #D4C9B8;
+
+  --font-brush-cn: "Ma Shan Zheng", cursive;
+  --font-brush: "Water Brush", cursive;
+  --font-serif: "Source Serif 4", "Noto Serif SC", Georgia, serif;
+  --font-serif-cn: "Noto Serif SC", "Songti SC", serif;
+  --font-handwriting: "Caveat", cursive;
+
+  --shadow-ink: 0 2px 12px rgba(39, 34, 31, 0.08);
+  --shadow-wash: 0 0 40px rgba(39, 34, 31, 0.06);
+
+  --ease-brush: cubic-bezier(0.08, 0.82, 0.17, 1);
+  --ease-ink: cubic-bezier(0.25, 0.1, 0.25, 1);
+
+  --animate-fade-up: fade-up 0.5s var(--ease-ink) forwards;
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* ──── Paper texture overlay (canvas-generated at runtime) ──── */
+.paper-grain-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  opacity: 0.18;
+  /* background-image set by JS paper-texture.js */
+}
+
+/* Kept as a no-op so existing class references don't break */
+@utility paper-texture {
+  position: relative;
+}
+
+@utility ink-bleed {
+  filter: url(#ink-bleed);
+}
+
+@utility ink-link {
+  position: relative;
+  display: inline-block;
+  padding: 2px 8px;
+  z-index: 1;
+  transition: color 600ms cubic-bezier(0.08, 0.82, 0.17, 1);
+
+  &::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 100%;
+    background: linear-gradient(
+      to right,
+      transparent, rgba(39, 34, 31, 0.1) 20%,
+      rgba(39, 34, 31, 0.12) 80%, transparent
+    );
+    transition: width 800ms cubic-bezier(0.08, 0.005, 0.33, 1.02),
+                left  800ms cubic-bezier(0.08, 0.005, 0.33, 1.02);
+    z-index: -1;
+  }
+  &:hover::after {
+    width: 120%;
+    left: -10%;
+  }
+}
+
+@utility ink-divider {
+  width: 80%;
+  margin: 2rem auto;
+  height: 2px;
+  background: var(--color-ink);
+  opacity: 0.4;
+  border: none;
+  filter: url(#brush-edge);
+}
+
+/* ──── Ink wash utility for images ──── */
+@utility ink-wash {
+  filter: grayscale(100%) contrast(1.4) brightness(1.1) sepia(15%);
+  mix-blend-mode: multiply;
+}
+@utility ink-wash-soft {
+  filter: grayscale(90%) contrast(1.2) brightness(1.15) sepia(10%);
+}
+
+/* ──── Scroll-driven reveal animation (applied by JS IntersectionObserver) ──── */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.6s cubic-bezier(0.25, 0.1, 0.25, 1),
+              transform 0.6s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.scroll-reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* ──── Base styles ──── */
+@layer base {
+  body {
+    font-family: var(--font-serif);
+    color: var(--color-ink);
+    background-color: var(--color-cream);
+    /* Aged paper vignette — darkened edges like old xuan paper */
+    box-shadow: inset 0 0 120px rgba(139, 119, 80, 0.12);
+  }
+  h1, h2, h3 {
+    font-family: var(--font-brush-cn);
+    /* Ink text-shadow — mimics ink bleeding into paper fibers */
+    text-shadow:
+      0 0 1px rgba(39, 34, 31, 0.6),
+      0 0 4px rgba(39, 34, 31, 0.15),
+      1px 1px 2px rgba(39, 34, 31, 0.1);
+  }
+}
+
+/* Ma Shan Zheng only ships weight 400 — prevent faux-bold distortion
+   by capping any element that uses the brush font */
+[data-theme="sumie"] :where(h1, h2, h3, .card-title, [class*="font-brush-cn"]) {
+  font-weight: 400 !important;
+}
+
+/* Brushtype drop-cap — first letter of headings wrapped by JS */
+[data-theme="sumie"] .dropcap {
+  font-family: 'Brushtype', cursive;
+  font-size: 1.8em;
+  line-height: 0;
+  display: inline;
+  vertical-align: baseline;
+}
+
+/* ──── DaisyUI component overrides for sumi-e ──── */
+[data-theme="sumie"] .btn {
+  font-family: var(--font-serif);
+  letter-spacing: 0.05em;
+  text-transform: none;
+  box-shadow: none;
+  transition: opacity 600ms var(--ease-brush);
+}
+[data-theme="sumie"] .btn:hover {
+  opacity: 0.75;
+}
+
+/* Ghost buttons inherit parent text color so they stay visible on dark backgrounds */
+[data-theme="sumie"] .bg-neutral .btn-ghost {
+  color: inherit;
+}
+
+[data-theme="sumie"] .card {
+  box-shadow: none;
+  border: 1px solid oklch(87% 0.015 80);
+}
+
+[data-theme="sumie"] .divider::before,
+[data-theme="sumie"] .divider::after {
+  background: var(--color-base-content);
+  height: 1px;
+  opacity: 0.25;
+}
+
+/* ──── Performance fallbacks ──── */
+@media (prefers-reduced-motion: reduce) {
+  .ink-bleed { filter: none; }
+}
+@media (max-width: 768px) {
+  .ink-bleed { filter: none; }
+}
