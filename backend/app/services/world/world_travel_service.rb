@@ -568,7 +568,7 @@ class WorldTravelService
       Room.create(
         location_id: location.id,
         name: terrain_room_name(terrain),
-        short_description: "You stand in the #{terrain_description(terrain)}. There are no settlements in sight.",
+        short_description: hex ? HexDescriptionService.describe(hex)[:description] : "You stand in the #{terrain_description(terrain)}.",
         room_type: 'field',
         is_outdoor: true,
         safe_room: true,

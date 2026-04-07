@@ -5789,27 +5789,6 @@ class FireflyApp < Roda
               @worlds = World.order(:name).all rescue []
               @universes = Universe.order(:name).all rescue []
 
-              # Batch-load counts to avoid N+1 queries (individual COUNTs timeout on large worlds)
-              @region_counts = begin
-                DB.transaction do
-                  DB.run('SET LOCAL statement_timeout = 0')
-                  WorldRegion.group_and_count(:world_id).to_hash(:world_id, :count)
-                end
-              rescue StandardError => e
-                warn "[WorldBuilder] region count query failed: #{e.message}"
-                {}
-              end
-
-              @hex_counts = begin
-                DB.transaction do
-                  DB.run('SET LOCAL statement_timeout = 0')
-                  WorldHex.group_and_count(:world_id).to_hash(:world_id, :count)
-                end
-              rescue StandardError => e
-                warn "[WorldBuilder] hex count query failed: #{e.message}"
-                {}
-              end
-
               view 'admin/world_builder/index'
             end
 
@@ -6193,6 +6172,7 @@ class FireflyApp < Roda
                         id: zone.id,
                         name: zone.name,
                         zone_type: zone.zone_type,
+                        zone_subtype: zone.zone_subtype,
                         polygon_points: zone.polygon_points,
                         danger_level: zone.danger_level
                       }
@@ -6518,6 +6498,7 @@ class FireflyApp < Roda
                         world_id: @world.id,
                         name: name,
                         zone_type: zone_type,
+                        zone_subtype: data['zone_subtype'],
                         danger_level: (data['danger_level'] || 1).to_i,
                         polygon_points: polygon_points
                       )
@@ -6528,6 +6509,7 @@ class FireflyApp < Roda
                           id: zone.id,
                           name: zone.name,
                           zone_type: zone.zone_type,
+                          zone_subtype: zone.zone_subtype,
                           polygon_points: zone.polygon_points,
                           danger_level: zone.danger_level
                         } : nil,
@@ -6552,6 +6534,7 @@ class FireflyApp < Roda
                     update_params = {}
                     update_params[:name] = data['name'] if data.key?('name')
                     update_params[:zone_type] = data['zone_type'] if data.key?('zone_type')
+                    update_params[:zone_subtype] = data['zone_subtype'] if data.key?('zone_subtype')
                     update_params[:danger_level] = data['danger_level'].to_i if data.key?('danger_level')
                     update_params[:polygon_points] = data['polygon_points'] if data.key?('polygon_points')
 
@@ -6564,6 +6547,7 @@ class FireflyApp < Roda
                         id: zone.id,
                         name: zone.name,
                         zone_type: zone.zone_type,
+                        zone_subtype: zone.zone_subtype,
                         polygon_points: zone.polygon_points,
                         danger_level: zone.danger_level
                       }
@@ -6662,6 +6646,7 @@ class FireflyApp < Roda
                       world_id: @world.id,
                       name: name,
                       zone_type: zone_type,
+                      zone_subtype: data['zone_subtype'],
                       danger_level: 1,
                       polygon_points: polygon_points,
                       polygon_scale: polygon_scale,
@@ -7258,7 +7243,7 @@ class FireflyApp < Roda
                                 :traversable, :altitude,
                                 :feature_n, :feature_ne, :feature_se, :feature_s, :feature_sw, :feature_nw)
                         .limit(5000)
-                      native_q = native_q.where(traversable: true) if @world.grid_locked
+                      native_q = native_q.where(Sequel.lit('traversable = true')) if @world.grid_locked
                       hexes_raw = native_q.all
 
                       hexes = hexes_raw.map do |row|
@@ -7537,7 +7522,7 @@ class FireflyApp < Roda
                       .order(:latitude, :longitude)
                       .limit(limit)
                     # When grid is locked, only query traversable hexes (uses smaller partial index)
-                    query = query.where(traversable: true) if @world.grid_locked
+                    query = query.where(Sequel.lit('traversable = true')) if @world.grid_locked
                     if after_lat && after_lon
                       query = query.where {
                         (latitude > after_lat) | ((latitude =~ after_lat) & (longitude > after_lon))

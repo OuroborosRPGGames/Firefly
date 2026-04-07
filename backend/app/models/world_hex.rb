@@ -521,6 +521,11 @@ class WorldHex < Sequel::Model(:world_hexes)
   # @param lon [Float] longitude in degrees (-180 to 180)
   # @return [WorldHex, nil] the nearest hex or nil if world has no hexes
   def self.find_nearest_by_latlon(world_id, lat, lon)
+    world = World[world_id]
+    base = where(world_id: world_id)
+    # Grid-locked worlds only care about traversable hexes (uses the fast partial index)
+    base = base.where(Sequel.lit('traversable = true')) if world&.grid_locked
+
     # Try progressively wider bounding box searches
     [5.0, 15.0, 45.0].each do |search_radius|
       # Handle longitude wrap-around near antimeridian
@@ -529,13 +534,13 @@ class WorldHex < Sequel::Model(:world_hexes)
 
       candidates = if lon_min < -180 || lon_max > 180
                      # Near antimeridian - split query
-                     where(world_id: world_id)
+                     base
                        .where { (latitude >= lat - search_radius) & (latitude <= lat + search_radius) }
                        .where { (longitude >= ((lon_min + 360) % 360 - 180)) | (longitude <= ((lon_max + 360) % 360 - 180)) }
                        .limit(500)
                        .all
                    else
-                     where(world_id: world_id)
+                     base
                        .where { (latitude >= lat - search_radius) & (latitude <= lat + search_radius) }
                        .where { (longitude >= lon_min) & (longitude <= lon_max) }
                        .limit(500)
@@ -678,14 +683,14 @@ class WorldHex < Sequel::Model(:world_hexes)
     where(world_id: world.id)
       .where { (latitude >= min_lat) & (latitude <= max_lat) }
       .where { (longitude >= min_lon) & (longitude <= max_lon) }
-      .where(traversable: true)
+      .where(Sequel.lit('traversable = true'))
   end
 
   # Count traversable hexes in a world
   # @param world [World] the world to query
   # @return [Integer] count of traversable hexes
   def self.count_traversable(world)
-    where(world_id: world.id, traversable: true).count
+    where(world_id: world.id).where(Sequel.lit('traversable = true')).count
   end
 
   # Bulk update traversability for a lat/lon bounding box

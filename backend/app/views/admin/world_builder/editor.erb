@@ -702,11 +702,25 @@
       </div>
       <div class="fieldset mb-3">
         <label class="label"><span class="fieldset-legend">Zone Type</span></label>
-        <select id="zone-type" class="select w-full">
+        <select id="zone-type" class="select w-full" onchange="document.getElementById('zone-subtype-wrap').style.display = this.value === 'area' ? '' : 'none'">
           <option value="political">Political</option>
           <option value="area">Area</option>
           <option value="location">Location</option>
           <option value="city">City</option>
+        </select>
+      </div>
+      <div class="fieldset mb-3" id="zone-subtype-wrap" style="display:none">
+        <label class="label"><span class="fieldset-legend">Subtype</span></label>
+        <select id="zone-subtype" class="select w-full">
+          <option value="">(none)</option>
+          <option value="lake">Lake</option>
+          <option value="mountain">Mountain</option>
+          <option value="mountain_range">Mountain Range</option>
+          <option value="forest">Forest</option>
+          <option value="swamp">Swamp</option>
+          <option value="jungle">Jungle</option>
+          <option value="desert">Desert</option>
+          <option value="volcano">Volcano</option>
         </select>
       </div>
       <div class="fieldset mb-3">
@@ -849,11 +863,18 @@
 
   // Initial globe camera position: center of non-ocean traversable hexes
   <%
-    # Use a fast approximate query: sample a single non-ocean traversable hex
-    focus = WorldHex.where(world_id: @world.id, traversable: true)
+    # Use a fast approximate query: find a land hex to center the camera on
+    # Uses the world_hexes_world_lat_lon_idx partial index (WHERE traversable = true)
+    focus = WorldHex.where(world_id: @world.id).where(Sequel.lit('traversable = true'))
                     .exclude(terrain_type: 'ocean')
                     .select(:latitude, :longitude)
+                    .limit(1)
                     .first
+    # Fallback to any traversable hex if no land found
+    focus ||= WorldHex.where(world_id: @world.id).where(Sequel.lit('traversable = true'))
+                      .select(:latitude, :longitude)
+                      .limit(1)
+                      .first
     focus_lat = focus ? focus.latitude.to_f.round(2) : 20
     focus_lon = focus ? focus.longitude.to_f.round(2) : 0
   %>
@@ -2090,9 +2111,11 @@
         console.error('Failed to parse zone points:', err);
       }
 
+      const zoneType = document.getElementById('zone-type').value;
       const payload = {
         name: document.getElementById('zone-name').value,
-        zone_type: document.getElementById('zone-type').value,
+        zone_type: zoneType,
+        zone_subtype: zoneType === 'area' ? (document.getElementById('zone-subtype').value || null) : null,
         danger_level: parseInt(document.getElementById('zone-danger').value) || 1,
         polygon_points: polygonPoints
       };

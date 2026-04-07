@@ -15,13 +15,19 @@ class Location < Sequel::Model
   one_to_many :delves
   one_to_many :news_articles
   one_to_many :metaplot_events
-  
+
+  SUBTYPES = %w[
+    misc landmark placeholder major_bridge foot_bridge
+    rail_bridge rail_station ocean_harbor river_dock
+  ].freeze
+
   def validate
     super
     validates_presence [:name, :zone_id]
     validates_unique [:zone_id, :name]
     validates_max_length 100, :name
     validates_includes ['building', 'outdoor', 'underground', 'water', 'sky'], :location_type
+    validates_includes SUBTYPES, :subtype if subtype
 
     # Validate world_id when globe_hex_id is present
     if globe_hex_id && !world_id

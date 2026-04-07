@@ -360,7 +360,7 @@ class SubHexEditor {
   }
 
   async finishZoneWithType(zoneType) {
-    let zoneName, locationType;
+    let zoneName, locationType, zoneSubtype;
 
     if (zoneType === 'location') {
       try {
@@ -379,6 +379,7 @@ class SubHexEditor {
         const result = await window.showPlainZoneModal();
         zoneName = result.name;
         zoneType = result.zoneType;
+        zoneSubtype = result.zoneSubtype || null;
       } catch {
         return; // user cancelled
       }
@@ -398,6 +399,7 @@ class SubHexEditor {
           lng: this.worldHexCoords.lng,
           name: zoneName,
           zone_type: zoneType,
+          zone_subtype: zoneSubtype,
           polygon_points: this.zonePoints,
           polygon_scale: 'local'
         })

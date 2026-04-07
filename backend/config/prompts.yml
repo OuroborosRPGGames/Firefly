@@ -2793,3 +2793,19 @@ battlemap:
       Can you change the outer walls to bright blue and change any outer
       doors to bright red.
 
+hex_description:
+  smooth: |
+    Rewrite the following terrain description as one evocative paragraph (3-5 sentences).
+    Write in a wuxia/fantasy tone with vivid but concise imagery.
+
+    Rules:
+    - Preserve ALL factual content: terrain types, compass directions, zone names, feature types, distances
+    - Do NOT invent landmarks, creatures, sounds, or features not mentioned in the original
+    - Use second person ("You stand...", "You can see...")
+    - Keep it to one short paragraph
+    - Do not use flowery language or purple prose — be direct and atmospheric
+
+    Original description:
+    %{template}
+
+    Rewritten paragraph:

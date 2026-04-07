@@ -56,18 +56,7 @@
           <p class="text-base-content/70 text-sm">
             Universe: <%= h world.universe&.name || 'Unknown' %>
           </p>
-          <%
-            region_count = @region_counts[world.id] || 0
-            hex_count = @hex_counts[world.id] || 0
-          %>
-          <div class="mb-4">
-            <span class="badge badge-neutral mr-2">
-              <i class="bi bi-grid-3x3 mr-1"></i><%= region_count %> regions
-            </span>
-            <span class="badge badge-neutral">
-              <i class="bi bi-hexagon mr-1"></i><%= hex_count %> hexes
-            </span>
-          </div>
+          <div class="mb-4"></div>
         </div>
         <div class="card-actions p-4 pt-0">
           <a href="/admin/world_builder/<%= world.id %>" class="btn btn-primary flex-1">
@@ -84,8 +73,7 @@
       <%
         _delete_world_content =
           '<p class="py-4">Are you sure you want to delete <strong>' + h(world.name) + '</strong>? ' +
-          'This will permanently remove the world and all associated data ' +
-          '(' + hex_count.to_s + ' hexes, ' + region_count.to_s + ' regions, zones, locations, and rooms).</p>'
+          'This will permanently remove the world and all associated data (hexes, regions, zones, locations, and rooms).</p>'
         _delete_world_actions =
           '<form action="/admin/world_builder/' + world.id.to_s + '/delete" method="post">' +
           csrf_tag +

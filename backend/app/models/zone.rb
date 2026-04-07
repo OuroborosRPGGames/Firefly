@@ -9,6 +9,23 @@ class Zone < Sequel::Model
   many_to_one :world
   one_to_many :locations
 
+  # Valid zone subtypes (primarily for 'area' zone_type)
+  ZONE_SUBTYPES = %w[lake mountain mountain_range forest swamp jungle desert volcano].freeze
+
+  # Terrain compatibility for each zone subtype
+  # core: terrains that always belong in this zone type
+  # edge: terrains allowed only near the zone boundary (transitional)
+  SUBTYPE_TERRAIN_MAP = {
+    'lake'           => { core: %w[lake], edge: %w[swamp sandy_coast rocky_coast grassy_plains light_forest] },
+    'mountain'       => { core: %w[mountain mountain_peak rocky_hills], edge: %w[grassy_hills rocky_plains light_forest tundra] },
+    'mountain_range' => { core: %w[mountain mountain_peak rocky_hills grassy_hills], edge: %w[rocky_plains light_forest tundra dense_forest] },
+    'forest'         => { core: %w[dense_forest light_forest], edge: %w[grassy_plains grassy_hills jungle swamp] },
+    'swamp'          => { core: %w[swamp], edge: %w[lake light_forest grassy_plains jungle] },
+    'jungle'         => { core: %w[jungle], edge: %w[dense_forest swamp grassy_plains light_forest] },
+    'desert'         => { core: %w[desert rocky_plains], edge: %w[grassy_plains rocky_hills sandy_coast tundra] },
+    'volcano'        => { core: %w[volcanic mountain mountain_peak], edge: %w[rocky_hills rocky_plains desert] }
+  }.freeze
+
   def validate
     super
     validates_presence [:name, :world_id]
@@ -16,6 +33,10 @@ class Zone < Sequel::Model
     validates_max_length 100, :name
     validates_includes %w[political area location city wilderness], :zone_type
     validates_integer :danger_level, range: 1..10
+    validates_includes ZONE_SUBTYPES, :zone_subtype, allow_nil: true
+    if zone_subtype && zone_type != 'area'
+      errors.add(:zone_subtype, 'is only allowed for area zones')
+    end
 
     # Validate geographic coordinates if provided (legacy support)
     validates_numeric :min_longitude, range: -180..180, allow_nil: true
@@ -375,7 +396,68 @@ class Zone < Sequel::Model
     update(default_backgrounds: Sequel.pg_jsonb_wrap(bgs))
   end
 
+  # ===== ZONE SUBTYPE METHODS =====
+
+  # Check if a hex's terrain is compatible with this zone's subtype.
+  # Uses core/edge terrain classification — core terrains always belong,
+  # edge terrains only belong if the hex is near the zone boundary.
+  #
+  # @param hex [WorldHex] The hex to check
+  # @return [Boolean] true if hex terrain fits the zone subtype
+  def hex_in_zone?(hex)
+    return true if zone_subtype.nil?
+
+    terrain_map = SUBTYPE_TERRAIN_MAP[zone_subtype]
+    return true if terrain_map.nil?
+
+    terrain = hex.terrain_type
+    return true if terrain_map[:core].include?(terrain)
+
+    if terrain_map[:edge].include?(terrain)
+      return edge_hex?(hex)
+    end
+
+    false
+  end
+
+  # Infer a zone subtype from a zone name using keyword matching.
+  # Checks multi-word patterns first (mountain_range) before single-word ones.
+  #
+  # @param name [String] The zone name to analyze
+  # @return [String, nil] Matching subtype or nil
+  def self.infer_subtype_from_name(name)
+    return nil if name.nil? || name.strip.empty?
+
+    n = name.downcase
+
+    # Check multi-word patterns first (order matters)
+    return 'volcano'        if n.match?(/\b(volcano|volcanic|caldera)\b/)
+    return 'mountain_range' if n.match?(/\b(mountain range|mountains|sierra|ridge|cordillera)\b/)
+    return 'mountain'       if n.match?(/\b(mountain|mount|peak)\b/) || n.match?(/\bmt\b/)
+    return 'jungle'         if n.match?(/\b(jungle|rainforest)\b/)
+    return 'forest'         if n.match?(/\b(forest|woods?|grove|timberland)\b/)
+    return 'swamp'          if n.match?(/\b(swamp|marsh|bog|wetland|fen|mire)\b/)
+    return 'lake'           if n.match?(/\b(lake|pond|lagoon|loch)\b/)
+    return 'desert'         if n.match?(/\b(desert|dunes?|wasteland|badlands)\b/)
+
+    nil
+  end
+
   private
+
+  # Check if a hex is on the edge of this zone (has at least one neighbor outside)
+  # Without a polygon, there's no boundary — treat all hexes as core.
+  #
+  # @param hex [WorldHex] The hex to check
+  # @return [Boolean] true if any neighbor is outside the zone polygon
+  def edge_hex?(hex)
+    return false unless has_polygon?
+
+    neighbors = WorldHex.neighbors_of(hex)
+    return true if neighbors.empty?
+
+    neighbors.any? { |n| !contains_hex?(n.longitude, n.latitude) }
+  end
 
   # (resolve_seasonal_content, build_seasonal_key provided by SeasonalContentCore)
 end
