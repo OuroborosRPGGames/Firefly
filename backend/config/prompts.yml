@@ -2809,3 +2809,33 @@ hex_description:
     %{template}
 
     Rewritten paragraph:
+
+# ==============================================================================
+# BATTLE ELEMENTS
+# ==============================================================================
+# Firefly ships prompts for the 4 generic interactive element types. The 3
+# lore-specific types (toxic_mushrooms, lotus_pollen, cliff_edge) are still
+# accepted by BattleMapElement::ELEMENT_TYPES — downstream games can add
+# their own prompts here to enable them.
+battle_elements:
+  eligibility: |
+    You are analyzing a room in a fantasy RPG to determine which interactive battle elements could plausibly be found there.
+
+    Room: %{room_name}
+    Description: %{room_description}
+    Environment type: %{environment_type}
+
+    Which of these interactive elements could plausibly exist in this location? Only include ones that make sense for the setting.
+
+    - water_barrel: A wooden barrel full of water
+    - oil_barrel: A barrel of flammable oil or lamp fuel
+    - munitions_crate: A crate of explosive materials (gunpowder, alchemical reagents)
+    - vase: A ceramic or clay vase, pot, or similar breakable vessel
+
+    Select the matching element type keys. Example: ["water_barrel", "vase"]
+
+  asset_generation:
+    water_barrel: "A top-down view of a wooden water barrel, dark fantasy RPG style, sitting on stone ground. The barrel is weathered oak with iron bands, slightly open at the top showing water inside. Moody lighting, painterly style. No background clutter, just the barrel on a simple surface."
+    oil_barrel: "A top-down view of a dark oil barrel, dark fantasy RPG style, on stone floor. The barrel is tarred black wood with a slightly greasy sheen, cork-sealed. Dim torch-lit atmosphere, painterly style. Simple surface, no background clutter."
+    munitions_crate: "A top-down view of a wooden munitions crate, dark fantasy RPG style, on stone ground. Reinforced with iron corners, red danger markings scratched into the wood, slightly ajar showing dark contents. Moody lighting, painterly style. No background clutter."
+    vase: "A top-down view of an ornate ceramic vase, dark fantasy RPG style, on stone floor. Decorated with faded patterns, slightly cracked. Moody torch-lit atmosphere, painterly style. No background clutter, just the vase on a simple surface."
