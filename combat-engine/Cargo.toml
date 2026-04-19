@@ -1,0 +1,3 @@
+[workspace]
+members = ["combat-core", "combat-rng", "combat-server", "combat-sim"]
+resolver = "2"

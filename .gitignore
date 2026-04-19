@@ -16,3 +16,6 @@ node_modules/
 vendor/bundle/
 backend/config/test_agent_tokens.json
 backend/public/uploads/user_content/
+
+# Vendored Rust combat engine build output
+combat-engine/target/
