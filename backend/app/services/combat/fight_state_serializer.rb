@@ -78,6 +78,11 @@ module Combat
         # still reads them — serialize so Rust matches the contract.
         'tactic_outgoing_damage_modifier' => (p.respond_to?(:tactic_outgoing_damage_modifier) ? p.tactic_outgoing_damage_modifier.to_i : 0),
         'tactic_incoming_damage_modifier' => (p.respond_to?(:tactic_incoming_damage_modifier) ? p.tactic_incoming_damage_modifier.to_i : 0),
+        # Firefly's `quick` tactic adds +2 flat movement via GameConfig::Tactics::MOVEMENT
+        # (fight_participant.rb:361-363). Rust's Participant.tactic_movement_bonus_flat
+        # gets added to the per-round movement budget alongside dice-derived bonus.
+        # Clamp to >=0: Rust's field is u32, and no Firefly tactic produces a negative bonus.
+        'tactic_movement_bonus_flat' => (p.respond_to?(:tactic_movement_modifier) ? [p.tactic_movement_modifier.to_i, 0].max : 0),
         'status_effects' => serialize_status_effects(p),
         'ai_profile' => determine_ai_profile(p),
         'is_knocked_out' => p.is_knocked_out || false,
