@@ -48,10 +48,14 @@ Firefly file locations will mirror these — same paths under `Firefly/backend/`
 **Scope is smaller than an earlier draft suggested.** `tactic_outgoing_damage_modifier` and `tactic_incoming_damage_modifier` already exist on `Participant` (`participant.rs:87-93`) and are already applied in `resolution.rs`. The only Rust-side work is the movement field.
 
 **Changes in game repo:**
-- `combat-engine/combat-core/src/movement.rs` lines 111 and 120 — rename `qi_movement_bonus` parameter/usage to `tactic_movement_bonus`. Update any callers in the same crate (grep for `qi_movement_bonus`). The field is already generic in effect; the rename makes it generic in name so Firefly's serializer can populate it without the variable reading as qi-specific.
-- `combat-engine/combat-core/src/types/participant.rs` — if `qi_movement_bonus` appears on `Participant` there too, rename consistently. If it's a function parameter only (computed from `qi_movement` dice), this is just the movement.rs rename.
-- Update the Ruby-side serializer in the game repo that populates `qi_movement_bonus` on the wire — the JSON field name should change alongside the Rust `serde` field. Check `backend/app/services/combat/fight_state_serializer.rb` for `qi_movement_bonus` emission and update.
-- Unit tests in the movement module: if the rename is mechanical, no new tests needed; if any test asserts the JSON field name directly, update.
+- Rename `qi_movement_bonus` → `tactic_movement_bonus` across **9 call sites in 2 files**:
+  - `combat-engine/combat-core/src/movement.rs:111,120` (parameter + usage).
+  - `combat-engine/combat-core/src/resolution.rs:46, 164, 171, 842, 867, 1108, 1132` (parameter, read, write, computed-from-dice assignment, struct-field pass-through, per-round-result read, per-round-result write).
+- The authoritative check: `grep -rn qi_movement_bonus combat-engine/` should return zero hits after the rename.
+- **No change needed in `participant.rs`** — the identifier is local to movement.rs/resolution.rs; it does not appear on the `Participant` struct.
+- **No change needed in the Ruby engine-bridge serializer** (`backend/app/services/combat/fight_state_serializer.rb`). The serializer emits `qi_movement` (the dice count); the *bonus* is computed inside Rust at `resolution.rs:842-857` from `dice::roll(action.qi_movement, …) / 2` and lives internal to Rust. It never hits the JSON wire, so no wire-format change accompanies the rename.
+- **Ruby fallback path (`backend/app/services/combat/combat_resolution_service.rb`, `combat_round_logger.rb`, and their specs)** keeps `qi_movement_bonus` unchanged — that code path is the qi-specific Ruby resolver and will never talk to Firefly. Leaving it as-is keeps the diff minimal and the intent clear.
+- Unit tests: the rename is purely mechanical; no new tests needed. If any existing test asserts the identifier name via string match (unlikely), update alongside the rename.
 
 **Do not introduce a damage clamp.** Earlier draft called for clamping damage ≥ 0 at the modifier site. Don't — the parity gate requires qi behavior to stay byte-identical, and adding a clamp that didn't exist before would silently change behavior any time a large `tactic_incoming_damage_modifier` would have pushed damage negative. Leave clamping to the threshold pipeline where it already lives.
 
@@ -149,9 +153,8 @@ Mirror the game repo:
 
 | File | Phase | Change |
 |---|---|---|
-| `game:combat-engine/combat-core/src/movement.rs` | 1 | Rename `qi_movement_bonus` → `tactic_movement_bonus` |
-| `game:combat-engine/combat-core/src/types/participant.rs` | 1 | Rename any residual qi_movement_bonus field |
-| `game:backend/app/services/combat/fight_state_serializer.rb` | 1 | Update JSON field name to match Rust rename |
+| `game:combat-engine/combat-core/src/movement.rs` | 1 | Rename `qi_movement_bonus` → `tactic_movement_bonus` (2 sites) |
+| `game:combat-engine/combat-core/src/resolution.rs` | 1 | Rename `qi_movement_bonus` → `tactic_movement_bonus` (7 sites) |
 | `firefly:combat-engine/**` | 2 | Vendored copy of Phase 1 snapshot |
 | `firefly:backend/app/services/combat_engine_client.rb` | 2 | Port verbatim |
 | `firefly:backend/app/services/combat/fight_state_serializer.rb` | 2 | Port with willpower/tactic adaptation |
