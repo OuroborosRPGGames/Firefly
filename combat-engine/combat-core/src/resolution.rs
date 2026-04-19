@@ -1105,7 +1105,10 @@ fn build_timeline(
         let pr = pre_rolls
             .iter()
             .find(|r| r.participant_id == action.participant_id);
-        let tactic_movement_bonus = pr.map_or(0, |r| r.tactic_movement_bonus);
+        // Firefly divergence: adds the participant's flat tactic_movement_bonus_flat
+        // (e.g., +2 from the `quick` tactic) on top of the dice-derived bonus.
+        let tactic_movement_bonus =
+            pr.map_or(0, |r| r.tactic_movement_bonus) + participant.tactic_movement_bonus_flat;
 
         // Determine if sprinting
         let is_sprinting = matches!(action.main_action, MainAction::Sprint);

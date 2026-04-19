@@ -91,6 +91,13 @@ pub struct Participant {
     /// (fight_participant.rb:378).
     #[serde(default)]
     pub tactic_incoming_damage_modifier: i32,
+    /// Tactic-driven flat movement-budget bonus. Added to the base +
+    /// sprint + dice-derived bonus in `calculate_movement_budget`.
+    /// Firefly's `quick` tactic populates +2 here; qi-tactic games
+    /// leave it at 0 so the dice-based bonus remains the only source.
+    /// Firefly-specific divergence from the upstream combat-engine snapshot.
+    #[serde(default)]
+    pub tactic_movement_bonus_flat: u32,
     pub status_effects: Vec<ActiveEffect>,
     pub ai_profile: Option<String>,
     pub is_knocked_out: bool,
@@ -214,6 +221,7 @@ impl Default for Participant {
             incoming_damage_modifier: 0,
             tactic_outgoing_damage_modifier: 0,
             tactic_incoming_damage_modifier: 0,
+            tactic_movement_bonus_flat: 0,
             status_effects: Vec::new(),
             ai_profile: None,
             is_knocked_out: false,
