@@ -471,8 +471,8 @@ git add backend/app/services/fight/fight_service.rb
 git commit -m "$(cat <<'EOF'
 feat(fight): wire FightService to Rust engine with auto-fallback to Ruby
 
-Adds combat_engine_mode, rust_engine_active?, resolve_with_rust!, and
-apply_rust_result! to Firefly's FightService. Default mode is 'auto':
+Adds combat_engine_mode, rust_engine_active?, resolve_via_rust_engine!,
+and apply_rust_result! to Firefly's FightService. Default mode is 'auto':
 Rust when the combat-server socket is reachable, Ruby when not.
 CombatEngineClient ConnectionError/ProtocolError trigger a warn-logged
 fallback to CombatResolutionService so ops can see it in the puma log.
@@ -1192,7 +1192,7 @@ Walk through each criterion in the spec's "Success criteria" section and confirm
 - ✅ `scripts/run_parity_tests.rb` green under 15 minutes
 - ✅ `GameSetting use_rust_combat_engine=false` reverts to Ruby path
 - ✅ Targeted spec dirs green after each phase (fight, combat non-parity, fight_participant_spec, fight_spec, and after Phase 3 also battlemap services/models)
-- ✅ All 7 ELEMENT_TYPES remain valid model inputs; admin UI shows 4
+- ✅ All 7 ELEMENT_TYPES remain valid model inputs; placement service gates to 4 active types
 
 - [ ] **Step 3: Memory update for future sessions**
 
@@ -1210,7 +1210,7 @@ If anything goes badly wrong in a phase:
 
 ## Risks and open questions
 
-- **Firefly `StatusEffectService` vocabulary mismatch** (Task 14): if Firefly has no `poisoned`/`intoxicated` effects, the three dormant element types need stub handlers. Surface this in Task 14 review rather than silently masking; downstream games that care can add their own status effects.
-- **Firefly admin-routing convention differs from game repo** (Task 15): the game repo's admin routes use a specific Roda pattern; Firefly may route differently. If the route paths diverge, the porter should follow Firefly's existing admin-route pattern and note the divergence in the commit message.
+- **Firefly status-effect vocabulary** (Task 14): Firefly's `status_effects` table has `poisoned`, `intoxicated`, and `on_fire`. The main known gap vs. game repo is `burning` → `on_fire`; Task 14 Step 2 handles it with a targeted grep+rename. Any other game-repo status name the handler references that's absent in Firefly gets a stub with a TODO comment rather than being deleted.
+- **Placement integration call sites** (Task 15): if Firefly has neither `ai_battle_map_generator_service.rb` nor `combat_quickmenu_handler.rb`, the ported `BattleMapElementPlacementService` will be dead code until a downstream game wires it in. That's acceptable — the service and model are still usable building blocks. Task 15 Step 3 surfaces the gap with explicit conditional checks.
 - **`CombatResolutionService` drift** between game repo and Firefly: Firefly's `CombatResolutionService` is 3301 lines vs. the game repo's 3848. Some methods that exist in the game-repo's writeback helpers may call into game-repo-only resolution code. Flag this early — if `apply_rust_result!` references a method Firefly doesn't have, either port the method or stub it.
 - **Vendored Rust copy drift from upstream**: as the game repo's `combat-engine/` evolves, Firefly's vendored copy will need periodic refresh. Out of scope for this plan; future refresh is a separate task (`git diff` the source dir and apply cleanly, or re-vendor wholesale).
