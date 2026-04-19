@@ -236,11 +236,15 @@ grep -n "qi_" backend/app/services/combat/fight_state_serializer.rb
 
 Save the line numbers. Expected: ~30-50 hits across method calls and serialized field names.
 
-- [ ] **Step 3: Replace qi column/method names with willpower equivalents**
+- [ ] **Step 3: Replace qi Ruby method calls with willpower equivalents — JSON keys stay qi_***
 
-For each match from step 2, replace:
+**Key rule:** the Rust engine's serde field names on `Participant` are `qi_attack`, `qi_defense`, `qi_ability`, `qi_movement`, `qi_die_sides` — those stay as-is on the wire. The serializer reads Firefly's `willpower_*` columns and emits the same `qi_*` JSON keys Rust decodes.
 
-| Game-repo (qi) | Firefly (willpower) |
+So for lines like `'qi_attack' => p.qi_attack`, change **only the right-hand side**: `'qi_attack' => p.willpower_attack`.
+
+Substitutions for Ruby method calls (left-hand `p.qi_*`):
+
+| Game-repo call | Firefly replacement |
 |---|---|
 | `p.qi_attack` | `p.willpower_attack` |
 | `p.qi_defense` | `p.willpower_defense` |
@@ -251,13 +255,8 @@ For each match from step 2, replace:
 | `p.qi_ability_roll` | `p.willpower_ability_roll` |
 | `p.qi_movement_roll` | `p.willpower_movement_roll` |
 | `p.qi_die_sides` or `character_instance.qi_die_sides` | literal `8` |
-| JSON field `qi_attack` | JSON field `willpower_attack` (same for the four columns and all roll fields) |
 
-Use your editor's find-and-replace. After each substitution, spot-check that the JSON serialization keys the Rust engine expects still match — Rust Participant's serde field names are `qi_attack`, `qi_defense`, etc. (Rust is qi-flavored on the wire; rename only the Ruby-side method calls, not the JSON keys.)
-
-**Important clarification:** The JSON wire format Rust accepts still uses `qi_attack`/`qi_defense` etc. as field names — the Ruby serializer should *read* Firefly's `willpower_*` columns but *emit* JSON with the same `qi_*` field names the Rust engine decodes. The serializer is the translation layer; Rust's schema doesn't change.
-
-So the corrections above apply **only to the left-hand `p.qi_*` method calls**, not to the right-hand-side hash keys. For each line like `'qi_attack' => p.qi_attack`, change to `'qi_attack' => p.willpower_attack` (key stays, value source swaps).
+Do **not** rename JSON hash keys — they're the engine's wire contract.
 
 - [ ] **Step 4: Replace die_sides call with hardcoded 8**
 
@@ -340,22 +339,37 @@ EOF
 )"
 ```
 
-### Task 6: Merge combat_engine_mode, resolve_with_rust!, and apply_rust_result! into Firefly's FightService
+### Task 6: Merge engine-mode, resolve_via_rust_engine!, and apply_rust_result! into Firefly's FightService
 
 **Files:**
 - Modify: `$FFW/backend/app/services/fight/fight_service.rb`
 
-**Source:** `$GAME/backend/app/services/fight/fight_service.rb:16-38` (engine mode), `:879-1067` (Rust dispatch in `try_advance_round`), `:1088-1390` (writeback). These are the sections to merge in.
+**Real method names and call sites in the game repo** (verified by grep):
 
-**Strategy:** Read Firefly's existing `FightService` end-to-end. Find the analogue of `try_advance_round` (at Firefly `:116`). Wrap the existing Ruby-path resolution with the same `engine_mode = combat_engine_mode` branch the game repo uses. Copy the `combat_engine_mode`, `rust_engine_active?`, `resolve_with_rust!`, and `apply_rust_result!` methods verbatim from the game repo, placing them alongside the existing class-level helpers near the top of the file.
+| Game-repo location | Method | Kind |
+|---|---|---|
+| `:21` | `combat_engine_mode` | class method |
+| `:35` | `rust_engine_active?` | class method |
+| `:870` | `resolve_round!` | instance method (existing call site in Firefly too) |
+| `:879-882` | Rust dispatch branch *inside* `resolve_round!` | inline, 4 lines |
+| `:1059` | `resolve_via_rust_engine!` | instance (private) |
+| `:1078` | `resolve_via_rust_engine_raw` | instance (private, compare-mode helper) |
+| `:1088` | `apply_rust_result!` | instance (private) |
 
-- [ ] **Step 1: Open both files side-by-side and read**
+The Rust integration is **not** inside the class-method `try_advance_round`. It's inside the instance method `resolve_round!`, which is called from `try_advance_round` via `FightService.new(fight).resolve_round!`. Firefly's `FightService` also has a `resolve_round!` instance method — that's where the dispatch branch goes.
 
-Read `$FFW/backend/app/services/fight/fight_service.rb` in full (1344 lines) and `$GAME/backend/app/services/fight/fight_service.rb:16-38, 875-1100, 1085-1395` (the Rust-specific regions).
+- [ ] **Step 1: Read both files' resolve_round! instance methods**
+
+```bash
+grep -n "def resolve_round" backend/app/services/fight/fight_service.rb
+grep -n "def resolve_round" /home/beat6749/game/.worktrees/rust-combat-engine/backend/app/services/fight/fight_service.rb
+```
+
+Open both and compare the method bodies.
 
 - [ ] **Step 2: Copy `combat_engine_mode` and `rust_engine_active?` class methods**
 
-Insert the two class methods from game repo `:16-38` into Firefly's `FightService` after the `attr_reader :fight` line. Exact text (copy as-is):
+Insert these two class methods into Firefly's `FightService` after the `attr_reader :fight` line (verbatim from game repo `:21-38`):
 
 ```ruby
   # Resolve which combat engine to use. Honors the COMBAT_ENGINE env var when
@@ -380,41 +394,57 @@ Insert the two class methods from game repo `:16-38` into Firefly's `FightServic
   end
 ```
 
-- [ ] **Step 3: Locate Firefly's round-resolution call site**
+- [ ] **Step 3: Insert the Rust dispatch branch inside Firefly's `resolve_round!`**
 
-```bash
-grep -n "CombatResolutionService\|resolve_round\|\.resolve\b" backend/app/services/fight/fight_service.rb | head -20
-```
-
-Find where Firefly calls `CombatResolutionService.new(fight).resolve_round` (or equivalent). This is the call that needs to be wrapped.
-
-- [ ] **Step 4: Wrap the call with the engine branch**
-
-The game-repo pattern (from `:875-1067`):
+Game-repo pattern at `:879-882` (verbatim — this is the inline 4-line dispatch):
 
 ```ruby
-engine_mode = self.class.combat_engine_mode
-if engine_mode == 'rust' || (engine_mode == 'auto' && CombatEngineClient.available?)
-  begin
-    rust_result = resolve_with_rust!(fight)
-    apply_rust_result!(rust_result)
-  rescue CombatEngineClient::ConnectionError, CombatEngineClient::ProtocolError => e
-    warn "[FightService] Rust combat engine unreachable, falling back to Ruby: #{e.message}"
-    # fall through to Ruby path
-    CombatResolutionService.new(fight).resolve_round
-  end
-else
-  CombatResolutionService.new(fight).resolve_round
-end
+    engine_mode = self.class.combat_engine_mode
+    if (engine_mode == 'rust' || engine_mode == 'auto') && CombatEngineClient.available?
+      return resolve_via_rust_engine!
+    end
 ```
 
-Adapt the exact method calls to whatever Firefly uses — the structure (rust-first with Ruby fallback on specific exceptions) is what matters.
+Place this **after** any setup code that must run for both engines (logger creation, `apply_defaults!`, `fight.advance_to_resolution!`) but **before** the Ruby `CombatResolutionService.new(fight).resolve!` call. Grep for where Firefly's `resolve_round!` calls `CombatResolutionService`:
 
-- [ ] **Step 5: Copy `resolve_with_rust!` and `apply_rust_result!` private methods**
+```bash
+grep -n "CombatResolutionService" backend/app/services/fight/fight_service.rb
+```
 
-From game repo `:1085-1395`, copy `resolve_with_rust!`, `apply_rust_result!`, and any helpers those two call (e.g., event-conversion helpers). Place them in Firefly's `FightService` under a `private` section near the bottom of the class. These methods reference `FightStateSerializer` and `CombatEngineClient`, both of which now exist in Firefly from Tasks 3-5.
+Insert the 4-line dispatch block immediately before that call.
 
-If any helper references a game-repo-only feature (e.g., a qi-state writeback), drop it — Firefly has no qi state to write back. Comment out rather than delete on first pass so the review is easier; final cleanup comes in step 7.
+Skip the `compare` mode (game repo `:884-890, 922-930`) — it's a dev-time A/B harness; Firefly's parity suite is its equivalent. Keeping it out of Firefly reduces surface area.
+
+- [ ] **Step 4: Copy `resolve_via_rust_engine!` as a private instance method**
+
+From game repo `:1059-1072`, copy verbatim into Firefly's `FightService` under a `private` section:
+
+```ruby
+  def resolve_via_rust_engine!
+    serializer = Combat::FightStateSerializer.new(fight)
+    engine_state = serializer.serialize
+    actions = serializer.serialize_actions
+
+    rust_result = CombatEngineClient.new.resolve_round(engine_state, actions)
+    apply_rust_result!(rust_result)
+  rescue CombatEngineClient::ConnectionError, CombatEngineClient::ProtocolError => e
+    warn "[FightService] Rust engine failed, falling back to Ruby: #{e.message}"
+    @last_resolution_service = CombatResolutionService.new(fight, logger: @combat_round_logger)
+    result = @last_resolution_service.resolve!
+    result = { events: result, roll_display: nil, damage_summary: nil, errors: [] } if result.is_a?(Array)
+    process_ruby_result(result)
+  end
+```
+
+**Two caveats:**
+- `Combat::FightStateSerializer` is namespaced under the `Combat` module (verified in `backend/app/services/combat/fight_state_serializer.rb:3`). The serializer port in Task 4 should have preserved that `module Combat ... end` wrapping.
+- The rescue block calls `process_ruby_result(result)` — a helper in the game-repo `FightService`. Grep for it (`grep -n "def process_ruby_result" $GAME/backend/app/services/fight/fight_service.rb`). Port whatever it does, or inline its body directly into the rescue branch if it's small. Firefly's existing `resolve_round!` post-processing (update `round_events`, `advance_to_narrative!`, etc.) may already cover this — if so, the rescue block should produce the same shape of return value the outer `resolve_round!` expects.
+
+- [ ] **Step 5: Copy `apply_rust_result!` as a private instance method**
+
+From game repo `:1088-1390`, copy verbatim. The method converts Rust's `{next_state, events, knockouts, fight_ended}` hash into Firefly DB updates and the same `{events:, roll_display:, damage_summary:, errors:}` hash shape `resolve_round!` returns.
+
+Walk through the method body — flag any Ruby call that references a method Firefly's `FightParticipant` or `Fight` models don't have (qi-specific writeback, etc.) and comment it with `# TODO(firefly): qi-specific, no-op` rather than deleting. Final cleanup in step 7.
 
 - [ ] **Step 6: Syntax and load check**
 
@@ -833,15 +863,21 @@ cp /home/beat6749/game/.worktrees/rust-combat-engine/backend/app/services/battle
 grep -nE "poisoned|intoxicated|StatusEffectService" backend/app/services/battlemap/fight_hex_effect_service.rb
 ```
 
-These handlers apply status effects for the three dormant element types. Verify Firefly's `StatusEffectService` supports `poisoned` and `intoxicated` (or whatever the game-repo calls them):
+These handlers apply status effects for the three dormant element types. Firefly's status effects are **DB-backed** (rows in the `status_effects` table), not hardcoded in the service. The verification query:
 
 ```bash
-grep -n "poisoned\|intoxicated" /home/beat6749/orig/Firefly/backend/app/services/status_effect_service.rb 2>&1 | head -5
+psql postgres://prom_user:prom_password@localhost/firefly -tc "SELECT name FROM status_effects WHERE name IN ('poisoned', 'intoxicated', 'on_fire', 'burning');"
 ```
 
-- If Firefly supports these status names, leave the handlers as-is.
-- If Firefly uses different names (likely), adapt the handlers to Firefly's vocabulary. The three types are dormant so real users won't trigger these paths often, but keeping the code compilable and adapted is needed.
-- If Firefly has no equivalent status effect, stub the handler to `no-op with a comment` (so a downstream game can enable its own status later) — don't delete, per the "code in place" philosophy.
+Expected output: `poisoned`, `intoxicated`, and `on_fire` all present (confirmed as of 2026-04-19). `burning` is the game-repo name; Firefly uses `on_fire` — if the handler references `burning`, change it to `on_fire`:
+
+```bash
+grep -n "'burning'\|\"burning\"" backend/app/services/battlemap/fight_hex_effect_service.rb
+```
+
+Replace `burning` with `on_fire` at every hit. Leave `poisoned` and `intoxicated` references alone — they work as-is in Firefly.
+
+If any other status name appears that Firefly's `status_effects` table doesn't have, stub that specific branch with a no-op comment (`# TODO(firefly): <name> status not yet in status_effects table`) rather than deleting — downstream games can enable the effect by seeding the row.
 
 - [ ] **Step 3: Syntax check**
 
@@ -867,42 +903,49 @@ EOF
 )"
 ```
 
-### Task 15: Port placement service and admin UI
+### Task 15: Port placement service and integrate into existing placement call sites
+
+**Spec-vs-source reconciliation:** the spec calls for an "admin UI for CRUD", but the game repo has **no dedicated CRUD admin UI** for `BattleMapElement` (verified by `grep -rln BattleMapElement backend/app/views backend/app/routes` returning empty). In the game repo, elements are placed automatically during map generation by three services: `battle_map_element_placement_service.rb` (procedural), `ai_battle_map_generator_service.rb` (LLM-driven), and interacted with in-fight via `combat_quickmenu_handler.rb`. That's the real upstream — port those, skip building net-new admin UI.
 
 **Files:**
 - Create: `$FFW/backend/app/services/battlemap/battle_map_element_placement_service.rb`
-- Create: Admin route + ERB files for CRUD (paths TBD based on Firefly's admin routing convention)
+- Modify: `$FFW/backend/app/services/battlemap/ai_battle_map_generator_service.rb` (if Firefly has this service; verify first)
+- Modify: `$FFW/backend/app/handlers/combat_quickmenu_handler.rb` (if Firefly has this handler; verify)
 
-- [ ] **Step 1: Copy placement service**
+- [ ] **Step 1: Copy the procedural placement service**
 
 ```bash
 cp /home/beat6749/game/.worktrees/rust-combat-engine/backend/app/services/battlemap/battle_map_element_placement_service.rb backend/app/services/battlemap/
 ```
 
-- [ ] **Step 2: Find the game-repo admin route and views**
+- [ ] **Step 2: Gate the service to active types only**
+
+Near the top of the copied service, grep for where `ELEMENT_TYPES` or per-type cases branch:
 
 ```bash
-find /home/beat6749/game/.worktrees/rust-combat-engine/backend -path "*admin*battle_map_element*" 2>&1
+grep -n "ELEMENT_TYPES\|water_barrel\|oil_barrel\|munitions_crate\|vase\|cliff_edge\|toxic_mushrooms\|lotus_pollen" backend/app/services/battlemap/battle_map_element_placement_service.rb
 ```
 
-Copy every file under matching paths to the corresponding Firefly path.
+Identify any constant or case statement that iterates all types. Introduce or replace with:
 
-- [ ] **Step 3: Filter the admin dropdown to active types**
-
-In the admin ERB (wherever `ELEMENT_TYPES` is rendered as a `<select>`), replace with an explicit array of the four active types in Firefly:
-
-```erb
-<% active_types = %w[water_barrel oil_barrel munitions_crate vase] %>
-<select name="element_type">
-  <% active_types.each do |t| %>
-    <option value="<%= t %>"><%= t.tr('_', ' ').capitalize %></option>
-  <% end %>
-</select>
+```ruby
+ACTIVE_TYPES = %w[water_barrel oil_barrel munitions_crate vase].freeze
 ```
 
-The model's `ELEMENT_TYPES` constant still includes all 7, so a downstream game can add dropdown entries by extending the ERB without touching the model.
+…and have the placement logic iterate `ACTIVE_TYPES` rather than the full `BattleMapElement::ELEMENT_TYPES`. Firefly's procedural generator won't place dormant types; a downstream game can override `ACTIVE_TYPES` or call the service with an explicit type list.
 
-- [ ] **Step 4: Syntax check the Ruby**
+- [ ] **Step 3: Check whether Firefly has the other two integration sites**
+
+```bash
+ls backend/app/services/battlemap/ai_battle_map_generator_service.rb 2>&1
+ls backend/app/handlers/combat_quickmenu_handler.rb 2>&1
+```
+
+- If **both exist** in Firefly: grep each for where the game-repo version calls `BattleMapElement` and port those integration points (likely a call to `BattleMapElementPlacementService.new(battle_map).place_random!` during generation, and element-interaction branches in the quickmenu handler).
+- If **neither exists**: Firefly generates maps without this surface today. Skip those edits for this task; add a TODO comment in `battle_map_element_placement_service.rb` noting that nothing calls it yet in Firefly, and wiring is a downstream concern. The service itself is already useful as a building block.
+- If **one exists but not the other**: port only that one.
+
+- [ ] **Step 4: Syntax check**
 
 ```bash
 cd backend && bundle exec ruby -c app/services/battlemap/battle_map_element_placement_service.rb
@@ -911,8 +954,23 @@ cd backend && bundle exec ruby -c app/services/battlemap/battle_map_element_plac
 - [ ] **Step 5: Commit**
 
 ```bash
-git add backend/app/services/battlemap/battle_map_element_placement_service.rb backend/app/views/admin/ backend/app/routes/
-git commit -m "feat(admin): battle map element CRUD UI, filtered to 4 active types"
+git add backend/app/services/battlemap/battle_map_element_placement_service.rb
+git add backend/app/services/battlemap/ai_battle_map_generator_service.rb 2>/dev/null || true
+git add backend/app/handlers/combat_quickmenu_handler.rb 2>/dev/null || true
+git commit -m "$(cat <<'EOF'
+feat(battlemap): port BattleMapElementPlacementService with active-type gate
+
+Procedural element placement gated to the 4 active types
+(water_barrel, oil_barrel, munitions_crate, vase). The dormant 3
+(cliff_edge, toxic_mushrooms, lotus_pollen) stay valid model inputs
+so a downstream game can opt in by overriding ACTIVE_TYPES or calling
+the placer with an explicit type list.
+
+Integration into map-generation and quickmenu-handler is wired in
+where the corresponding Firefly services exist; left as TODO where
+they don't (no admin UI in upstream game repo either).
+EOF
+)"
 ```
 
 ### Task 16: Port asset generation script and prune prompts
