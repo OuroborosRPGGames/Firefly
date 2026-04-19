@@ -9,6 +9,27 @@ class FightService
 
   attr_reader :fight
 
+  # Resolve which combat engine to use. Honors the COMBAT_ENGINE env var when
+  # set; otherwise defaults to 'auto' (Rust when the combat-server socket is
+  # reachable, Ruby fallback when not). The 'use_rust_combat_engine' GameSetting
+  # is an ops-side escape hatch: set it explicitly to false to force Ruby.
+  def self.combat_engine_mode
+    env_mode = ENV['COMBAT_ENGINE']
+    return env_mode if env_mode && !env_mode.empty?
+
+    setting = GameSetting.get('use_rust_combat_engine')
+    return 'ruby' if setting == false || setting == 'false' || setting == '0'
+
+    'auto'
+  rescue StandardError
+    env_mode || 'auto'
+  end
+
+  def self.rust_engine_active?
+    mode = combat_engine_mode
+    (mode == 'rust' || mode == 'auto') && CombatEngineClient.available?
+  end
+
   def initialize(fight = nil)
     @fight = fight
   end
@@ -705,6 +726,11 @@ class FightService
     apply_defaults!
     fight.advance_to_resolution!
 
+    engine_mode = self.class.combat_engine_mode
+    if (engine_mode == 'rust' || engine_mode == 'auto') && CombatEngineClient.available?
+      return resolve_via_rust_engine!
+    end
+
     @last_resolution_service = CombatResolutionService.new(fight, logger: @combat_round_logger)
     result = @last_resolution_service.resolve!
 
@@ -833,6 +859,346 @@ class FightService
   end
 
   private
+
+  def resolve_via_rust_engine!
+    serializer = Combat::FightStateSerializer.new(fight)
+    engine_state = serializer.serialize
+    actions = serializer.serialize_actions
+
+    rust_result = CombatEngineClient.new.resolve_round(engine_state, actions)
+    apply_rust_result!(rust_result)
+  rescue CombatEngineClient::ConnectionError, CombatEngineClient::ProtocolError => e
+    warn "[FightService] Rust engine failed, falling back to Ruby: #{e.message}"
+    @last_resolution_service = CombatResolutionService.new(fight, logger: @combat_round_logger)
+    result = @last_resolution_service.resolve!
+    result = { events: result, roll_display: nil, damage_summary: nil, errors: [] } if result.is_a?(Array)
+    process_ruby_result(result)
+  end
+
+  # Apply the Rust engine's RoundResult back to the database.
+  # @param rust_result [Hash] { "next_state" => ..., "events" => ..., "knockouts" => ..., "fight_ended" => ... }
+  # @return [Hash] { events:, roll_display:, damage_summary:, errors: }
+  def apply_rust_result!(rust_result)
+    next_state = rust_result['next_state'] || rust_result
+    events = rust_result['events'] || []
+    knockouts = rust_result['knockouts'] || []
+
+    # Update participant states from Rust results
+    if next_state['participants']
+      next_state['participants'].each do |rust_p|
+        db_participant = FightParticipant[rust_p['id']]
+        next unless db_participant
+
+        ci = db_participant.character_instance
+        if ci
+          new_hp = rust_p['current_hp'].to_i
+          old_hp = ci.health.to_i
+          ci.update(health: new_hp) if new_hp != old_hp
+        end
+
+        updates = {
+          hex_x: rust_p.dig('position', 'x'),
+          hex_y: rust_p.dig('position', 'y'),
+          is_knocked_out: rust_p['is_knocked_out'] || false,
+          willpower_dice: rust_p['qi_dice']  # TODO(firefly): game uses qi_dice; mapped to willpower_dice
+        }
+        updates[:touch_count] = rust_p['touch_count'] if fight.spar_mode?
+        updates[:is_prone] = rust_p['is_prone'] if rust_p.key?('is_prone')
+        updates[:is_mounted] = rust_p['is_mounted'] if rust_p.key?('is_mounted')
+        updates[:targeting_monster_id] = rust_p['mount_target_id'] if rust_p.key?('mount_target_id')
+        # TODO(firefly): qi_lightness_elevated / qi_lightness_elevation_bonus are qi-specific,
+        # no-op in Firefly (willpower does not have a lightness mechanic)
+        # if rust_p.key?('qi_lightness_elevated')
+        #   updates[:qi_lightness_elevated] = rust_p['qi_lightness_elevated'] ? true : false
+        # end
+        # if rust_p.key?('qi_lightness_elevation_bonus')
+        #   updates[:qi_lightness_elevation_bonus] = rust_p['qi_lightness_elevation_bonus'].to_i
+        # end
+        db_participant.update(updates.compact)
+
+        # Write back cooldowns (Rust decays them per round)
+        if rust_p['cooldowns']
+          abilities_list = db_participant.respond_to?(:all_combat_abilities) ? db_participant.all_combat_abilities : []
+          id_to_name = abilities_list.each_with_object({}) { |a, h| h[a.id.to_s] = a.name }
+          named_cds = {}
+          rust_p['cooldowns'].each do |id_str, rounds|
+            name = id_to_name[id_str.to_s] || id_str.to_s
+            named_cds[name] = rounds.to_i if rounds.to_i > 0
+          end
+          db_participant.update(ability_cooldowns: Sequel.pg_jsonb_wrap(named_cds))
+        end
+
+        # Write back global cooldown
+        if rust_p.key?('global_cooldown') && db_participant.respond_to?(:global_ability_cooldown)
+          db_participant.update(global_ability_cooldown: rust_p['global_cooldown'].to_i)
+        end
+
+        # TODO(firefly): Combat::StatusEffectSyncer does not exist in Firefly (qi-specific),
+        # status effect sync from Rust is a no-op here.
+        # if rust_p['status_effects']
+        #   Combat::StatusEffectSyncer.sync!(db_participant, rust_p['status_effects'])
+        # end
+      end
+    end
+
+    # Write back monster state
+    if next_state['monsters']
+      next_state['monsters'].each do |rust_m|
+        monster = LargeMonsterInstance[rust_m['id']] rescue nil
+        next unless monster
+
+        monster.update(
+          current_hp: rust_m['current_hp'].to_i,
+          status: rust_m['status']&.downcase || 'active'
+        )
+        (rust_m['segments'] || []).each do |rust_seg|
+          seg = MonsterSegmentInstance[rust_seg['id']] rescue nil
+          next unless seg
+
+          seg.update(
+            current_hp: rust_seg['current_hp'].to_i,
+            status: rust_seg['status']&.downcase || 'healthy'
+          )
+        end
+
+        # Writeback mount states: climb_progress, mount_status, current_segment_id.
+        # Without this, Ruby never sees Rust's shake-off or climb-back transitions.
+        (rust_m['mount_states'] || []).each do |ms|
+          next unless defined?(MonsterMountState)
+          record = MonsterMountState.first(
+            large_monster_instance_id: monster.id,
+            fight_participant_id: ms['participant_id']
+          ) rescue nil
+          next unless record
+
+          updates = {
+            climb_progress: ms['climb_progress'].to_i,
+            mount_status: ms['mount_status'].to_s.downcase
+          }
+          if ms['segment_id'].to_i > 0 && record.respond_to?(:current_segment_id=)
+            updates[:current_segment_id] = ms['segment_id'].to_i
+          end
+          record.update(updates) rescue nil
+        end
+      end
+    end
+
+    # Writeback interactive objects (element state transitions).
+    if next_state['interactive_objects'] && defined?(BattleMapElement)
+      next_state['interactive_objects'].each do |rust_el|
+        el = BattleMapElement[rust_el['id']] rescue nil
+        next unless el
+
+        rust_state = rust_el['state'].to_s.downcase
+        el.update(state: rust_state) if el.state != rust_state
+      end
+    end
+
+    # Writeback FightHex overlays. Rows with id > 0 are mutated in place;
+    # rows with id == 0 are freshly-created during round resolution and
+    # must be inserted. Rust is authoritative for the round's FightHex set;
+    # rows no longer present are deleted.
+    if next_state['fight_hexes'] && defined?(FightHex)
+      rust_hexes = next_state['fight_hexes']
+      rust_ids = rust_hexes.map { |h| h['id'].to_i }.reject(&:zero?).to_set
+
+      # Delete removed rows
+      FightHex.where(fight_id: fight.id).each do |fh|
+        fh.delete unless rust_ids.include?(fh.id)
+      end
+
+      rust_hexes.each do |rh|
+        hex_type = case rh['hex_type'].to_s
+                   when 'Oil' then 'oil'
+                   when 'SharpGround' then 'sharp_ground'
+                   when 'Fire' then 'fire'
+                   when 'Puddle' then 'puddle'
+                   when 'LongFall' then 'long_fall'
+                   when 'OpenWindow' then 'open_window'
+                   else rh['hex_type'].to_s.downcase
+                   end
+        if rh['id'].to_i > 0
+          fh = FightHex[rh['id']] rescue nil
+          next unless fh
+
+          updates = {
+            hex_x: rh['hex_x'].to_i,
+            hex_y: rh['hex_y'].to_i,
+            hex_type: hex_type,
+            hazard_type: rh['hazard_type']&.to_s&.downcase,
+            hazard_damage_per_round: (rh['hazard_damage_per_round'] || 0).to_i
+          }
+          fh.update(updates) rescue nil
+        else
+          FightHex.create(
+            fight_id: fight.id,
+            hex_x: rh['hex_x'].to_i,
+            hex_y: rh['hex_y'].to_i,
+            hex_type: hex_type,
+            hazard_type: rh['hazard_type']&.to_s&.downcase,
+            hazard_damage_per_round: (rh['hazard_damage_per_round'] || 0).to_i
+          ) rescue nil
+        end
+      end
+    end
+
+    # Check if Rust determined the fight ended
+    if rust_result['fight_ended']
+      fight.update(status: 'complete')
+      if (winner_side = rust_result['winner_side'])
+        fight.update(winner_side: winner_side)
+      end
+    end
+
+    # Process flee room transitions. Delegate to Ruby's process_successful_flee!
+    # so character move, fled_from_fight_id, KO marker, arrival position, and
+    # personalized broadcast all match Ruby-only resolution.
+    # Also apply ability_penalty / all_roll_penalty from AbilityUsed events;
+    # Rust handles cooldowns + global_cooldown, but roll-penalty JSONB is
+    # Ruby-only and must be updated here so next round's rolls see them.
+    events.each do |event|
+      next unless event.is_a?(Hash)
+
+      if (flee_data = event['FleeSuccess'])
+        db_p = FightParticipant[flee_data['participant_id']] rescue nil
+        next unless db_p
+
+        direction = flee_data['direction'].to_s.downcase
+        next if direction.empty?
+
+        # Ruby expects these set on the participant; Rust only emits them on the event.
+        db_p.update(is_fleeing: true, flee_direction: direction) if db_p.respond_to?(:flee_direction=)
+
+        begin
+          db_p.process_successful_flee! if db_p.respond_to?(:process_successful_flee!)
+        rescue StandardError => e
+          warn "[FightService] process_successful_flee! failed for #{db_p.id}: #{e.message}"
+        end
+      elsif (flee_fail = event['FleeFailed'])
+        db_p = FightParticipant[flee_fail['participant_id']] rescue nil
+        next unless db_p
+
+        begin
+          db_p.cancel_flee! if db_p.respond_to?(:cancel_flee!)
+        rescue StandardError => e
+          warn "[FightService] cancel_flee! failed for #{db_p.id}: #{e.message}"
+        end
+      elsif (ability_data = event['AbilityUsed'])
+        caster_id = ability_data['caster_id']
+        ability_id = ability_data['ability_id']
+        next unless caster_id && ability_id
+
+        db_caster = FightParticipant[caster_id] rescue nil
+        ability = Ability[ability_id] rescue nil
+        next unless db_caster && ability
+
+        begin
+          if ability.ability_penalty_config.any?
+            db_caster.apply_penalty!(
+              'ability_rolls',
+              ability.ability_penalty_config['amount'].to_i,
+              ability.ability_penalty_config['decay_per_round'].to_i
+            )
+          end
+          if ability.all_roll_penalty_config.any?
+            db_caster.apply_penalty!(
+              'all_rolls',
+              ability.all_roll_penalty_config['amount'].to_i,
+              ability.all_roll_penalty_config['decay_per_round'].to_i
+            )
+          end
+        rescue StandardError => e
+          warn "[FightService] apply_penalty! failed for participant=#{caster_id} ability=#{ability_id}: #{e.message}"
+        end
+      elsif (style_data = event['StyleSwitched'])
+        # Delegate to the existing Ruby apply so variant-lock cleanup and
+        # character_instance preference all happen in one place.
+        db_p = FightParticipant[style_data['participant_id']] rescue nil
+        begin
+          db_p.apply_style_switch! if db_p && db_p.respond_to?(:apply_style_switch!)
+        rescue StandardError => e
+          warn "[FightService] apply_style_switch! failed for p=#{style_data['participant_id']}: #{e.message}"
+        end
+      elsif (ko = event['KnockedOut'])
+        # Ruby distinguishes surrender / hostile-NPC death / prisoner-KO.
+        # Rust encodes the distinction via KoReason; route to the right
+        # service here so prisoner state transitions and NPC despawn fire.
+        db_p = FightParticipant[ko['participant_id']] rescue nil
+        next unless db_p
+
+        reason = ko['reason'] || 'Defeat'
+        begin
+          case reason
+          when 'Surrender'
+            db_p.process_surrender! if db_p.respond_to?(:process_surrender!)
+          when 'Died'
+            ci = db_p.character_instance
+            if ci && defined?(NpcSpawnService) && NpcSpawnService.respond_to?(:kill_npc!)
+              NpcSpawnService.kill_npc!(ci)
+            end
+          else # 'Defeat' or unknown
+            # Non-NPC participants: route through prisoner flow so they can
+            # be revived / freed. NPCs just carry the is_knocked_out flag
+            # already written back by participant updates above.
+            if !db_p.is_npc && defined?(PrisonerService) &&
+               PrisonerService.respond_to?(:process_knockout!)
+              PrisonerService.process_knockout!(db_p.character_instance) if db_p.character_instance
+            end
+          end
+        rescue StandardError => e
+          warn "[FightService] KO routing failed for p=#{db_p.id} reason=#{reason}: #{e.message}"
+        end
+      end
+    end
+
+    fight.update(round_events: events.to_json)
+
+    # TODO(firefly): Cultivation::BoostAccumulatorService does not exist in Firefly (qi-specific),
+    # cultivation boost accumulation from combat is a no-op here.
+    # begin
+    #   Cultivation::BoostAccumulatorService.process_round(fight, fight.round_number)
+    # rescue StandardError => e
+    #   warn "[FightService] cultivation boost accumulator failed: #{e.message}"
+    # end
+
+    fight.advance_to_narrative! unless fight.status == 'complete'
+
+    # Re-render lighting with updated positions (gated behind feature flag)
+    if fight.room&.has_battle_map && GameSetting.boolean('dynamic_lighting_enabled')
+      DynamicLightingService.render_for_fight(fight)
+    end
+
+    { events: events, roll_display: nil, damage_summary: nil, errors: [] }
+  rescue StandardError => e
+    warn "[FightService] Error in apply_rust_result!: #{e.message}"
+    { events: events || [], roll_display: nil, damage_summary: nil, errors: [{ step: 'apply_rust_result', error_class: e.class.name, message: e.message }] }
+  end
+
+  # Process a Ruby resolution result through the standard post-processing.
+  # Extracted so resolve_via_rust_engine! fallback can reuse it.
+  # @param result [Hash] from CombatResolutionService#resolve!
+  # @return [Hash]
+  def process_ruby_result(result)
+    events = result[:events] || []
+    roll_display = result[:roll_display]
+    damage_summary = result[:damage_summary]
+    errors = result[:errors] || []
+
+    fight.update(round_events: events.to_json)
+
+    if errors.any?
+      error_lines = errors.map { |err| "#{err[:step]}: #{err[:error_class]} - #{err[:message]}" }.join(' | ')
+      warn "[FightService] Round resolution had errors for fight #{fight.id}: #{error_lines}"
+    end
+
+    fight.advance_to_narrative! unless fight.status == 'complete'
+
+    if fight.room&.has_battle_map && GameSetting.boolean('dynamic_lighting_enabled')
+      DynamicLightingService.render_for_fight(fight)
+    end
+
+    { events: events, roll_display: roll_display, damage_summary: damage_summary, errors: errors }
+  end
 
   # Get all hexes currently occupied by fight participants and monsters
   # @return [Set<Array<Integer, Integer>>] set of [hex_x, hex_y] pairs
