@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "wtypes_id": 3,
+    "description": "<span style=\"color:#c3e5ea\">A</span><span style=\"color:#c1dcdb\"> </span><span style=\"color:#bed2cd\">s</span><span style=\"color:#bcc9be\">t</span><span style=\"color:#b9bfb0\">e</span><span style=\"color:#b7b6a1\">e</span><span style=\"color:#b5ac92\">l</span><span style=\"color:#b2a384\"> </span><span style=\"color:#b09975\">r</span><span style=\"color:#ad9067\">e</span><span style=\"color:#ab8658\">v</span><span style=\"color:#a97d49\">o</span><span style=\"color:#a6733b\">l</span><span style=\"color:#a46a2c\">v</span><span style=\"color:#a1601e\">e</span><span style=\"color:#9f570f\">r</span>",
+    "created_by": 2,
+    "price": null,
+    "last_used": "2023-05-19 18:45:30 +0000",
+    "desc_type": "SFW Picture",
+    "desc_desc": "/images/newbies/revolver.png",
+    "handle_desc": null,
+    "created_at": "2023-05-19 18:45:30 +0000",
+    "magic_type": 4,
+    "min_year": 1920,
+    "max_year": null
+  },
+  {
+    "id": 2,
+    "wtypes_id": 1,
+    "description": "<span style=\"color:#c3e5ea\">A</span><span style=\"color:#c0dbda\"> </span><span style=\"color:#bed1cb\">h</span><span style=\"color:#bbc7bb\">u</span><span style=\"color:#b9bcab\">n</span><span style=\"color:#b6b29c\">t</span><span style=\"color:#b4a88c\">i</span><span style=\"color:#b19e7d\">n</span><span style=\"color:#ae946d\">g</span><span style=\"color:#ac8a5d\"> </span><span style=\"color:#a9804e\">k</span><span style=\"color:#a7753e\">n</span><span style=\"color:#a46b2e\">i</span><span style=\"color:#a2611f\">f</span><span style=\"color:#9f570f\">e</span>",
+    "created_by": 2,
+    "price": null,
+    "last_used": "2023-05-19 18:49:46 +0000",
+    "desc_type": "SFW Picture",
+    "desc_desc": "/images/newbies/hknife.png",
+    "handle_desc": null,
+    "created_at": "2023-05-19 18:49:46 +0000",
+    "magic_type": 4,
+    "min_year": -1000,
+    "max_year": null
+  }
+]

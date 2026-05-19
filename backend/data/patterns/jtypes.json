@@ -1,0 +1,342 @@
+[
+  {
+    "id": 1,
+    "jname": "Right Hand Ring",
+    "jtype": "Ring",
+    "layer": 140,
+    "bone": "Right Hand",
+    "btwo": "",
+    "dorder": 4010,
+    "metal_mult": 1.0
+  },
+  {
+    "id": 2,
+    "jname": "Left Hand Ring",
+    "jtype": "Ring",
+    "layer": 140,
+    "bone": "Left Hand",
+    "btwo": "",
+    "dorder": 4010,
+    "metal_mult": 1.0
+  },
+  {
+    "id": 3,
+    "jname": "Right Toering",
+    "jtype": "Ring",
+    "layer": 30,
+    "bone": "Right Foot",
+    "btwo": "",
+    "dorder": 6010,
+    "metal_mult": 1.0
+  },
+  {
+    "id": 4,
+    "jname": "Left Toering",
+    "jtype": "Ring",
+    "layer": 30,
+    "bone": "Left Foot",
+    "btwo": "",
+    "dorder": 6010,
+    "metal_mult": 1.0
+  },
+  {
+    "id": 5,
+    "jname": "Right Hand Bracelet",
+    "jtype": "Bracelet",
+    "layer": 130,
+    "bone": "Right Wrist",
+    "btwo": "",
+    "dorder": 4005,
+    "metal_mult": 2.0
+  },
+  {
+    "id": 6,
+    "jname": "Left Hand Bracelet",
+    "jtype": "Bracelet",
+    "layer": 130,
+    "bone": "Left Wrist",
+    "btwo": "",
+    "dorder": 4005,
+    "metal_mult": 2.0
+  },
+  {
+    "id": 7,
+    "jname": "Right Anklet",
+    "jtype": "Bracelet",
+    "layer": 30,
+    "bone": "Right Calf",
+    "btwo": "",
+    "dorder": 6010,
+    "metal_mult": 2.0
+  },
+  {
+    "id": 8,
+    "jname": "Left Anklet",
+    "jtype": "Bracelet",
+    "layer": 30,
+    "bone": "Left Calf",
+    "btwo": "",
+    "dorder": 6010,
+    "metal_mult": 2.0
+  },
+  {
+    "id": 9,
+    "jname": "Tiara",
+    "jtype": "Misc",
+    "layer": 50,
+    "bone": "Forehead",
+    "btwo": "",
+    "dorder": 980,
+    "metal_mult": 3.0
+  },
+  {
+    "id": 10,
+    "jname": "Belly Chain",
+    "jtype": "Misc",
+    "layer": 20,
+    "bone": "Stomach",
+    "btwo": "",
+    "dorder": 2035,
+    "metal_mult": 1.5
+  },
+  {
+    "id": 11,
+    "jname": "Right Ear Piercing",
+    "jtype": "Piercing",
+    "layer": 1,
+    "bone": "Cheeks",
+    "btwo": "",
+    "dorder": 1010,
+    "metal_mult": 0.2
+  },
+  {
+    "id": 12,
+    "jname": "Left Ear Piercing",
+    "jtype": "Piercing",
+    "layer": 1,
+    "bone": "Cheeks",
+    "btwo": "",
+    "dorder": 1010,
+    "metal_mult": 0.2
+  },
+  {
+    "id": 13,
+    "jname": "Both Ears Piercing",
+    "jtype": "Piercing",
+    "layer": 1,
+    "bone": "Cheeks",
+    "btwo": "",
+    "dorder": 1010,
+    "metal_mult": 0.2
+  },
+  {
+    "id": 14,
+    "jname": "Right Nipple Piercing",
+    "jtype": "Piercing",
+    "layer": 1,
+    "bone": "Breasts",
+    "btwo": "",
+    "dorder": 2032,
+    "metal_mult": 0.2
+  },
+  {
+    "id": 15,
+    "jname": "Left Nipple Piercing",
+    "jtype": "Piercing",
+    "layer": 1,
+    "bone": "Breasts",
+    "btwo": "",
+    "dorder": 2032,
+    "metal_mult": 0.2
+  },
+  {
+    "id": 16,
+    "jname": "Both Nipples Piercing",
+    "jtype": "Piercing",
+    "layer": 1,
+    "bone": "Breasts",
+    "btwo": "",
+    "dorder": 2032,
+    "metal_mult": 0.2
+  },
+  {
+    "id": 17,
+    "jname": "Eyebrow Piercing",
+    "jtype": "Piercing",
+    "layer": 1,
+    "bone": "Eyes",
+    "btwo": "",
+    "dorder": 1005,
+    "metal_mult": 0.2
+  },
+  {
+    "id": 18,
+    "jname": "Nose Piercing",
+    "jtype": "Piercing",
+    "layer": 1,
+    "bone": "Nose",
+    "btwo": "",
+    "dorder": 1009,
+    "metal_mult": 0.2
+  },
+  {
+    "id": 19,
+    "jname": "Genital Piercing",
+    "jtype": "Piercing",
+    "layer": 1,
+    "bone": "Groin",
+    "btwo": "",
+    "dorder": 5028,
+    "metal_mult": 0.2
+  },
+  {
+    "id": 20,
+    "jname": "Cheek Piercing",
+    "jtype": "Surface Piercing",
+    "layer": 1,
+    "bone": "Cheeks",
+    "btwo": "",
+    "dorder": 1010,
+    "metal_mult": 0.2
+  },
+  {
+    "id": 21,
+    "jname": "Mid Back Piercing",
+    "jtype": "Surface Piercing",
+    "layer": 1,
+    "bone": "Mid Back",
+    "btwo": "",
+    "dorder": 2012,
+    "metal_mult": 0.2
+  },
+  {
+    "id": 22,
+    "jname": "Lower Back Piercing",
+    "jtype": "Surface Piercing",
+    "layer": 1,
+    "bone": "Lower Back",
+    "btwo": "",
+    "dorder": 2014,
+    "metal_mult": 0.2
+  },
+  {
+    "id": 23,
+    "jname": "Thigh Piercing",
+    "jtype": "Surface Piercing",
+    "layer": 1,
+    "bone": "Thighs",
+    "btwo": "",
+    "dorder": 5010,
+    "metal_mult": 0.2
+  },
+  {
+    "id": 24,
+    "jname": "Lip Piercing",
+    "jtype": "Piercing",
+    "layer": 1,
+    "bone": "Mouth",
+    "btwo": "",
+    "dorder": 1012,
+    "metal_mult": 0.2
+  },
+  {
+    "id": 25,
+    "jname": "Tongue Piercing",
+    "jtype": "Piercing",
+    "layer": 1,
+    "bone": "Mouth",
+    "btwo": "",
+    "dorder": 1013,
+    "metal_mult": 0.2
+  },
+  {
+    "id": 26,
+    "jname": "Watch",
+    "jtype": "Misc",
+    "layer": 80,
+    "bone": "Left Wrist",
+    "btwo": "",
+    "dorder": 4005,
+    "metal_mult": 3.0
+  },
+  {
+    "id": 27,
+    "jname": "Pocket Watch",
+    "jtype": "Misc",
+    "layer": 150,
+    "bone": "Stomach",
+    "btwo": "",
+    "dorder": 2042,
+    "metal_mult": 3.0
+  },
+  {
+    "id": 28,
+    "jname": "Hairpins",
+    "jtype": "Misc",
+    "layer": 50,
+    "bone": "Scalp",
+    "btwo": "",
+    "dorder": 1002,
+    "metal_mult": 2.0
+  },
+  {
+    "id": 29,
+    "jname": "Over-Shirt Necklace",
+    "jtype": "Necklace",
+    "layer": 112,
+    "bone": "Collarbone",
+    "btwo": "",
+    "dorder": 1980,
+    "metal_mult": 3.0
+  },
+  {
+    "id": 30,
+    "jname": "Under-Shirt Necklace",
+    "jtype": "Necklace",
+    "layer": 95,
+    "bone": "Collarbone",
+    "btwo": "",
+    "dorder": 1978,
+    "metal_mult": 3.0
+  },
+  {
+    "id": 31,
+    "jname": "Collar",
+    "jtype": "Necklace",
+    "layer": 150,
+    "bone": "Neck",
+    "btwo": "",
+    "dorder": 1962,
+    "metal_mult": 5.0
+  },
+  {
+    "id": 32,
+    "jname": "Neck Piercing",
+    "jtype": "Surface Piercing",
+    "layer": 1,
+    "bone": "Neck",
+    "btwo": "",
+    "dorder": 1962,
+    "metal_mult": 0.2
+  },
+  {
+    "id": 33,
+    "jname": "Upper Back Piercing",
+    "jtype": "Surface Piercing",
+    "layer": 1,
+    "bone": "Upper Back",
+    "btwo": "",
+    "dorder": 1980,
+    "metal_mult": 0.2
+  },
+  {
+    "id": 34,
+    "jname": "Naval Piercing",
+    "jtype": "Piercing",
+    "layer": 1,
+    "bone": "Stomach",
+    "btwo": "",
+    "dorder": 2045,
+    "metal_mult": 0.4
+  }
+]

@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "wname": "Knife",
+    "wtype": "Knife",
+    "hands": 1
+  },
+  {
+    "id": 2,
+    "wname": "Twin Knives",
+    "wtype": "Knife",
+    "hands": 2
+  },
+  {
+    "id": 3,
+    "wname": "Pistol",
+    "wtype": "Firearm",
+    "hands": 1
+  },
+  {
+    "id": 4,
+    "wname": "Twin Pistols",
+    "wtype": "Firearm",
+    "hands": 2
+  },
+  {
+    "id": 5,
+    "wname": "Rifle",
+    "wtype": "Firearm",
+    "hands": 2
+  },
+  {
+    "id": 6,
+    "wname": "Sword",
+    "wtype": "Sword",
+    "hands": 1
+  },
+  {
+    "id": 7,
+    "wname": "Twin Swords",
+    "wtype": "Sword",
+    "hands": 2
+  },
+  {
+    "id": 8,
+    "wname": "Two-Handed Sword",
+    "wtype": "Sword",
+    "hands": 2
+  }
+]
